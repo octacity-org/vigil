@@ -16,7 +16,7 @@ RAW_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", 
 
 
 # KAP files are not in the repository (see README). These tests need a local download
-# of 2026/2 and are skipped otherwise. Their expected values are circular; see issue #31.
+# of 2026/2 and are skipped otherwise. Their expected values are circular; see issue #20.
 @unittest.skipUnless(os.path.isdir(RAW_DIR), "KAP 2026/2 files not downloaded")
 class TestKapParserAndSignals(unittest.TestCase):
     def test_general_310003_industrial_katmr(self):
