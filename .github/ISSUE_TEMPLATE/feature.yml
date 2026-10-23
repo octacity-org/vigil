@@ -1,0 +1,26 @@
+name: Feature
+description: A new capability or an improvement.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why is this needed?
+    validations:
+      required: true
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: How do we know it is finished? Prefer checks that can run in CI.
+    validations:
+      required: true

@@ -1,0 +1,19 @@
+name: Methodology question
+description: A question about a financial definition or rule that needs a recorded answer.
+labels: ["area: methodology", "finance-knowledge"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Real example
+      description: A filing where the answer changes the result, with the numbers.
+  - type: textarea
+    id: options
+    attributes:
+      label: Options you see
