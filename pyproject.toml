@@ -23,6 +23,8 @@ pythonpath = ["src"]
 [tool.ruff]
 line-length = 120
 target-version = "py310"
+# Markdown code blocks quote code verbatim (e.g. the buggy regex in docs/VIGIL.md).
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
