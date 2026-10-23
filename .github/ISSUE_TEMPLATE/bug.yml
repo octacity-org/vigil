@@ -1,0 +1,28 @@
+name: Bug
+description: Something produces a wrong number, crashes, or breaks a check.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What is wrong? Include the command you ran.
+    validations:
+      required: true
+  - type: input
+    id: filing
+    attributes:
+      label: Filing
+      description: Company, year/quarter, file name or disclosure id (if it concerns a specific filing).
+      placeholder: KATMR 2026/2, KATMR_1651411_2026_2.xls
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected value and source
+      description: The correct value and where you read it (statement, row id, column) in the raw file.
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual value
+    validations:
+      required: true
