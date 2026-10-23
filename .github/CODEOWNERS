@@ -1,0 +1,23 @@
+# Cross review: the person who writes a part does not approve it alone.
+# Replace @Berke111 with the owners from the role plan (docs/VIGIL.md, section 13)
+# once team members have their GitHub handles.
+
+# Default: project lead
+*                         @Berke111
+
+# Data pipeline and parser -> data owner (person 2) and parser owner (person 3)
+/src/vigil/downloader.py  @Berke111
+/src/vigil/parser.py      @Berke111
+
+# Metrics and signals -> technical lead (person 4) and methodology owner (person 1)
+/src/vigil/signals.py     @Berke111
+
+# Methodology and decisions -> methodology owner (person 1)
+/docs/decisions/          @Berke111
+/docs/VIGIL.md            @Berke111
+
+# Golden dataset -> QA (person 5)
+/tests/golden/            @Berke111
+
+# CI and repository settings -> data owner / DevOps (person 2)
+/.github/                 @Berke111
