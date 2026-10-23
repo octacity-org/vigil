@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Methodology discussion
+    url: https://github.com/orgs/octacity-org/discussions/11
+    about: Open-ended questions about definitions and signals belong in Discussions first.

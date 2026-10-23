@@ -1,0 +1,35 @@
+name: Golden dataset entry
+description: Hand-extract values from a raw KAP file so the parser can be tested against them. No code needed.
+labels: ["area: qa", "no-code", "finance-knowledge"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Open the raw file in a browser and copy values by hand. Do **not** use parser output.
+        Format: see `tests/golden/README.md` (issue #21).
+  - type: input
+    id: filing
+    attributes:
+      label: Filing
+      placeholder: MOGAN 2026/2, disclosure id
+    validations:
+      required: true
+  - type: dropdown
+    id: template
+    attributes:
+      label: Template
+      options: [general, bank, finance, holding, insurance]
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this filing
+      description: What does it test? (special fiscal period, restatement, unusual scale, extreme margin...)
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: Rules
+      options:
+        - label: I did not write the parser code this entry will test.
+          required: true
