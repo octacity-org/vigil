@@ -32,15 +32,6 @@ gh repo fork octacity-org/vigil --remote --remote-name fork
 git push -u fork HEAD
 ```
 
-### Opening a pull request
-
-1. Create a branch for the issue, e.g. `git checkout -b issue-21-golden-format`.
-2. Commit, then push the branch to your fork.
-3. Open a pull request against `octacity-org/vigil:main` (`gh pr create -R octacity-org/vigil --fill`) and write `Closes #N` in the description.
-4. CI runs on the pull request; a maintainer reviews it and merges.
-
-Keep your fork up to date with `gh repo sync` (or GitHub's *Sync fork* button) before starting new work.
-
 | Command | What it does |
 |---|---|
 | `ruff check .` | Lint |
@@ -48,6 +39,15 @@ Keep your fork up to date with `gh repo sync` (or GitHub's *Sync fork* button) b
 | `pytest` | Tests |
 
 CI runs all three on every pull request.
+
+### Opening a pull request
+
+1. Create a branch for the issue, e.g. `git checkout -b issue-21-golden-format`.
+2. Commit, then push the branch to your fork.
+3. Open a pull request against `octacity-org/vigil:main` (`gh pr create -R octacity-org/vigil --fill`) and write `Closes #N` in the description.
+4. CI runs on the pull request; a maintainer reviews it and merges.
+
+Before starting new work, update your fork with `gh repo sync <your-user>/vigil` (or GitHub's *Sync fork* button), then `git pull` locally.
 
 ### KAP data
 
@@ -93,7 +93,7 @@ Methodology choices change results by large factors (at KATMR, one EBITDA defini
 ## Issues and pull requests
 
 - **Claim an issue** by commenting on it. If an assigned issue has no activity for **two weeks**, it is politely unassigned so someone else can pick it up. No hard feelings — school comes first.
-- **Pull requests come from forks.** Write access is not needed and not given for contributing (see [Setup](#setup)).
+- **Pull requests come from forks.** You do not need write access to contribute (see [Setup](#setup)).
 - **One issue per pull request** where possible. Use `Closes #N` in the description.
 - **Reviews are crossed:** parser changes are reviewed by the data owner, signal and metric changes by the methodology owner (see `.github/CODEOWNERS`).
 - `main` is protected: a pull request, a green CI run and an approving review are required.
