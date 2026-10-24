@@ -2,7 +2,7 @@
 
 - **Status:** accepted
 - **Date:** 2026-10-23
-- **Decided by:** @Berke111
+- **Decided by:** @BerkeDurdu
 - **Discussion:** #3
 
 ## Context
