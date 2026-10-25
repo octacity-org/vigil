@@ -70,7 +70,7 @@ One fact, across reports, is:
 - `currency_part` is `TP`, `YP` or `TOTAL`, from the end of `period_type` (bank balance sheets).
 - `period_type` itself is not part of it: the dates already say whether a value is cumulative or 3-month.
 
-`row_id` contains the template family and the table's role code. Versions of an item are linked only while both stay the same. In 2026/2 the general template's income statement comes as `310003` in 443 reports and `310000` in 210; a company that switches between them, or a template that renumbers its rows, starts a new fact. Linking those needs the template row map (Phase 0); the schema does not guess.
+`row_id` contains the template family and the table's role code. Versions of an item are linked only while both stay the same. In 2026/2 the general template's income statement comes as `310003` in 443 reports, `310000` in 210 and `310002` in 1. A company that switches role code, or a template that renumbers its rows, starts a new fact. This happens: MSY's solo income statement is `banks_role_310016` in 2025/2 and `banks_role_310017` in 2026/2, so its income statement items have no linked versions. Linking those needs the template row map (Phase 0); the schema does not guess.
 
 ## Views
 
@@ -80,6 +80,18 @@ One fact, across reports, is:
 | `facts_first_reported` | `version_no = 1`: each fact as first reported |
 | `facts_latest` | `version_no = version_count`: each fact as in the latest report |
 | `fact_conflicts` | Same fact, same report, different values in two columns |
+
+Columns of `fact_versions` (and of `facts_first_reported` / `facts_latest`, which filter it):
+
+| Column | Meaning |
+|---|---|
+| `company_code`, `consolidation_type`, `row_id`, `currency_part`, `period_start`, `period_end` | Fact identity (see above) |
+| `label_tr`, `raw_value`, `scale_unit`, `normalized_value_tl` | The value as written in this report |
+| `disclosure_id`, `column_class`, `period_label`, `is_comparative` | Where it comes from |
+| `reported_year`, `reported_quarter`, `as_reported_in` | Report period, e.g. `as_reported_in = '2026_2'` |
+| `version_no`, `version_count` | This report's place among the reports that carry the fact, and how many there are |
+
+`fact_conflicts` has the fact identity, `disclosure_id`, and the lists `column_classes` and `raw_values`.
 
 Versions are ordered by report period (`year`, `quarter`), then `disclosure_id`. "Latest" therefore means "from the most recent report period", not "most recently published": a correction to 2025/2 published in 2026 still ranks below the 2026/2 report. Within one report period the order assumes that KAP disclosure ids grow over time, so a corrected filing would count as the later version (2025/2 and 2026/2 have no second filing for the same company and consolidation). A version is a report, not a column: if one report carries the same fact in two columns (for example, a Q1 report whose cumulative and 3-month columns cover the same three months), both rows have the same `version_no`. If their values differ they appear in `fact_conflicts` and both stay in `facts_latest`; Vigil does not pick one.
 
