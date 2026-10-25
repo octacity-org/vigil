@@ -11,8 +11,9 @@ requires-python = ">=3.10"
 dependencies = []
 
 [project.optional-dependencies]
-db = ["duckdb>=1.1"]
-dev = ["pytest>=8", "ruff>=0.6", "duckdb>=1.1"]
+# 1.4.2 is the oldest DuckDB the loader and the schema views were tested with.
+db = ["duckdb>=1.4.2"]
+dev = ["pytest>=8", "ruff>=0.6", "duckdb>=1.4.2"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
