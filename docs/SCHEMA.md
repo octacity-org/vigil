@@ -1,6 +1,6 @@
 # Storage schema
 
-Bitemporal DuckDB schema for parsed KAP facts. Code: [`src/vigil/schema.py`](../src/vigil/schema.py). Decision: [0002](decisions/0002-bitemporal-schema.md).
+Bitemporal DuckDB schema for parsed KAP facts. Code: [`src/vigil/schema.py`](../src/vigil/schema.py). Loader: [`src/vigil/db.py`](../src/vigil/db.py). Decision: [0002](decisions/0002-bitemporal-schema.md).
 
 ## Why bitemporal
 
@@ -82,6 +82,32 @@ One fact, across reports, is:
 | `fact_conflicts` | Same fact, same report, different values in two columns |
 
 Versions are ordered by report period (`year`, `quarter`), then `disclosure_id`. "Latest" therefore means "from the most recent report period", not "most recently published": a correction to 2025/2 published in 2026 still ranks below the 2026/2 report. Within one report period the order assumes that KAP disclosure ids grow over time, so a corrected filing would count as the later version (2025/2 and 2026/2 have no second filing for the same company and consolidation). A version is a report, not a column: if one report carries the same fact in two columns (for example, a Q1 report whose cumulative and 3-month columns cover the same three months), both rows have the same `version_no`. If their values differ they appear in `fact_conflicts` and both stay in `facts_latest`; Vigil does not pick one.
+
+## Checked on real data (2025/2 + 2026/2)
+
+Both quarters loaded into one database: 736 + 776 reports, 340,201 + 366,437 facts, row counts matching the parse report.
+
+- KATMR consolidated revenue (`general_role_310003-row-3`), 01.01.2025 – 30.06.2025: version 1 is 1,085,459,841 TL (2025/2, `col-order-class-4`), version 2 is 1,434,008,001 TL (2026/2, `col-order-class-5`, restated). The 3-month figure for 01.04.2025 – 30.06.2025 goes from 526,067,945 to 694,991,758 TL.
+- 81,277 facts have two versions (162,554 rows); `fact_conflicts` is empty. Between the first and the latest version, 61,152 changed value and 20,125 kept it (11,148 of those are 0).
+- Of the 88,474 current-period income, comprehensive income and cash flow facts in 2025/2 (companies that also reported in 2026/2 with the same consolidation), 80,906 (91.4%) are linked to their 2026/2 version. None of the 7,568 unlinked ones has a 2026/2 fact with the same row and dates, so none is missed by the schema:
+  - 776: the 2026/2 report has the row and a value ending on the same date, but for a different start (for example only the cumulative, not the 3-month value);
+  - 1,318: the row is there but has no value ending on that date (empty cell, or moved by #14);
+  - 5,474: the row is not in the 2026/2 report at all (2,960 of them were 0 in 2025/2).
+- Balance sheet values at 30.06.2025 have no second version and will not get one from quarterly reports: later balance sheets are compared with the previous year end. Year-end balances are what get restated (31.12.2025 appears in 2025/4 and again in each 2026 report). The 235 balance sheet facts that do have two versions (5 companies) are at 31.12.2024: the 2025/2 comparative column (`col-order-class-5`) and the third balance sheet column (`col-order-class-6`, `Bir Önceki Dönem 31.12.2024`) of 2026/2 reports that restated their prior periods.
+
+## What is not in the database
+
+- **Statement of changes in equity.** The parser skips it in Phase 0 (two-dimensional equity columns), so it is not loaded.
+- **Files that fail to parse.** They are listed by the loader with the reason. In 2026/2: the two `ALBRK-ALK` filings, which use a `par-banks` template the parser does not recognise.
+- **Correctness beyond the parser.** The database stores what the parser produces. Until the column-shift bug (#14) is fixed, about 1% of values sit in the wrong column. Matching row counts prove the load is complete, not that the values are right; that is what the golden dataset checks.
+
+## Loading
+
+```bash
+python -m vigil.db data/raw/2026_2 data/vigil.duckdb
+```
+
+Each report is deleted and rewritten in one transaction, so re-running never duplicates rows. The command exits with an error when a file fails to load, when a report's row count differs from the parse report, or when a file that failed this time still has rows from an earlier load (stale report).
 
 ## Example queries
 

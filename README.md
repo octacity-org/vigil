@@ -36,6 +36,14 @@ pytest
 
 KAP files are **not** part of this repository. Download them locally into `data/raw/{year}_{quarter}/` with `src/vigil/downloader.py`. Tests that need them are skipped when they are missing.
 
+Load a parsed quarter into DuckDB (re-running replaces each filing, it never duplicates rows):
+
+```bash
+python -m vigil.db data/raw/2026_2 data/vigil.duckdb
+```
+
+It prints the parse report (failed files and why) and checks that the row count of every filing in the database matches it.
+
 ## Documentation
 
 | Document | Content |
