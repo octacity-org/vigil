@@ -120,7 +120,7 @@ Both quarters loaded into one database: 736 + 776 reports, 340,201 + 366,437 fac
 python -m vigil.db data/raw/2026_2 data/vigil.duckdb
 ```
 
-Each report is deleted and rewritten in one transaction, so re-running never duplicates rows. The command exits with an error when a file fails to load, when a report's row count differs from the parse report, or when a file that failed this time still has rows from an earlier load (stale report).
+Each report is deleted and rewritten in one transaction, so re-running never duplicates rows. The command exits with an error when a file fails to load, when a report's row count differs from the parse report, or when a file that failed this time still has rows from an earlier load (stale report), or when a report of the same year and quarter is in the database but its file is no longer in the directory (missing file). Stale and missing reports are listed, not deleted.
 
 ## Example queries
 

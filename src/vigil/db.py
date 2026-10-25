@@ -15,7 +15,7 @@ import os
 import re
 from typing import Dict, List, Optional, Tuple
 
-from vigil.parser import ParsedFiling, parse_kap_xls
+from vigil.parser import ParsedFiling, parse_filename, parse_kap_xls
 from vigil.schema import SCHEMA_SQL
 
 try:
@@ -263,6 +263,28 @@ def stale_reports(con, report: ParseReport) -> List[Tuple[str, int]]:
     return out
 
 
+def missing_reports(con, report: ParseReport) -> List[Tuple[str, int]]:
+    """
+    Reports still in the database for a report period (year, quarter) of this run whose file is no longer in
+    raw_dir. Their rows come from a file that was removed. Returns (filepath, disclosure_id).
+    """
+    names = {os.path.basename(r.filepath) for r in report.files}
+    periods = set()
+    for name in names:
+        try:
+            _, _, _, year, quarter = parse_filename(name)
+        except ValueError:
+            continue
+        periods.add((year, quarter))
+    out: List[Tuple[str, int]] = []
+    for disclosure_id, path, year, quarter in con.execute(
+        "SELECT disclosure_id, filepath, year, quarter FROM reports ORDER BY filepath"
+    ).fetchall():
+        if (year, quarter) in periods and os.path.basename(path) not in names:
+            out.append((path, disclosure_id))
+    return out
+
+
 if __name__ == "__main__":
     import sys
 
@@ -275,6 +297,7 @@ if __name__ == "__main__":
     load_filings(conn, parsed, rep)
     mismatches = count_mismatches(conn, rep)
     stale = stale_reports(conn, rep)
+    missing = missing_reports(conn, rep)
 
     print(f"Files: {len(rep.files)} | ok: {len(rep.ok_files)} | failed: {len(rep.failed_files)}")
     print(f"Facts in parse report: {rep.total_facts}")
@@ -292,6 +315,11 @@ if __name__ == "__main__":
     if stale:
         print(f"Stale reports (failed now, rows from an earlier load still in the database): {len(stale)}")
         for path, disclosure_id in stale:
+            print(f"  {os.path.basename(path)} (disclosure {disclosure_id})")
+        sys.exit(1)
+    if missing:
+        print(f"Missing files (removed from {target_dir}, rows still in the database): {len(missing)}")
+        for path, disclosure_id in missing:
             print(f"  {os.path.basename(path)} (disclosure {disclosure_id})")
         sys.exit(1)
     print(f"Row counts match the parse report for all {len(rep.ok_files)} loaded files -> {db_path}")
