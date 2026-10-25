@@ -42,6 +42,7 @@ KAP files are **not** part of this repository. Download them locally into `data/
 |---|---|
 | [`docs/VIGIL.md`](docs/VIGIL.md) | Full project document (Turkish): methodology, worked KATMR example, roles, roadmap, known issues |
 | [`docs/DATA_CONTRACT.md`](docs/DATA_CONTRACT.md) | Data contract draft (Turkish) |
+| [`docs/SCHEMA.md`](docs/SCHEMA.md) | Bitemporal storage schema and example queries |
 | [`docs/glossary.md`](docs/glossary.md) | Turkish–English glossary of financial statement terms |
 | [`docs/decisions/`](docs/decisions/) | Recorded methodology and project decisions |
 

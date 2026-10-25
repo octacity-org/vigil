@@ -5,6 +5,7 @@ Every methodology or project choice that changes results or how people work is r
 | # | Decision | Status |
 |---|---|---|
 | [0001](0001-license.md) | License: Apache-2.0 for code, no redistribution of KAP data | accepted |
+| [0002](0002-bitemporal-schema.md) | Bitemporal storage schema | proposed |
 
 ## Open decisions
 
