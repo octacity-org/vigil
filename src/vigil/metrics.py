@@ -120,6 +120,7 @@ class BalanceSheetRatios:
     net_debt: Optional[float]
     net_debt_to_equity: Optional[float]
     liabilities_to_assets: Optional[float]
+    liabilities_derived: bool = False
 
 
 def calculate_balance_sheet_ratios(
@@ -137,7 +138,8 @@ def calculate_balance_sheet_ratios(
     Calculate all standard balance sheet ratios from available inputs.
 
     If total_liabilities is not provided but total_assets and equity are present,
-    total_liabilities is reconciled as (total_assets - equity).
+    total_liabilities is derived as (total_assets - equity) and marked with
+    liabilities_derived=True.
     """
     cr = current_ratio(current_assets, current_liabilities)
     qr = quick_ratio(current_assets, inventories, current_liabilities)
@@ -146,8 +148,10 @@ def calculate_balance_sheet_ratios(
     nde = net_debt_to_equity(nd, equity)
 
     resolved_liabilities = total_liabilities
+    liabilities_derived = False
     if resolved_liabilities is None and total_assets is not None and equity is not None:
         resolved_liabilities = total_assets - equity
+        liabilities_derived = True
 
     la = liabilities_to_assets(resolved_liabilities, total_assets)
 
@@ -158,4 +162,5 @@ def calculate_balance_sheet_ratios(
         net_debt=nd,
         net_debt_to_equity=nde,
         liabilities_to_assets=la,
+        liabilities_derived=liabilities_derived,
     )
