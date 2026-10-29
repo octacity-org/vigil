@@ -8,8 +8,11 @@ What a quarterly KAP file looks like, for anyone touching the downloader, the pa
 GET https://www.kap.org.tr/tr/api/financialTable/download/{year}/{quarter}
 ```
 
-- Returns one zip per quarter with one file per filing.
-- Downloads are often cut off. Complete members can still be recovered from a partial zip by reading the local file headers (`PK\x03\x04`) and inflating each member with `zlib.decompressobj(-15)`; `src/vigil/downloader.py` does this.
+- Returns one zip per quarter with one file per filing: 778 files (28.6 MB, about 1 GB unpacked) for 2026/2 and 672 for 2026/1, measured on 2026-10-29.
+- The response has no `Content-Length` and **ignores `Range`** (it answers `200` from the first byte), so a cut-off download cannot be resumed; it has to start again.
+- Every member is deflated and written with a data descriptor: the local header has no sizes or CRC, they follow the data.
+- Downloads are often cut off (between 3.7 and 15 MB in earlier tests; two complete downloads in about 10 seconds on 2026-10-29). Complete members can still be recovered from a partial zip: read each local header (`PK\x03\x04`), inflate with `zlib.decompressobj(-15)` until the stream ends, then check the CRC from the data descriptor. Do not find a member's end by searching for the next `PK` signature; it can occur inside compressed data.
+- `python -m vigil.downloader {year} {quarter} data/raw` does all of this: it retries from the start with backoff, keeps the longest attempt, and reports recovered and lost files (#38).
 - `checkFileExist` gave unreliable answers during prototyping; do not depend on it (#39).
 - Raw files are never committed (decision [0001](decisions/0001-license.md)).
 
