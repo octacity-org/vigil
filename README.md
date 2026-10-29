@@ -51,6 +51,7 @@ It prints the parse report (failed files and why) and checks that the row count 
 | [`docs/VIGIL.md`](docs/VIGIL.md) | Full project document (Turkish): methodology, worked KATMR example, roles, roadmap, known issues |
 | [`docs/DATA_CONTRACT.md`](docs/DATA_CONTRACT.md) | Data contract draft (Turkish) |
 | [`docs/SCHEMA.md`](docs/SCHEMA.md) | Bitemporal storage schema and example queries |
+| [`docs/kap.md`](docs/kap.md) | KAP file format: download, encoding, header, tables, rows, value cells, columns |
 | [`docs/glossary.md`](docs/glossary.md) | Turkish–English glossary of financial statement terms |
 | [`docs/decisions/`](docs/decisions/) | Recorded methodology and project decisions |
 

@@ -1,0 +1,108 @@
+# KAP financial statement files
+
+What a quarterly KAP file looks like, for anyone touching the downloader, the parser or the golden dataset. Counts below come from 246 files of 2026/2 (a partial download); the full quarter has more files and may contain cases not listed here (see #124, #125).
+
+## Download
+
+```
+GET https://www.kap.org.tr/tr/api/financialTable/download/{year}/{quarter}
+```
+
+- Returns one zip per quarter with one file per filing.
+- Downloads are often cut off. Complete members can still be recovered from a partial zip by reading the local file headers (`PK\x03\x04`) and inflating each member with `zlib.decompressobj(-15)`; `src/vigil/downloader.py` does this.
+- `checkFileExist` gave unreliable answers during prototyping; do not depend on it (#39).
+- Raw files are never committed (decision [0001](decisions/0001-license.md)).
+
+## File name
+
+```
+{TICKER-GROUP}_{disclosure_id}_{year}_{quarter}.xls
+KATMR_1651411_2026_2.xls
+ADB-ADBNK_1652729_2026_2.xls
+```
+
+`TICKER-GROUP` is one ticker or several joined by `-` (24 of 246 files). The first part is used as the company code. `disclosure_id` is the KAP disclosure number and identifies the filing.
+
+## Encoding
+
+Despite the `.xls` extension, files are **UTF-8 HTML** (Excel-flavoured, `Generator: Microsoft Excel 11`). The charset is declared in an unusual way (`<meta http-equiv="Content-Type" content="text/html;" charset="utf-8">`); browsers still pick it up, so a copy renamed to `.html` opens fine.
+
+## File header
+
+Before the tables, the file states:
+
+| Field | Example | Notes |
+|---|---|---|
+| Company name | `KATMERCİLER ARAÇ ÜSTÜ EKİPMAN SANAYİ VE TİCARET A.Ş.` | |
+| `Finansal Rapor Gönderim Tarihi` | `17.08.2026 19:05:18` | Submission timestamp. Decision 0002 orders versions by disclosure id because no publication time was known; this field could replace that assumption. |
+| `Bildirim Tipi` | `FR` | |
+| `Yıl` | `2026` | Report year |
+| `Periyot` | `2` | Report quarter. Does not tell the period for special fiscal years; use column header dates. |
+| `Sunum Para Birimi` | `TL`, `1.000 TL`, `1.000.000 TL` | Reporting unit: 187, 44 and 15 files |
+| `Finansal Tablo Niteliği` | `Konsolide` | All 246 files in the sample |
+
+## Tables
+
+Each statement is a `<table>` whose class contains `tbl_{family}_role_{code}`, e.g. `tbl_general_role_310003`.
+
+### Template families
+
+| Family | Tables in sample | Used by |
+|---|---|---|
+| `general` | 928 | Industrial, trade and service companies |
+| `banks` | 84 | Banks |
+| `finance` | 48 | Leasing, factoring and other finance companies |
+| `holding` | 25 | Holding companies |
+| `insurance` | 20 | Insurers |
+
+`par-banks` (participation banks, ALBRK) exists in the full quarter but is not handled yet (#124). Row meanings differ between families: row 58 is discontinued operations in `general`, deferred tax in `holding`, and a life technical expense in `insurance`.
+
+### Role codes
+
+The first two digits of the six-digit role code give the statement:
+
+| Prefix | Statement | Tables in sample |
+|---|---|---|
+| `21` | Balance sheet | 268 (banks have two) |
+| `31` | Income statement | 246 |
+| `41` | Other comprehensive income (one holding filing, SAHOL) | 1 |
+| `42` | Other comprehensive income | 98 |
+| `51` | Cash flow, direct method | 28 |
+| `52` | Cash flow, indirect method | 218 |
+| `61` | Statement of changes in equity | 246 |
+
+Within a family the code can differ by filing: the general income statement appears as `310003`, `310000` or `310002`, and a company can switch codes between quarters (MSY: `banks_role_310016` → `310017`, see #31).
+
+## Rows
+
+- A row is `<tr class="{family}_role_{code}-row-{n} ...">`, e.g. `general_role_310003-row-42`.
+- The Turkish label sits in a nested table inside the first cells, in a `div` with class `content-tr`. A row's cells therefore span a nested `</tr>`; split rows on the next `<tr class="..._role_...-row-...">`, not on the first `</tr>`.
+- Row numbers are stable within one role code, not across families or codes.
+
+## Value cells
+
+- A value cell is `<td class="taxonomy-context-value col-order-class-N ...">`.
+- The value is the cell's `title` attribute, **unscaled**: multiply by the reporting unit (`1`, `1,000`, `1,000,000`) to get TL. The visible text uses thousands separators (`39.369`); never read it.
+- **An empty cell has no `title` at all.** Read `title` only inside its own `<td>...</td>`; searching forward from the cell start picks up the next cell's value (this is the column-shift bug, #14).
+- No decimal values were found in the 2026/2 sample.
+
+### Columns
+
+Value columns start at `col-order-class-4` and follow the headers from left to right. Headers are `<td class="context-header">` cells; a header shown on two lines is one cell split by `<br>` (e.g. `Önceki Dönem<br>01.01.2025 - 30.06.2025`).
+
+| Table | Columns | Meaning |
+|---|---|---|
+| General balance sheet | 4, 5 (6) | current period end, prior year end; a 6th column means restated comparatives (3 files in sample) |
+| General income statement | 4–7 | current cumulative, prior cumulative, current 3-month, prior 3-month (3-month columns only in Q2/Q3) |
+| General cash flow | 4, 5 | current cumulative, prior cumulative (always cumulative) |
+| Bank / finance balance sheet | 4–9 | current TP, YP, Total; prior TP, YP, Total. Two header rows: period over `TP` / `YP` / `Toplam` |
+| Bank / finance income statement | 4–7 | as general |
+| Statement of changes in equity | up to 52 | one column per equity component |
+
+Columns beyond these exist in some filings of the full quarter (EXIMB, VDFAS balance sheets use 10–12, #125).
+
+## Periods
+
+Read periods from the header dates (`01.01.2026 - 30.06.2026`, or a single date for balance sheets), never from `Periyot`. Special fiscal periods exist: MAVI's 2026/2 covers `01.02.2026 - 31.07.2026`.
+
+Under IAS 29 (TMS 29), every report restates its comparative columns in the purchasing power of its own period end, so the same period appears with different values in different reports (see `docs/SCHEMA.md`).
