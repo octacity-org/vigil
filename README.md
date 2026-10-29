@@ -34,7 +34,13 @@ pip install -e ".[dev]"
 pytest
 ```
 
-KAP files are **not** part of this repository. Download them locally into `data/raw/{year}_{quarter}/` with `src/vigil/downloader.py`. Tests that need them are skipped when they are missing.
+KAP files are **not** part of this repository. Download a quarter locally into `data/raw/{year}_{quarter}/` (retries, recovers what it can from a cut-off download and lists lost files; exits 1 if the quarter is incomplete):
+
+```bash
+python -m vigil.downloader 2026 2 data/raw
+```
+
+Tests that need raw files are skipped when they are missing.
 
 Load a parsed quarter into DuckDB (re-running replaces each filing, it never duplicates rows):
 

@@ -1,12 +1,26 @@
+"""Download a quarter of KAP financial statements and recover what a cut-off download contains (#38).
+
+    python -m vigil.downloader 2026 2 data/raw
+
+KAP behaviour measured on 2026-10-29 (docs/kap.md):
+- `GET financialTable/download/{year}/{quarter}` streams one zip without `Content-Length` and ignores `Range`,
+  so a cut-off download cannot be resumed; it is retried from the start.
+- Every member uses a data descriptor: the local header has no sizes or CRC. A member's end is found by
+  inflating its deflate stream until it ends, never by searching for the next `PK` signature, which can
+  occur inside compressed data.
+"""
+
 from __future__ import annotations
 
+import dataclasses
 import os
 import struct
+import sys
 import time
 import urllib.request
 import zipfile
 import zlib
-from typing import List
+from typing import BinaryIO, Callable, List, Optional, Tuple
 
 KAP_BULK_URL = "https://www.kap.org.tr/tr/api/financialTable/download/{year}/{quarter}"
 
@@ -20,133 +34,189 @@ DEFAULT_HEADERS = {
     "Referer": "https://www.kap.org.tr/tr/",
 }
 
+LOCAL_HEADER = b"PK\x03\x04"
+DATA_DESCRIPTOR = b"PK\x07\x08"
+CHUNK = 256 * 1024
 
-def salvage_partial_zip(zip_path: str, extract_dir: str) -> List[str]:
-    """
-    Extract all complete .xls files from a valid or truncated/interrupted ZIP file
-    by scanning local file headers (PK\\x03\\x04) sequentially.
-    """
-    os.makedirs(extract_dir, exist_ok=True)
-    extracted: List[str] = []
 
-    if zipfile.is_zipfile(zip_path):
-        try:
-            with zipfile.ZipFile(zip_path, "r") as zf:
-                for name in zf.namelist():
-                    if name.lower().endswith(".xls"):
-                        zf.extract(name, extract_dir)
-                        extracted.append(os.path.join(extract_dir, name))
-                return extracted
-        except Exception:
-            pass
+@dataclasses.dataclass
+class SalvageResult:
+    complete: bool  # the archive was a valid zip and every member was read
+    recovered: List[str]  # paths of the files written
+    lost: List[str]  # members seen but cut off or corrupt; members after the cut are not known at all
 
-    data = open(zip_path, "rb").read()
-    pos = 0
-    sig = b"PK\x03\x04"
 
-    while True:
-        idx = data.find(sig, pos)
-        if idx == -1 or idx + 30 > len(data):
-            break
-        (
-            _ver,
-            flags,
-            method,
-            _mtime,
-            _mdate,
-            crc32_expected,
-            comp_size,
-            uncomp_size,
-            fname_len,
-            extra_len,
-        ) = struct.unpack("<HHHHHIIIHH", data[idx + 4 : idx + 30])
-        header_end = idx + 30 + fname_len + extra_len
-        if header_end > len(data):
-            break
+@dataclasses.dataclass
+class DownloadResult:
+    zip_path: str
+    attempts: int
+    complete: bool
+    recovered: List[str]
+    lost: List[str]
+    errors: List[str]
 
-        fname = data[idx + 30 : idx + 30 + fname_len].decode("utf-8", errors="replace")
-        next_sig = data.find(sig, header_end)
-        chunk_end = (
-            header_end + comp_size
-            if (comp_size > 0 and not (flags & 0x08))
-            else (next_sig if next_sig != -1 else len(data))
+
+def _safe_name(member: str) -> Optional[str]:
+    """Base name of an `.xls` member, so nothing is written outside the target directory."""
+    name = os.path.basename(member.replace("\\", "/"))
+    return name if name.lower().endswith(".xls") else None
+
+
+def _write(extract_dir: str, name: str, data: bytes) -> str:
+    path = os.path.join(extract_dir, name)
+    with open(path, "wb") as f:
+        f.write(data)
+    return path
+
+
+def _inflate(data: memoryview, start: int) -> Optional[Tuple[bytes, int]]:
+    """Inflate one raw deflate stream. Returns (content, end offset), or None if the stream is cut off."""
+    d = zlib.decompressobj(-15)
+    out = []
+    pos = start
+    while pos < len(data):
+        piece = data[pos : pos + CHUNK]
+        out.append(d.decompress(piece))
+        if d.eof:
+            return b"".join(out), pos + len(piece) - len(d.unused_data)
+        pos += len(piece)
+    return None
+
+
+def _scan_local_headers(data: bytes, extract_dir: str) -> SalvageResult:
+    view = memoryview(data)
+    result = SalvageResult(complete=False, recovered=[], lost=[])
+    pos = data.find(LOCAL_HEADER)
+    while pos != -1 and pos + 30 <= len(data):
+        _ver, flags, method, _t, _d, crc, comp_size, _size, name_len, extra_len = struct.unpack(
+            "<HHHHHIIIHH", data[pos + 4 : pos + 30]
         )
-        if chunk_end > len(data):
+        start = pos + 30 + name_len + extra_len
+        member = data[pos + 30 : pos + 30 + name_len].decode("utf-8", errors="replace")
+        if start > len(data):
+            if pos + 30 + name_len <= len(data):
+                result.lost.append(member)  # the name is known, its data is not
             break
+        has_descriptor = bool(flags & 0x08)
 
-        payload = data[header_end:chunk_end]
         try:
-            if method == 0:
-                raw_bytes = payload[:uncomp_size] if uncomp_size else payload
-            elif method == 8:
-                decomp = zlib.decompressobj(-15)
-                raw_bytes = decomp.decompress(payload)
-                if not decomp.eof:
-                    # Truncated deflate stream at the tail of the partial zip
-                    pos = header_end
-                    continue
+            if method == 8:
+                inflated = _inflate(view, start)
+            elif method == 0 and not has_descriptor and start + comp_size <= len(data):
+                inflated = data[start : start + comp_size], start + comp_size
             else:
-                pos = header_end
-                continue
+                inflated = None  # cut off, or stored with an unknown size: its end cannot be found
+        except zlib.error:
+            inflated = None
+        if inflated is None:
+            result.lost.append(member)
+            break
+        content, end = inflated
 
-            if crc32_expected and (zlib.crc32(raw_bytes) & 0xFFFFFFFF) != crc32_expected:
-                pos = header_end
-                continue
+        if has_descriptor:
+            if data[end : end + 4] == DATA_DESCRIPTOR:
+                end += 4
+            if end + 12 > len(data):
+                result.lost.append(member)
+                break
+            crc = struct.unpack("<I", data[end : end + 4])[0]
+            end += 12  # crc, compressed size, uncompressed size (KAP does not use zip64)
 
-            out_path = os.path.join(extract_dir, os.path.basename(fname))
-            with open(out_path, "wb") as out_f:
-                out_f.write(raw_bytes)
-            extracted.append(out_path)
-        except Exception:
-            pass
-
-        pos = max(header_end, next_sig if next_sig != -1 else len(data))
-
-    return extracted
+        name = _safe_name(member)
+        if (zlib.crc32(content) & 0xFFFFFFFF) != crc:
+            result.lost.append(member)
+        elif name:
+            result.recovered.append(_write(extract_dir, name, content))
+        pos = data.find(LOCAL_HEADER, end)
+    return result
 
 
-def download_kap_quarter_zip(
+def salvage_zip(zip_path: str, extract_dir: str) -> SalvageResult:
+    """Write every complete `.xls` member of a zip, valid or cut off, to `extract_dir` (flat, by base name)."""
+    os.makedirs(extract_dir, exist_ok=True)
+    if zipfile.is_zipfile(zip_path):
+        result = SalvageResult(complete=True, recovered=[], lost=[])
+        with zipfile.ZipFile(zip_path) as zf:
+            for info in zf.infolist():
+                name = _safe_name(info.filename)
+                if not name:
+                    continue
+                try:
+                    result.recovered.append(_write(extract_dir, name, zf.read(info)))
+                except (zipfile.BadZipFile, zlib.error):
+                    result.lost.append(info.filename)
+        result.complete = not result.lost
+        return result
+    with open(zip_path, "rb") as f:
+        return _scan_local_headers(f.read(), extract_dir)
+
+
+def _open_url(url: str, headers: dict, timeout: float) -> BinaryIO:
+    return urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=timeout)
+
+
+def download_quarter(
     year: int,
     quarter: int,
-    target_zip_path: str,
-    max_retries: int = 8,
-    chunk_size: int = 256 * 1024,
-) -> str:
+    raw_dir: str,
+    retries: int = 5,
+    timeout: float = 60,
+    backoff: float = 2.0,
+    open_url: Callable[[str, dict, float], BinaryIO] = _open_url,
+    sleep: Callable[[float], None] = time.sleep,
+) -> DownloadResult:
     """
-    Download KAP quarterly financial statements ZIP with automatic retry and
-    HTTP Range resume support when connections drop mid-stream.
+    Download one quarter into `{raw_dir}/{year}_{quarter}.zip` and extract it to `{raw_dir}/{year}_{quarter}/`.
+
+    Retries from the start with exponential backoff until the zip is complete. If it never is, the largest
+    partial download is salvaged and the result lists what was recovered and what was lost.
     """
-    os.makedirs(os.path.dirname(os.path.abspath(target_zip_path)), exist_ok=True)
+    os.makedirs(raw_dir, exist_ok=True)
+    zip_path = os.path.join(raw_dir, f"{year}_{quarter}.zip")
+    part_path = zip_path + ".part"
     url = KAP_BULK_URL.format(year=year, quarter=quarter)
-
-    for attempt in range(1, max_retries + 1):
-        existing_bytes = os.path.getsize(target_zip_path) if os.path.exists(target_zip_path) else 0
-        if existing_bytes > 0 and zipfile.is_zipfile(target_zip_path):
-            return target_zip_path
-
-        headers = dict(DEFAULT_HEADERS)
-        mode = "wb"
-        if existing_bytes > 0:
-            headers["Range"] = f"bytes={existing_bytes}-"
-            mode = "ab"
-
-        req = urllib.request.Request(url, headers=headers, method="GET")
+    if os.path.exists(zip_path):
+        os.remove(zip_path)  # never salvage a file left by an earlier run
+    errors: List[str] = []
+    best = 0
+    attempt = 0
+    for attempt in range(1, retries + 1):
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                status = getattr(resp, "status", 200)
-                if status == 200 and existing_bytes > 0:
-                    # Server ignored Range header and sent from byte 0
-                    mode = "wb"
-                with open(target_zip_path, mode) as f:
-                    while True:
-                        buf = resp.read(chunk_size)
-                        if not buf:
-                            break
-                        f.write(buf)
+            with open_url(url, dict(DEFAULT_HEADERS), timeout) as resp, open(part_path, "wb") as f:
+                while True:
+                    buf = resp.read(CHUNK)
+                    if not buf:
+                        break
+                    f.write(buf)
+        except Exception as e:  # network errors are retried and reported, never raised
+            errors.append(f"attempt {attempt}: {type(e).__name__}: {e}")
+        if zipfile.is_zipfile(part_path):
+            os.replace(part_path, zip_path)
+            break
+        size = os.path.getsize(part_path) if os.path.exists(part_path) else 0
+        if size:
+            errors.append(f"attempt {attempt}: incomplete zip ({size} bytes)")
+        if size > best:  # every attempt streams the same file from the start; keep the longest
+            best = size
+            os.replace(part_path, zip_path)
+        if attempt < retries:
+            sleep(backoff * 2 ** (attempt - 1))
+    if os.path.exists(part_path):
+        os.remove(part_path)
+    if not os.path.exists(zip_path):
+        return DownloadResult(zip_path, attempt, False, [], [], errors)
+    salvage = salvage_zip(zip_path, os.path.join(raw_dir, f"{year}_{quarter}"))
+    return DownloadResult(zip_path, attempt, salvage.complete, salvage.recovered, salvage.lost, errors)
 
-            if zipfile.is_zipfile(target_zip_path):
-                return target_zip_path
-        except Exception:
-            time.sleep(min(2**attempt, 15))
 
-    return target_zip_path
+if __name__ == "__main__":
+    year, quarter = int(sys.argv[1]), int(sys.argv[2])
+    raw_dir = sys.argv[3] if len(sys.argv) > 3 else os.path.join("data", "raw")
+    r = download_quarter(year, quarter, raw_dir)
+    for e in r.errors:
+        print(e)
+    state = "complete" if r.complete else "INCOMPLETE"
+    print(f"{year}/{quarter}: {state} after {r.attempts} attempt(s); {len(r.recovered)} files, {len(r.lost)} lost")
+    for name in r.lost:
+        print("  lost:", name)
+    sys.exit(0 if r.complete else 1)

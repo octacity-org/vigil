@@ -22,7 +22,7 @@
 ### 2.1. İndirme Kanalı ve Kesinti Dayanıklılığı
 * **Toplu İndirme Adresi:** `GET https://www.kap.org.tr/tr/api/financialTable/download/{year}/{quarter}` (`quarter` $\in \{1, 2, 3, 4\}$).
 * **Ağ Kararsızlığı:** ~28,5 MB boyutundaki ZIP akışı sık sık yarıda kesilmektedir (testlerde 3,7 MB – 15 MB arasında kopmalar gözlenmiştir).
-* **Zorunlu İndirici Gereksinimi:** İndirici (`downloader.py`) HTTP `Range` başlığı ile kaldığı yerden devam etme (resume), üstel geri çekilmeli yeniden deneme (exponential backoff retry) ve bozuk/yarım ZIP arşivlerinden tam inmiş `.xls` girdilerini kurtarma (stream recovery) yeteneğine sahip olmalıdır.
+* **Zorunlu İndirici Gereksinimi:** İndirici (`downloader.py`) üstel geri çekilmeli yeniden deneme (exponential backoff retry) ve bozuk/yarım ZIP arşivlerinden tam inmiş `.xls` girdilerini kurtarma (stream recovery) yeteneğine sahip olmalı, kaybolan dosyaları raporlamalıdır. KAP `Range` başlığını yok sayar (29.10.2026'da ölçüldü); kaldığı yerden devam mümkün değildir, her deneme baştan indirir (#38).
 * **Anlık Bildirim vs. Toplu Arşiv:** Toplu ZIP geçmiş dönem taraması ve Faz 0/1 doğrulaması içindir; anlık sinyal üretimi (Faz 2+) tekil bildirim akışı servisine (`disclosure/list/main`) dayanmalıdır.
 
 ### 2.2. Dosya Adlandırma Kuralı ve Çoklu Kod İstisnası
