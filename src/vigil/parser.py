@@ -210,9 +210,14 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
     except UnicodeDecodeError:
         raw_html = raw_bytes.decode("cp1254", errors="replace")
 
+    # Values are unscaled; guessing the unit would make every value off by 1,000x or 1,000,000x (#132).
     scale_match = HEADER_SCALE_RE.search(raw_html)
-    scale_unit = _clean_text(scale_match.group(1)) if scale_match else "TL"
-    scale_multiplier = SCALE_MAP.get(scale_unit.upper(), SCALE_MAP.get(scale_unit, 1))
+    if not scale_match:
+        raise ValueError(f"Reporting unit (Sunum Para Birimi) not found in {filepath}")
+    scale_unit = _clean_text(scale_match.group(1))
+    scale_multiplier = SCALE_MAP.get(scale_unit.upper(), SCALE_MAP.get(scale_unit))
+    if scale_multiplier is None:
+        raise ValueError(f"Unknown reporting unit {scale_unit!r} in {filepath}")
 
     consol_match = HEADER_CONSOL_RE.search(raw_html)
     consolidation_type = _clean_text(consol_match.group(1)) if consol_match else "Bilinmiyor"

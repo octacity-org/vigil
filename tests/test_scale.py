@@ -41,13 +41,11 @@ def test_known_units(tmp_path, unit, multiplier):
     assert fact.normalized_value_tl == 39369 * multiplier
 
 
-@pytest.mark.xfail(strict=True, reason="#132: a missing unit is silently treated as TL")
 def test_missing_unit_raises(tmp_path):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Sunum Para Birimi"):
         parse_kap_xls(write_filing(tmp_path, ""))
 
 
-@pytest.mark.xfail(strict=True, reason="#132: an unknown unit is silently given multiplier 1")
 def test_unknown_unit_raises(tmp_path):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="1.000 USD"):
         parse_kap_xls(write_filing(tmp_path, unit_header("1.000 USD")))
