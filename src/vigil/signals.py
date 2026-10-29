@@ -276,8 +276,8 @@ def detect_restatement_tripwire(filing: ParsedFiling) -> Optional[SignalObject]:
     Triggers when a standard Balance Sheet (210015 / 210004) contains a populated
     3rd column (col-order-class-6: 'Bir Önceki Dönem').
     """
-    if filing.template_family in ("banks", "finance"):
-        # Banks and finance have 6-column TP/YP/Toplam balance sheets
+    if filing.template_family in ("banks", "par-banks", "finance"):
+        # Banks, participation banks and finance have 6-column TP/YP/Toplam balance sheets
         return None
 
     bs_col6_facts = [

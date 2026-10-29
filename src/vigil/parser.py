@@ -119,9 +119,12 @@ class ParsedFiling:
 FILENAME_RE = re.compile(r"^([A-Z0-9-]+)_(\d+)_(\d{4})_([1-4])\.xls$", re.IGNORECASE)
 HEADER_SCALE_RE = re.compile(r"Sunum Para Birimi\s*</td>\s*<td[^>]*>\s*([^<]+?)\s*</td>", re.S)
 HEADER_CONSOL_RE = re.compile(r"Finansal Tablo Niteli[^<]*</td>\s*<td[^>]*>\s*([^<]+?)\s*</td>", re.S)
-ROLE_TABLE_RE = re.compile(r'<table[^>]*class="[^"]*tbl_(\w+)_role_(\d{6})[^"]*"[^>]*>', re.S)
+# Template families seen in KAP files (docs/kap.md). `par-banks` (participation banks, ALBRK) has a hyphen (#124).
+KNOWN_FAMILIES = ("general", "banks", "par-banks", "finance", "holding", "insurance")
+# The family is read up to `_role_`, whatever characters it has, so an unknown one is reported rather than missed.
+ROLE_TABLE_RE = re.compile(r'<table[^>]*class="[^"]*tbl_([^"\s]+?)_role_(\d{6})[^"]*"[^>]*>', re.S)
 ROW_START_RE = re.compile(
-    r'<tr\s+class="((?:[a-z]+)_role_\d{6}-row-\d+)\s+data-input-row[^"]*"[^>]*>',
+    r'<tr\s+class="([^"\s]+?_role_\d{6}-row-\d+)\s+data-input-row[^"]*"[^>]*>',
     re.S,
 )
 LABEL_TR_RE = re.compile(r'class="[^"]*content-tr[^"]*"[^>]*>\s*(.*?)\s*</div>', re.S)
@@ -310,6 +313,9 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
     role_matches = list(ROLE_TABLE_RE.finditer(raw_html))
     if not role_matches:
         raise ValueError(f"No XBRL role tables found in {filepath}")
+    unknown = sorted({m.group(1) for m in role_matches} - set(KNOWN_FAMILIES))
+    if unknown:
+        raise ValueError(f"Unknown template family {', '.join(unknown)} in {filepath}")
 
     template_family = role_matches[0].group(1)
     role_codes: List[str] = []

@@ -106,7 +106,7 @@ Before the tables, the file states:
 | `Bildirim Tipi` | `FR` | |
 | `Yıl` | `2026` | Report year |
 | `Periyot` | `2` | Report quarter. Does not tell the period for special fiscal years; use column header dates. |
-| `Sunum Para Birimi` | `TL`, `1.000 TL`, `1.000.000 TL` | Reporting unit: 187, 44 and 15 files |
+| `Sunum Para Birimi` | `TL`, `1.000 TL`, `1.000.000 TL` | Reporting unit: 187, 44 and 15 files. A company can change it between quarters (ALBRK: `1.000 TL` in 2026/1, `1.000.000 TL` in 2026/2) |
 | `Finansal Tablo Niteliği` | `Konsolide` | All 246 files in the sample |
 
 ## Tables
@@ -123,7 +123,7 @@ Each statement is a `<table>` whose class contains `tbl_{family}_role_{code}`, e
 | `holding` | 25 | Holding companies |
 | `insurance` | 20 | Insurers |
 
-`par-banks` (participation banks, ALBRK) exists in the full quarter but is not handled yet (#124). Row meanings differ between families: row 58 is discontinued operations in `general`, deferred tax in `holding`, and a life technical expense in `insurance`.
+`par-banks` (participation banks) is used only by ALBRK in 2026/1–2026/3, for its consolidated and solo filings. Its role codes differ from `banks` (`210013`, `210501`, `310019`, `420005`, `510009`, `610005`), but the layout is the same: a TP / YP / Toplam balance sheet with six columns. It is the only family name with a hyphen. The parser knows these six families and stops with an error naming any other (#124). Row meanings differ between families: row 58 is discontinued operations in `general`, deferred tax in `holding`, and a life technical expense in `insurance`.
 
 ### Role codes
 
@@ -145,7 +145,7 @@ Within a family the code can differ by filing: the general income statement appe
 
 - A row is `<tr class="{family}_role_{code}-row-{n} ...">`, e.g. `general_role_310003-row-42`.
 - The Turkish label sits in a nested table inside the first cells, in a `div` with class `content-tr`. A row's cells therefore span a nested `</tr>`; split rows on the next `<tr class="..._role_...-row-...">`, not on the first `</tr>`.
-- Row numbers are stable within one role code, not across families or codes.
+- Row numbers are not stable across families or codes, and **not always within one role code either**: in ALBRK's `par-banks_role_210013`, total liabilities is row 91 in 2026/1 and row 94 in 2026/2, because three rows were added above it. Match rows by label as well as number.
 
 ## Value cells
 
