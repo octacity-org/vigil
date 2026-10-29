@@ -82,8 +82,10 @@ Within a family the code can differ by filing: the general income statement appe
 ## Value cells
 
 - A value cell is `<td class="taxonomy-context-value col-order-class-N ...">`.
-- The value is the cell's `title` attribute, **unscaled**: multiply by the reporting unit (`1`, `1,000`, `1,000,000`) to get TL. The visible text uses thousands separators (`39.369`); never read it.
-- **An empty cell has no `title` at all.** Read `title` only inside its own `<td>...</td>`; searching forward from the cell start picks up the next cell's value (this is the column-shift bug, #14).
+- The value is the cell's `title` attribute, **unscaled**: multiply by the reporting unit (`1`, `1,000`, `1,000,000`) to get TL. The visible text is the same number with thousands separators (`39.369`).
+- **Some cells have visible text but no `title`** (all of YONGA 2026/2, a few cells in six other files). Read the text only then, and only in the format `-?\d{1,3}(\.\d{3})*`; fail on anything else (decision [0004](decisions/0004-visible-text-values.md)).
+- `title` and visible text can disagree: 84 cells in 2026/2, 9 of them outside the equity statement (MNDTR, three-month income statement column). Use `title` and count the disagreement.
+- **An empty cell has neither `title` nor text.** Read `title` only inside its own `<td>...</td>`; searching forward from the cell start picks up the next cell's value (this is the column-shift bug, #14).
 - No decimal values were found in the 2026/2 sample.
 
 ### Columns

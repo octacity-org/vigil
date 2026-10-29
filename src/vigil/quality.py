@@ -47,6 +47,8 @@ class FileQuality:
     failed: int = 0
     not_checked: int = 0
     informational_differences: int = 0
+    text_values: int = 0
+    text_disagreements: int = 0
     first_failure: str = ""
     error: str = ""
     counts: Dict[str, Dict[str, int]] = dataclasses.field(default_factory=dict)
@@ -73,6 +75,8 @@ def file_quality(path: str) -> FileQuality:
         template=filing.template_family,
         scale_unit=filing.scale_unit,
         facts=len(filing.facts),
+        text_values=filing.text_values,
+        text_disagreements=filing.text_disagreements,
     )
     if not filing.facts:
         row.status = "no_values"
@@ -122,6 +126,8 @@ CSV_COLUMNS = (
     "failed",
     "not_checked",
     "informational_differences",
+    "text_values",
+    "text_disagreements",
     "first_failure",
     "error",
 )
@@ -164,6 +170,12 @@ def markdown_summary(rows: List[FileQuality], title: str) -> str:
         "",
         f"Cash differences between the cash flow statement and the balance sheet (informational, decision 0003): "
         f"{informational} in {sum(1 for r in rows if r.informational_differences)} files.",
+        "",
+        f"Values read from the visible text because the cell had no `title` (decision 0004): "
+        f"{sum(r.text_values for r in rows)} in {sum(1 for r in rows if r.text_values)} files.",
+        "",
+        f"Cells whose `title` and visible text disagree (the `title` is used): "
+        f"{sum(r.text_disagreements for r in rows)} in {sum(1 for r in rows if r.text_disagreements)} files.",
     ]
     problems = [r for r in rows if r.status in ("fail", "no_values", "parse_error")]
     if problems:

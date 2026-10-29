@@ -34,9 +34,15 @@ def test_parse_error_is_reported(tmp_path):
 
 
 def test_file_without_values_is_reported(tmp_path):
-    # Values shown only as text, without `title` (YONGA 2026/2, #137).
-    row = quality.file_quality(write(tmp_path, "TEST_2_2026_2.xls", NO_TITLES))
+    empty = NO_TITLES.replace("<div>120.759.073</div>", "<div></div>")
+    row = quality.file_quality(write(tmp_path, "TEST_2_2026_2.xls", empty))
     assert (row.status, row.facts) == ("no_values", 0)
+
+
+def test_values_read_from_text_are_counted(tmp_path):
+    # Values shown only as text, without `title` (YONGA 2026/2, #137).
+    row = quality.file_quality(write(tmp_path, "TEST_6_2026_2.xls", NO_TITLES))
+    assert (row.facts, row.text_values, row.text_disagreements) == (1, 1, 0)
 
 
 def test_blocking_failure_fails_the_file(tmp_path, monkeypatch):

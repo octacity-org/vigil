@@ -82,6 +82,10 @@ class ParsedFiling:
     role_codes: List[str]
     has_tms29_monetary_item: bool
     facts: List[ParsedFinancialFact]
+    # Values read from the visible text because the cell had no `title` (decision 0004).
+    text_values: int = 0
+    # Cells whose `title` and visible text disagree (or the text cannot be read); the `title` is used.
+    text_disagreements: int = 0
 
 
 FILENAME_RE = re.compile(r"^([A-Z0-9-]+)_(\d+)_(\d{4})_([1-4])\.xls$", re.IGNORECASE)
@@ -101,6 +105,20 @@ VALUE_CELL_RE = re.compile(
     re.S,
 )
 VALUE_TITLE_RE = re.compile(r'title="([-+]?\d+(?:[.,]\d+)?)"')
+# Visible text of a value cell: the same unscaled number with `.` thousands separators and a leading `-`.
+# Read only when the cell has no `title` (YONGA 2026/2, #137; decision 0004).
+VALUE_TEXT_RE = re.compile(r">\s*([^<\s][^<]*?)\s*<")
+VISIBLE_NUMBER_RE = re.compile(r"^-?\d{1,3}(?:\.\d{3})*$")
+
+
+def _visible_value(cell_html: str) -> Optional[int]:
+    """The value shown in a cell without `title`, or None for an empty cell. Unknown formats raise."""
+    texts = VALUE_TEXT_RE.findall(">" + cell_html + "<")
+    if not texts:
+        return None
+    if len(texts) > 1 or not VISIBLE_NUMBER_RE.match(texts[0]):
+        raise ValueError(f"Unexpected value text {texts!r}")
+    return int(texts[0].replace(".", ""))
 
 
 def parse_filename(filepath: str) -> Tuple[str, str, int, int, int]:
@@ -232,6 +250,8 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
     role_codes: List[str] = []
     facts: List[ParsedFinancialFact] = []
     has_tms29 = False
+    text_values = 0
+    text_disagreements = 0
 
     for idx, rm in enumerate(role_matches):
         family = rm.group(1)
@@ -270,14 +290,22 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
 
             for cell_m in VALUE_CELL_RE.finditer(row_chunk):
                 col_class = cell_m.group(1)
-                title_m = VALUE_TITLE_RE.search(cell_m.group(2))
-                if not title_m:
-                    continue  # empty cell
-                val_str = title_m.group(1).replace(",", ".")
                 try:
-                    raw_val = int(float(val_str))
-                except ValueError:
-                    continue
+                    shown, text_error = _visible_value(cell_m.group(2)), None
+                except ValueError as e:
+                    shown, text_error = None, e
+                title_m = VALUE_TITLE_RE.search(cell_m.group(2))
+                if title_m:
+                    raw_val = int(float(title_m.group(1).replace(",", ".")))
+                    if text_error or (shown is not None and shown != raw_val):
+                        text_disagreements += 1
+                elif text_error:
+                    raise ValueError(f"{text_error} in {row_id} {col_class} of {filepath}")
+                elif shown is not None:
+                    raw_val = shown
+                    text_values += 1
+                else:
+                    continue  # empty cell
 
                 col_meta = col_map.get(
                     col_class,
@@ -328,4 +356,6 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
         role_codes=role_codes,
         has_tms29_monetary_item=has_tms29,
         facts=facts,
+        text_values=text_values,
+        text_disagreements=text_disagreements,
     )
