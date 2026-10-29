@@ -1,6 +1,7 @@
 # KAP files are not redistributed; each contributor downloads them locally.
 data/raw/
 data/processed/
+reports/
 *.duckdb
 *.duckdb.wal
 *.sqlite

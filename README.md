@@ -44,6 +44,14 @@ python -m vigil.db data/raw/2026_2 data/vigil.duckdb
 
 It prints the parse report (failed files and why) and checks that the row count of every filing in the database matches it.
 
+Check a quarter before using it (parse status, subtotals and cross-statement reconciliation, one row per file):
+
+```bash
+python -m vigil.quality data/raw/2026_2 reports/quality_2026_2.csv
+```
+
+It writes the CSV and a Markdown summary next to it, and exits with an error if any file fails a blocking check or cannot be parsed.
+
 ## Documentation
 
 | Document | Content |
