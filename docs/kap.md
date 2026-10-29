@@ -13,8 +13,34 @@ GET https://www.kap.org.tr/tr/api/financialTable/download/{year}/{quarter}
 - Every member is deflated and written with a data descriptor: the local header has no sizes or CRC, they follow the data.
 - Downloads are often cut off (between 3.7 and 15 MB in earlier tests; two complete downloads in about 10 seconds on 2026-10-29). Complete members can still be recovered from a partial zip: read each local header (`PK\x03\x04`), inflate with `zlib.decompressobj(-15)` until the stream ends, then check the CRC from the data descriptor. Do not find a member's end by searching for the next `PK` signature; it can occur inside compressed data.
 - `python -m vigil.downloader {year} {quarter} data/raw` does all of this: it retries from the start with backoff, keeps the longest attempt, and reports recovered and lost files (#38).
-- `checkFileExist` gave unreliable answers during prototyping; do not depend on it (#39).
 - Raw files are never committed (decision [0001](decisions/0001-license.md)).
+
+### What the zip contains
+
+Compared with the disclosure list (`disclosure/list/main`, #40) on 2026-10-29:
+
+- **One current version per filing.** A filing that was later corrected is left out: KAP marks it `isChanged: "DUZELTILEN"` in the list, and the correction (`"DUZENLENEN"`, linked by `relatedDisclosureOid`) is in the zip instead. 2026/2 has 17 such originals. The zip has no history of corrections; only the disclosure list has it.
+- **A company can have more than one file in a quarter**, for example consolidated and solo statements filed separately (AVGYO, LXGYO in 2026/2).
+- **Not every financial report is in it.** 2026/2 has 996 `Finansal Rapor` disclosures for 2026 Q2; 778 are in the zip, 17 are corrected originals, and 201 come from companies with no file in the zip at all. Of those, 162 have three-letter codes (brokers and portfolio managers) and 36 are banks and finance companies such as `TEB, TEBNK`. Why they are left out is not known.
+- **A quarter's zip keeps growing** while filings arrive: the 2026/2 zip includes MILKS, published on 16.10.2026, and the 2026/3 zip already had 127 files on 29.10.2026. Download a quarter again after the filing deadline and compare it with the disclosure list before treating it as complete.
+
+### `checkFileExist`
+
+```
+GET https://www.kap.org.tr/tr/api/financialTable/checkFileExist/{year}/{quarter}
+```
+
+The site calls this before offering the download. It answers `200` with `[{"year": 2026, "period": 2}]` when a zip exists and `[]` when it does not.
+
+Measured on 2026-10-29 for ten quarters from 2008/4 to 2027/1, it agreed with the download endpoint every time:
+
+- 2009/1 to 2026/3: the check returned the quarter and the download returned a zip.
+- 2008/4, 2026/4 and 2027/1: the check returned `[]` and the download returned `500` with `{"success": false, ...}`.
+
+The earlier "unreliable" answers are best explained by what the check means: **a zip exists, not that the quarter is complete.** For example, 2026/3 already reports a file while most Q3 reports are still to come. Vigil does not depend on it (#39):
+
+- The downloader just requests the zip; a `500` means there is no file.
+- Completeness is judged against the disclosure list.
 
 ## File name
 
