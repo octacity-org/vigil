@@ -136,3 +136,80 @@ def reconcile(filing: ParsedFiling) -> List[CheckResult]:
 def blocking_failures(results: Sequence[CheckResult]) -> List[CheckResult]:
     """Blocking checks that failed. A filing with any of these should not produce signals."""
     return [r for r in results if r.severity == "blocking" and r.status == "fail"]
+
+
+# Income statement subtotals (issue #15). Values carry their sign (costs are negative), so every subtotal is
+# a plain sum of its components. Row numbers are the same in the general income statement variants 310003,
+# 310000 and 310002; each formula held in every 2026/2 filing that reports its components.
+INCOME_STATEMENT_ROLES = ("310003", "310000", "310002")
+INCOME_STATEMENT_COLUMNS = ("col-order-class-4", "col-order-class-5", "col-order-class-6", "col-order-class-7")
+INCOME_STATEMENT_SUBTOTALS: Sequence[Tuple[int, str, Sequence[int]]] = (
+    (5, "TİCARİ FAALİYETLERDEN BRÜT KAR (ZARAR)", (3, 4)),
+    (6, "Finans Sektörü Faaliyetleri Hasılatı", tuple(range(7, 17))),
+    (17, "Finans Sektörü Faaliyetleri Maliyeti", tuple(range(18, 29))),
+    (29, "FİNANS SEKTÖRÜ FAALİYETLERİNDEN BRÜT KAR (ZARAR)", (6, 17)),
+    (31, "BRÜT KAR (ZARAR)", (5, 29, 30)),
+    (38, "ESAS FAALİYET KARI (ZARARI)", (31, 32, 33, 34, 35, 36, 37)),
+    (49, "FİNANSMAN GELİRİ (GİDERİ) ÖNCESİ FAALİYET KARI (ZARARI)", (38, *range(39, 49))),
+    (53, "SÜRDÜRÜLEN FAALİYETLER VERGİ ÖNCESİ KARI (ZARARI)", (49, 50, 51, 52)),
+    (54, "Sürdürülen Faaliyetler Vergi (Gideri) Geliri", (55, 56)),
+    (57, "SÜRDÜRÜLEN FAALİYETLER DÖNEM KARI (ZARARI)", (53, 54)),
+    (59, "DÖNEM KARI (ZARARI)", (57, 58)),
+    (59, "DÖNEM KARI (ZARARI)", (61, 62)),
+)
+
+
+def income_statement_subtotals(filing: ParsedFiling) -> List[CheckResult]:
+    """
+    Recompute each income statement subtotal from its components, per column (#15).
+
+    - A subtotal whose components are all unreported is `not_checked`: the company gave only the total.
+    - Each component may be rounded by one reporting unit, so the tolerance is the number of components.
+    - These checks are `blocking`: a mismatch means a parsing error or an inconsistent filing.
+    """
+    family = filing.template_family
+    role = next((r for r in INCOME_STATEMENT_ROLES if r in filing.role_codes), None)
+    if family != "general" or role is None:
+        roles = ", ".join(INCOME_STATEMENT_ROLES)
+        reason = f"income statement subtotals are defined for the general template ({roles})"
+        return [CheckResult("income_statement_subtotals", "blocking", "not_checked", reason=reason)]
+
+    facts = {(f.row_id, f.column_class): f for f in filing.facts if f.role_code == role}
+    if not facts:
+        reason = f"no income statement values were parsed for {role}"
+        return [CheckResult("income_statement_subtotals", "blocking", "not_checked", reason=reason)]
+
+    def row_id(n: int) -> str:
+        return f"{family}_role_{role}-row-{n}"
+
+    results: List[CheckResult] = []
+    for total_row, label, parts in INCOME_STATEMENT_SUBTOTALS:
+        name = f"income_statement_row_{total_row}_equals_rows_{'+'.join(str(p) for p in parts)}"
+        for column in INCOME_STATEMENT_COLUMNS:
+            components = [facts[(row_id(p), column)] for p in parts if (row_id(p), column) in facts]
+            total = facts.get((row_id(total_row), column))
+            source = f"{row_id(total_row)} {column}"
+            if not components:
+                if total is not None:
+                    results.append(
+                        CheckResult(name, "blocking", "not_checked", reason=f"{source}: components not reported")
+                    )
+                continue
+            if total is not None and total.label_tr != label:
+                reason = f"{total.row_id} is {total.label_tr!r}, expected {label!r}"
+                results.append(CheckResult(name, "blocking", "not_checked", reason=reason))
+                continue
+            total_value = total.raw_value if total is not None else 0
+            parts_sum = sum(f.raw_value for f in components)
+            results.append(
+                CheckResult(
+                    name,
+                    "blocking",
+                    "pass" if abs(total_value - parts_sum) <= ROUNDING_TOLERANCE * len(parts) else "fail",
+                    left=total_value,
+                    right=parts_sum,
+                    left_source=source,
+                    right_source=", ".join(f"{f.row_id}" for f in components),
+                )
+            )
+    return results
