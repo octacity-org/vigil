@@ -94,11 +94,13 @@ ROW_START_RE = re.compile(
 )
 LABEL_TR_RE = re.compile(r'class="[^"]*content-tr[^"]*"[^>]*>\s*(.*?)\s*</div>', re.S)
 FOOTNOTE_RE = re.compile(r'class="taxonomy-footnote-value"[^>]*>\s*(.*?)\s*</div>', re.S)
+# One value cell up to its own closing tag. An empty cell has no `title`; searching for `title` past the
+# cell boundary would take the next cell's value and put it in the empty cell's column (#14).
 VALUE_CELL_RE = re.compile(
-    r'<td\s+class="taxonomy-context-value\s+(col-order-class-\d+)[^"]*"[^>]*>.*?'
-    r'title="([-+]?\d+(?:[.,]\d+)?)"',
+    r'<td\s+class="taxonomy-context-value\s+(col-order-class-\d+)[^"]*"[^>]*>(.*?)</td>',
     re.S,
 )
+VALUE_TITLE_RE = re.compile(r'title="([-+]?\d+(?:[.,]\d+)?)"')
 
 
 def parse_filename(filepath: str) -> Tuple[str, str, int, int, int]:
@@ -266,9 +268,12 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
             if footnote_ref == "":
                 footnote_ref = None
 
-            for val_m in VALUE_CELL_RE.finditer(row_chunk):
-                col_class = val_m.group(1)
-                val_str = val_m.group(2).replace(",", ".")
+            for cell_m in VALUE_CELL_RE.finditer(row_chunk):
+                col_class = cell_m.group(1)
+                title_m = VALUE_TITLE_RE.search(cell_m.group(2))
+                if not title_m:
+                    continue  # empty cell
+                val_str = title_m.group(1).replace(",", ".")
                 try:
                     raw_val = int(float(val_str))
                 except ValueError:

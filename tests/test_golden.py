@@ -15,9 +15,7 @@ RAW_DIR = os.path.join(TESTS_DIR, "..", "data", "raw")
 
 # Golden rows the parser is known to get wrong. strict=True turns the test into a
 # failure once the bug is fixed, so the marker gets removed.
-KNOWN_BUGS = {
-    ("KATMR_1651411", "general_role_310003-row-42"): "#14",
-}
+KNOWN_BUGS: dict = {}
 
 
 def _golden_rows():

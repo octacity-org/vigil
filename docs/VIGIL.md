@@ -709,9 +709,11 @@ Prototip kod Gemini tarafından yazıldı ve #1 ile repoya taşındı. İşler [
 
 ## 17. Bilinen sorunlar
 
-### Ayrıştırıcı kolon kayması (kritik, düzeltilmedi)
+### Ayrıştırıcı kolon kayması (düzeltildi, #14)
 
-`src/vigil/parser.py` içindeki `VALUE_CELL_RE` hücre sınırını aşıyor:
+**Durum:** #14 ile düzeltildi. Her hücre artık kendi kapanış etiketine kadar okunuyor; 2026/2'nin 246 dosyasında yanlış kolonda değer kalmadı. KATMR 42. satır altın veri testinde, boş hücreden sonra dolu hücre gelen durum da sentetik bir testte (`tests/test_parser_cells.py`) kontrol ediliyor. Aşağısı hatanın kaydı olarak duruyor.
+
+Eski `src/vigil/parser.py` içindeki `VALUE_CELL_RE` hücre sınırını aşıyordu:
 
 ```python
 VALUE_CELL_RE = re.compile(

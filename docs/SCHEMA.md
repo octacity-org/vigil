@@ -112,7 +112,7 @@ Both quarters loaded into one database: 736 + 776 reports, 340,201 + 366,437 fac
 - **Statement of changes in equity.** The parser skips it in Phase 0 (two-dimensional equity columns), so it is not loaded.
 - **Files that fail to parse.** They are listed by the loader with the reason. In both 2025/2 and 2026/2: the two `ALBRK-ALK` filings, which use a `par-banks` template the parser does not recognise.
 - **Dates for columns the parser does not know.** 509 facts in 2026/2 (EXIMB, VDFAS) come from balance sheet columns `col-order-class-10` to `12`, which the parser has no header for. They are loaded with `period_type = 'UNKNOWN'` and no dates, so they stay out of the version views (last example query).
-- **Correctness beyond the parser.** The database stores what the parser produces. Until the column-shift bug (#14) is fixed, about 1% of values sit in the wrong column. Matching row counts prove the load is complete, not that the values are right; that is what the golden dataset checks.
+- **Correctness beyond the parser.** The database stores what the parser produces. The column-shift bug (#14) put about 1% of values in the wrong column; it is fixed, so databases loaded before the fix should be reloaded. The counts on this page were measured before the fix. Matching row counts prove the load is complete, not that the values are right; that is what the golden dataset checks.
 
 ## Loading
 
