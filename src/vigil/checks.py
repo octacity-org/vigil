@@ -603,6 +603,222 @@ def balance_sheet_subtotals(filing: ParsedFiling) -> List[CheckResult]:
     )
 
 
+# Cash flow statement subtotals (issue #17), indirect method (520003, general and holding templates). Every
+# formula held in every 2026/2 filing that reports its components. Row 53 (disposals of non-current assets)
+# covers rows 54-58 only; rows 59-61 (disposals of assets held for sale, associates, subsidiaries) sit directly
+# under row 6. Row 205 is the effect of exchange rate changes on cash; 119, 161, 202 and 203 are inflation effects.
+CASH_FLOW_ROLES = ("520003",)
+CASH_FLOW_COLUMNS = ("col-order-class-4", "col-order-class-5")
+CASH_FLOW_SUBTOTALS: Sequence[Tuple[int, str, Sequence[int]]] = (
+    (2, "İŞLETME FAALİYETLERİNDEN NAKİT AKIŞLARI", (*range(102, 120),)),
+    (
+        3,
+        "Dönem Karı (Zararı)",
+        (
+            4,
+            5,
+        ),
+    ),
+    (
+        6,
+        "Dönem Net Karı (Zararı) Mutabakatı İle İlgili Düzeltmeler",
+        (
+            7,
+            8,
+            19,
+            *range(28, 32),
+            *range(36, 42),
+            48,
+            *range(51, 54),
+            *range(59, 65),
+        ),
+    ),
+    (8, "Değer Düşüklüğü (İptali) İle İlgili Düzeltmeler", (*range(9, 19),)),
+    (19, "Karşılıklar İle İlgili Düzeltmeler", (*range(20, 28),)),
+    (31, "Faiz (Gelirleri) ve Giderleri İle İlgili Düzeltmeler", (*range(32, 36),)),
+    (41, "Gerçeğe Uygun Değer Kayıpları (Kazançları) İle İlgili Düzeltmeler", (*range(42, 48),)),
+    (
+        48,
+        "Özkaynak Yöntemiyle Değerlenen Yatırımların Dağıtılmamış Karları ile İlgili Düzeltmeler",
+        (
+            49,
+            50,
+        ),
+    ),
+    (
+        53,
+        "Duran Varlıkların Elden Çıkarılmasından Kaynaklanan Kayıplar (Kazançlar) İle İlgili Düzeltmeler",
+        (*range(54, 59),),
+    ),
+    (
+        65,
+        "İşletme Sermayesinde Gerçekleşen Değişimler",
+        (
+            *range(66, 69),
+            71,
+            72,
+            75,
+            *range(79, 85),
+            *range(87, 90),
+            93,
+            *range(96, 100),
+        ),
+    ),
+    (
+        68,
+        "Ticari Alacaklardaki Azalış (Artış) ile İlgili Düzeltmeler",
+        (
+            69,
+            70,
+        ),
+    ),
+    (
+        72,
+        "Faaliyetlerle İlgili Diğer Alacaklardaki Azalış (Artış) ile İlgili Düzeltmeler",
+        (
+            73,
+            74,
+        ),
+    ),
+    (75, "Müşteri Sözleşmelerinden Doğan Varlıklardaki Azalış (Artış) İle İlgili Düzeltmeler", (*range(76, 79),)),
+    (
+        84,
+        "Ticari Borçlardaki Artış (Azalış) ile İlgili Düzeltmeler",
+        (
+            85,
+            86,
+        ),
+    ),
+    (89, "Müşteri Sözleşmelerinden Doğan Yükümlülüklerdeki Artış (Azalış) İle İlgili Düzeltmeler", (*range(90, 93),)),
+    (
+        93,
+        "Faaliyetler ile İlgili Diğer Borçlardaki Artış (Azalış) ile İlgili Düzeltmeler",
+        (
+            94,
+            95,
+        ),
+    ),
+    (
+        99,
+        "İşletme Sermayesinde Gerçekleşen Diğer Artış (Azalış) ile İlgili Düzeltmeler",
+        (
+            100,
+            101,
+        ),
+    ),
+    (
+        102,
+        "Faaliyetlerden Elde Edilen Nakit Akışları",
+        (
+            3,
+            6,
+            65,
+        ),
+    ),
+    (
+        120,
+        "YATIRIM FAALİYETLERİNDEN KAYNAKLANAN NAKİT AKIŞLARI",
+        (
+            *range(121, 131),
+            133,
+            *range(136, 145),
+            147,
+            *range(150, 162),
+        ),
+    ),
+    (
+        130,
+        "Maddi ve Maddi Olmayan Duran Varlıkların Satışından Kaynaklanan Nakit Girişleri",
+        (
+            131,
+            132,
+        ),
+    ),
+    (
+        133,
+        "Maddi ve Maddi Olmayan Duran Varlıkların Alımından Kaynaklanan Nakit Çıkışları",
+        (
+            134,
+            135,
+        ),
+    ),
+    (
+        144,
+        "Verilen Nakit Avans ve Borçlar",
+        (
+            145,
+            146,
+        ),
+    ),
+    (
+        147,
+        "Verilen Nakit Avans ve Borçlardan Geri Ödemeler",
+        (
+            148,
+            149,
+        ),
+    ),
+    (
+        162,
+        "FİNANSMAN FAALİYETLERİNDEN NAKİT AKIŞLARI",
+        (
+            *range(163, 166),
+            168,
+            169,
+            173,
+            177,
+            178,
+            183,
+            *range(188, 203),
+        ),
+    ),
+    (
+        165,
+        "Pay ve Diğer Özkaynağa Dayalı Araçların İhracından Kaynaklanan Nakit Girişleri",
+        (
+            166,
+            167,
+        ),
+    ),
+    (
+        169,
+        "İşletmenin Kendi Paylarını ve Diğer Özkaynağa Dayalı Araçlarını Almasıyla İlgili Nakit Çıkışları",
+        (*range(170, 173),),
+    ),
+    (
+        173,
+        "İşletmenin Kendi Paylarını ve Diğer Özkaynağa Dayalı Araçlarını Satmasından Kaynaklanan Nakit Girişleri",
+        (*range(174, 177),),
+    ),
+    (178, "Borçlanmadan Kaynaklanan Nakit Girişleri", (*range(179, 183),)),
+    (183, "Borç Ödemelerine İlişkin Nakit Çıkışları", (*range(184, 188),)),
+    (
+        204,
+        "YABANCI PARA ÇEVRİM FARKLARININ ETKİSİNDEN ÖNCE NAKİT VE NAKİT BENZERLERİNDEKİ NET ARTIŞ (AZALIŞ)",
+        (
+            2,
+            120,
+            162,
+            203,
+        ),
+    ),
+    (
+        206,
+        "NAKİT VE NAKİT BENZERLERİNDEKİ NET ARTIŞ (AZALIŞ)",
+        (
+            204,
+            205,
+        ),
+    ),
+    (209, "DÖNEM SONU NAKİT VE NAKİT BENZERLERİ", (*range(206, 209),)),
+)
+
+
+def cash_flow_subtotals(filing: ParsedFiling) -> List[CheckResult]:
+    """Recompute each cash flow statement subtotal from its components, per column (#17)."""
+    return _subtotals(filing, "cash_flow", SUPPORTED_FAMILIES, CASH_FLOW_ROLES, CASH_FLOW_COLUMNS, CASH_FLOW_SUBTOTALS)
+
+
 def _subtotals(
     filing: ParsedFiling,
     statement: str,
@@ -632,11 +848,26 @@ def _subtotals(
     def row_id(n: int) -> str:
         return f"{family}_role_{role}-row-{n}"
 
+    # A group total left empty while its components are filled still counts in the group above it: its
+    # value is then the sum of its own components (a company may fill a breakdown without the total).
+    groups: Dict[int, Sequence[int]] = {}
+    for total_row, _, parts in formulas:
+        groups.setdefault(total_row, parts)
+
+    def value(n: int, column: str) -> Optional[int]:
+        fact = facts.get((row_id(n), column))
+        if fact is not None:
+            return fact.raw_value
+        if n in groups:
+            values = [v for v in (value(p, column) for p in groups[n]) if v is not None]
+            return sum(values) if values else None
+        return None
+
     results: List[CheckResult] = []
     for total_row, label, parts in formulas:
         name = f"{statement}_row_{total_row}_equals_rows_{'+'.join(str(p) for p in parts)}"
         for column in columns:
-            components = [facts[(row_id(p), column)] for p in parts if (row_id(p), column) in facts]
+            components = {p: v for p in parts if (v := value(p, column)) is not None}
             total = facts.get((row_id(total_row), column))
             source = f"{row_id(total_row)} {column}"
             if not components:
@@ -645,21 +876,24 @@ def _subtotals(
                         CheckResult(name, "blocking", "not_checked", reason=f"{source}: components not reported")
                     )
                 continue
-            if total is not None and total.label_tr != label:
+            if total is None:
+                reason = f"{source}: total not reported; its components count in the group above"
+                results.append(CheckResult(name, "blocking", "not_checked", reason=reason))
+                continue
+            if total.label_tr != label:
                 reason = f"{total.row_id} is {total.label_tr!r}, expected {label!r}"
                 results.append(CheckResult(name, "blocking", "not_checked", reason=reason))
                 continue
-            total_value = total.raw_value if total is not None else 0
-            parts_sum = sum(f.raw_value for f in components)
+            parts_sum = sum(components.values())
             results.append(
                 CheckResult(
                     name,
                     "blocking",
-                    "pass" if abs(total_value - parts_sum) <= ROUNDING_TOLERANCE * len(parts) else "fail",
-                    left=total_value,
+                    "pass" if abs(total.raw_value - parts_sum) <= ROUNDING_TOLERANCE * len(parts) else "fail",
+                    left=total.raw_value,
                     right=parts_sum,
                     left_source=source,
-                    right_source=", ".join(f"{f.row_id}" for f in components),
+                    right_source=", ".join(row_id(p) for p in components),
                 )
             )
     return results
