@@ -160,32 +160,482 @@ INCOME_STATEMENT_SUBTOTALS: Sequence[Tuple[int, str, Sequence[int]]] = (
 
 
 def income_statement_subtotals(filing: ParsedFiling) -> List[CheckResult]:
+    """Recompute each income statement subtotal from its components, per column (#15)."""
+    return _subtotals(
+        filing,
+        "income_statement",
+        ("general",),
+        INCOME_STATEMENT_ROLES,
+        INCOME_STATEMENT_COLUMNS,
+        INCOME_STATEMENT_SUBTOTALS,
+    )
+
+
+# Balance sheet subtotals (issue #16). Every group in the general balance sheet (210015, also used by the
+# holding template) is the sum of the rows below it; each formula held in every 2026/2 filing that reports its
+# components (12,885 comparisons). Column 6 is the restated comparative column, when present.
+BALANCE_SHEET_ROLES = ("210015",)
+BALANCE_SHEET_COLUMNS = ("col-order-class-4", "col-order-class-5", "col-order-class-6")
+BALANCE_SHEET_SUBTOTALS: Sequence[Tuple[int, str, Sequence[int]]] = (
+    (
+        6,
+        "Finansal Yatırımlar",
+        (
+            *range(7, 12),
+            16,
+            *range(19, 22),
+        ),
+    ),
+    (11, "Gerçeğe Uygun Değer Farkı Kar/Zarara Yansıtılan Finansal Varlıklar", (*range(12, 16),)),
+    (
+        16,
+        "Gerçeğe Uygun Değer Farkı Diğer Kapsamlı Gelire Yansıtılan Finansal Varlıklar",
+        (
+            17,
+            18,
+        ),
+    ),
+    (
+        22,
+        "Ticari Alacaklar",
+        (
+            23,
+            24,
+        ),
+    ),
+    (
+        25,
+        "Finans Sektörü Faaliyetlerinden Alacaklar",
+        (
+            26,
+            27,
+        ),
+    ),
+    (
+        29,
+        "Diğer Alacaklar",
+        (
+            30,
+            31,
+        ),
+    ),
+    (32, "Müşteri Sözleşmelerinden Doğan Varlıklar", (*range(33, 36),)),
+    (
+        37,
+        "Türev Araçlar",
+        (
+            38,
+            39,
+        ),
+    ),
+    (
+        43,
+        "Peşin Ödenmiş Giderler",
+        (
+            44,
+            45,
+        ),
+    ),
+    (
+        49,
+        "Diğer Dönen Varlıklar",
+        (
+            50,
+            51,
+        ),
+    ),
+    (
+        52,
+        "ARA TOPLAM",
+        (
+            *range(4, 7),
+            22,
+            25,
+            28,
+            29,
+            32,
+            36,
+            37,
+            *range(40, 44),
+            *range(46, 50),
+        ),
+    ),
+    (55, "TOPLAM DÖNEN VARLIKLAR", (*range(52, 55),)),
+    (
+        57,
+        "Finansal Yatırımlar",
+        (
+            *range(58, 63),
+            67,
+            70,
+            71,
+        ),
+    ),
+    (62, "Gerçeğe Uygun Değer Farkı Kar/Zarara Yansıtılan Finansal Varlıklar", (*range(63, 67),)),
+    (
+        67,
+        "Gerçeğe Uygun Değer Farkı Diğer Kapsamlı Gelire Yansıtılan Finansal Varlıklar",
+        (
+            68,
+            69,
+        ),
+    ),
+    (
+        73,
+        "Ticari Alacaklar",
+        (
+            74,
+            75,
+        ),
+    ),
+    (
+        76,
+        "Finans Sektörü Faaliyetlerinden Alacaklar",
+        (
+            77,
+            78,
+        ),
+    ),
+    (
+        79,
+        "Diğer Alacaklar",
+        (
+            80,
+            81,
+        ),
+    ),
+    (82, "Müşteri Sözleşmelerinden Doğan Varlıklar", (*range(83, 86),)),
+    (
+        87,
+        "Türev Araçlar",
+        (
+            88,
+            89,
+        ),
+    ),
+    (95, "Maddi Duran Varlıklar", (*range(96, 108),)),
+    (109, "Maddi Olmayan Duran Varlıklar", (*range(110, 119),)),
+    (
+        119,
+        "Peşin Ödenmiş Giderler",
+        (
+            120,
+            121,
+        ),
+    ),
+    (
+        125,
+        "Diğer Duran Varlıklar",
+        (
+            126,
+            127,
+        ),
+    ),
+    (
+        128,
+        "TOPLAM DURAN VARLIKLAR",
+        (
+            57,
+            72,
+            73,
+            76,
+            79,
+            82,
+            86,
+            87,
+            *range(90, 96),
+            108,
+            109,
+            119,
+            *range(122, 126),
+        ),
+    ),
+    (
+        129,
+        "TOPLAM VARLIKLAR",
+        (
+            55,
+            128,
+        ),
+    ),
+    (
+        132,
+        "Kısa Vadeli Borçlanmalar",
+        (
+            133,
+            138,
+        ),
+    ),
+    (133, "İlişkili Taraflardan Kısa Vadeli Borçlanmalar", (*range(134, 138),)),
+    (138, "İlişkili Olmayan Taraflardan Kısa Vadeli Borçlanmalar", (*range(139, 143),)),
+    (
+        143,
+        "Uzun Vadeli Borçlanmaların Kısa Vadeli Kısımları",
+        (
+            144,
+            149,
+        ),
+    ),
+    (144, "İlişkili Taraflardan Uzun Vadeli Borçlanmaların Kısa Vadeli Kısımları", (*range(145, 149),)),
+    (149, "İlişkili Olmayan Taraflardan Uzun Vadeli Borçlanmaların Kısa Vadeli Kısımları", (*range(150, 154),)),
+    (154, "Diğer Finansal Yükümlülükler", (*range(155, 158),)),
+    (
+        158,
+        "Ticari Borçlar",
+        (
+            159,
+            160,
+        ),
+    ),
+    (
+        161,
+        "Finans Sektörü Faaliyetlerinden Borçlar",
+        (
+            162,
+            163,
+        ),
+    ),
+    (
+        165,
+        "Diğer Borçlar",
+        (
+            166,
+            167,
+        ),
+    ),
+    (168, "Müşteri Sözleşmelerinden Doğan Yükümlülükler", (*range(169, 172),)),
+    (
+        173,
+        "Türev Araçlar",
+        (
+            174,
+            175,
+        ),
+    ),
+    (
+        177,
+        "Ertelenmiş Gelirler (Müşteri Sözleşmelerinden Doğan Yükümlülüklerin Dışında Kalanlar)",
+        (
+            178,
+            179,
+        ),
+    ),
+    (181, "Kısa Vadeli Karşılıklar", (*range(182, 185),)),
+    (
+        185,
+        "Diğer Kısa Vadeli Yükümlülükler",
+        (
+            186,
+            187,
+        ),
+    ),
+    (
+        188,
+        "ARA TOPLAM",
+        (
+            132,
+            143,
+            154,
+            158,
+            161,
+            164,
+            165,
+            168,
+            172,
+            173,
+            176,
+            177,
+            180,
+            181,
+            185,
+        ),
+    ),
+    (191, "TOPLAM KISA VADELİ YÜKÜMLÜLÜKLER", (*range(188, 191),)),
+    (
+        193,
+        "Uzun Vadeli Borçlanmalar",
+        (
+            194,
+            199,
+        ),
+    ),
+    (194, "İlişkili Taraflardan Uzun Vadeli Borçlanmalar", (*range(195, 199),)),
+    (199, "İlişkili Olmayan Taraflardan Uzun Vadeli Borçlanmalar", (*range(200, 204),)),
+    (204, "Diğer Finansal Yükümlülükler", (*range(205, 208),)),
+    (
+        208,
+        "Ticari Borçlar",
+        (
+            209,
+            210,
+        ),
+    ),
+    (
+        211,
+        "Finans Sektörü Faaliyetlerinden Borçlar",
+        (
+            212,
+            213,
+        ),
+    ),
+    (
+        215,
+        "Diğer Borçlar",
+        (
+            216,
+            217,
+        ),
+    ),
+    (218, "Müşteri Sözleşmelerinden Doğan Yükümlülükler", (*range(219, 222),)),
+    (
+        223,
+        "Türev Araçlar",
+        (
+            224,
+            225,
+        ),
+    ),
+    (
+        227,
+        "Ertelenmiş Gelirler (Müşteri Sözleşmelerinden Doğan Yükümlülüklerin Dışında Kalanlar)",
+        (
+            228,
+            229,
+        ),
+    ),
+    (230, "Uzun Vadeli Karşılıklar", (*range(231, 236),)),
+    (
+        238,
+        "Diğer Uzun Vadeli Yükümlülükler",
+        (
+            239,
+            240,
+        ),
+    ),
+    (
+        241,
+        "TOPLAM UZUN VADELİ YÜKÜMLÜLÜKLER",
+        (
+            193,
+            204,
+            208,
+            211,
+            214,
+            215,
+            218,
+            222,
+            223,
+            226,
+            227,
+            230,
+            *range(236, 239),
+        ),
+    ),
+    (
+        242,
+        "TOPLAM YÜKÜMLÜLÜKLER",
+        (
+            191,
+            241,
+        ),
+    ),
+    (
+        244,
+        "Ana Ortaklığa Ait Özkaynaklar",
+        (
+            *range(245, 257),
+            269,
+            284,
+            *range(290, 295),
+        ),
+    ),
+    (
+        256,
+        "Kar veya Zararda Yeniden Sınıflandırılmayacak Birikmiş Diğer Kapsamlı Gelirler (Giderler)",
+        (
+            257,
+            258,
+            *range(264, 269),
+        ),
+    ),
+    (258, "Yeniden Değerleme ve Ölçüm Kazançları (Kayıpları)", (*range(259, 264),)),
+    (
+        269,
+        "Kar veya Zararda Yeniden Sınıflandırılacak Birikmiş Diğer Kapsamlı Gelirler (Giderler)",
+        (
+            270,
+            271,
+            275,
+            *range(279, 284),
+        ),
+    ),
+    (271, "Riskten Korunma Kazançları (Kayıpları)", (*range(272, 275),)),
+    (275, "Yeniden Değerleme ve Sınıflandırma Kazançları (Kayıpları)", (*range(276, 279),)),
+    (284, "Kardan Ayrılan Kısıtlanmış Yedekler", (*range(285, 290),)),
+    (
+        296,
+        "TOPLAM ÖZKAYNAKLAR",
+        (
+            244,
+            295,
+        ),
+    ),
+    (
+        297,
+        "TOPLAM KAYNAKLAR",
+        (
+            242,
+            296,
+        ),
+    ),
+)
+
+
+def balance_sheet_subtotals(filing: ParsedFiling) -> List[CheckResult]:
+    """Recompute each balance sheet subtotal from its components, per column (#16)."""
+    return _subtotals(
+        filing,
+        "balance_sheet",
+        SUPPORTED_FAMILIES,
+        BALANCE_SHEET_ROLES,
+        BALANCE_SHEET_COLUMNS,
+        BALANCE_SHEET_SUBTOTALS,
+    )
+
+
+def _subtotals(
+    filing: ParsedFiling,
+    statement: str,
+    families: Sequence[str],
+    roles: Sequence[str],
+    columns: Sequence[str],
+    formulas: Sequence[Tuple[int, str, Sequence[int]]],
+) -> List[CheckResult]:
     """
-    Recompute each income statement subtotal from its components, per column (#15).
+    Recompute subtotals from their components, per column.
 
     - A subtotal whose components are all unreported is `not_checked`: the company gave only the total.
     - Each component may be rounded by one reporting unit, so the tolerance is the number of components.
     - These checks are `blocking`: a mismatch means a parsing error or an inconsistent filing.
     """
     family = filing.template_family
-    role = next((r for r in INCOME_STATEMENT_ROLES if r in filing.role_codes), None)
-    if family != "general" or role is None:
-        roles = ", ".join(INCOME_STATEMENT_ROLES)
-        reason = f"income statement subtotals are defined for the general template ({roles})"
-        return [CheckResult("income_statement_subtotals", "blocking", "not_checked", reason=reason)]
+    role = next((r for r in roles if r in filing.role_codes), None)
+    if family not in families or role is None:
+        reason = f"{statement} subtotals are defined for {'/'.join(families)} ({', '.join(roles)})"
+        return [CheckResult(f"{statement}_subtotals", "blocking", "not_checked", reason=reason)]
 
     facts = {(f.row_id, f.column_class): f for f in filing.facts if f.role_code == role}
     if not facts:
-        reason = f"no income statement values were parsed for {role}"
-        return [CheckResult("income_statement_subtotals", "blocking", "not_checked", reason=reason)]
+        reason = f"no {statement.replace('_', ' ')} values were parsed for {role}"
+        return [CheckResult(f"{statement}_subtotals", "blocking", "not_checked", reason=reason)]
 
     def row_id(n: int) -> str:
         return f"{family}_role_{role}-row-{n}"
 
     results: List[CheckResult] = []
-    for total_row, label, parts in INCOME_STATEMENT_SUBTOTALS:
-        name = f"income_statement_row_{total_row}_equals_rows_{'+'.join(str(p) for p in parts)}"
-        for column in INCOME_STATEMENT_COLUMNS:
+    for total_row, label, parts in formulas:
+        name = f"{statement}_row_{total_row}_equals_rows_{'+'.join(str(p) for p in parts)}"
+        for column in columns:
             components = [facts[(row_id(p), column)] for p in parts if (row_id(p), column) in facts]
             total = facts.get((row_id(total_row), column))
             source = f"{row_id(total_row)} {column}"

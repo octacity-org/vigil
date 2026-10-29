@@ -1,14 +1,20 @@
-"""Income statement subtotals recomputed from their components (#15)."""
+"""Income statement (#15) and balance sheet (#16) subtotals recomputed from their components."""
 
 import dataclasses
 import os
 
 import pytest
 
-from vigil.checks import INCOME_STATEMENT_SUBTOTALS, income_statement_subtotals
+from vigil.checks import (
+    BALANCE_SHEET_SUBTOTALS,
+    INCOME_STATEMENT_SUBTOTALS,
+    balance_sheet_subtotals,
+    income_statement_subtotals,
+)
 from vigil.parser import ParsedFiling, ParsedFinancialFact, parse_kap_xls
 
 LABELS = {row: label for row, label, _ in INCOME_STATEMENT_SUBTOTALS}
+BS_LABELS = {row: label for row, label, _ in BALANCE_SHEET_SUBTOTALS}
 COL = "col-order-class-4"
 
 # A consistent income statement (values in TL, costs negative). Rows not listed are unreported.
@@ -37,7 +43,7 @@ CONSISTENT = {
 }
 
 
-def make_filing(values, family="general", role="310003"):
+def make_filing(values, family="general", role="310003", labels=LABELS):
     facts = [
         ParsedFinancialFact(
             company_code="TEST",
@@ -50,7 +56,7 @@ def make_filing(values, family="general", role="310003"):
             role_code=role,
             statement_type="INCOME_STATEMENT",
             row_id=f"{family}_role_{role}-row-{row}",
-            label_tr=LABELS.get(row, f"row {row}"),
+            label_tr=labels.get(row, f"row {row}"),
             footnote_ref=None,
             column_class=COL,
             period_type="YTD_CUMULATIVE",
@@ -137,11 +143,64 @@ def test_other_templates_and_empty_filings_are_not_checked():
     assert "no income statement values" in empty.reason
 
 
+# A consistent balance sheet: cash 100, trade receivables 50, PP&E 300; trade payables 80, deferred tax 20;
+# paid-in capital 300 and profit 50.
+BALANCE_SHEET = {
+    4: 100,
+    24: 50,
+    22: 50,
+    52: 150,
+    55: 150,
+    95: 300,
+    128: 300,
+    129: 450,
+    160: 80,
+    158: 80,
+    188: 80,
+    191: 80,
+    237: 20,
+    241: 20,
+    242: 100,
+    245: 300,
+    294: 50,
+    244: 350,
+    296: 350,
+    297: 450,
+}
+
+
+def balance_sheet(values, family="general"):
+    return make_filing(values, family=family, role="210015", labels=BS_LABELS)
+
+
+def test_consistent_balance_sheet_passes():
+    for family in ("general", "holding"):
+        results = balance_sheet_subtotals(balance_sheet(BALANCE_SHEET, family))
+        assert {r.status for r in results} == {"pass", "not_checked"}
+        assert not [r for r in results if r.status == "fail"]
+    names = {r.name for r in balance_sheet_subtotals(balance_sheet(BALANCE_SHEET)) if r.status == "pass"}
+    assert "balance_sheet_row_297_equals_rows_242+296" in names
+    assert "balance_sheet_row_129_equals_rows_55+128" in names
+
+
+def test_balance_sheet_component_mismatch_fails_only_its_group():
+    values = {**BALANCE_SHEET, 24: 60}  # receivables breakdown no longer adds up to row 22
+    failed = [r for r in balance_sheet_subtotals(balance_sheet(values)) if r.status == "fail"]
+    assert [(r.name, r.difference) for r in failed] == [("balance_sheet_row_22_equals_rows_23+24", -10)]
+
+
+def test_balance_sheet_other_templates_are_not_checked():
+    (bank,) = balance_sheet_subtotals(make_filing(BALANCE_SHEET, family="banks", role="210011", labels=BS_LABELS))
+    assert bank.status == "not_checked"
+
+
 KATMR = os.path.join(os.path.dirname(__file__), "..", "data", "raw", "2026_2", "KATMR_1651411_2026_2.xls")
 
 
 @pytest.mark.skipif(not os.path.exists(KATMR), reason="raw KAP file missing: data/raw/2026_2/KATMR_1651411_2026_2.xls")
 def test_katmr_subtotals_pass():
-    results = income_statement_subtotals(parse_kap_xls(KATMR))
+    filing = parse_kap_xls(KATMR)
+    results = income_statement_subtotals(filing)
     assert len(results) == 36
     assert {r.status for r in results} == {"pass"}
+    assert not [r for r in balance_sheet_subtotals(filing) if r.status == "fail"]
