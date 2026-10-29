@@ -42,6 +42,45 @@ The earlier "unreliable" answers are best explained by what the check means: **a
 - The downloader just requests the zip; a `500` means there is no file.
 - Completeness is judged against the disclosure list.
 
+## Disclosure list
+
+```
+POST https://www.kap.org.tr/tr/api/disclosure/list/main
+Content-Type: application/json
+
+{"fromDate": "17.08.2026", "toDate": "17.08.2026", "disclosureTypes": ["FR"], "memberTypes": [], "mkkMemberOid": null}
+```
+
+This is the list behind KAP's home page and disclosure search. Measured on 2026-10-29 (#40):
+
+| Field | Required | Meaning |
+|---|---|---|
+| `fromDate`, `toDate` | yes | `DD.MM.YYYY`, inclusive. **At most 90 days apart**: `01.07.2026`–`29.09.2026` works, `01.07.2026`–`30.09.2026` fails. The site's own "six months" check is client-side only. |
+| `memberTypes` | yes | `[]` for all member types |
+| `disclosureTypes` | no | `null` for all; `["FR"]` for disclosures of class `FR` (financial reports, plus related notices such as responsibility statements and activity reports) |
+| `mkkMemberOid` | no | one company, e.g. KATMR is `4028e4a14184e9cf01419c001e945a74` (from `mkkMemberOid` in any of its disclosures) |
+
+**Errors.** A missing required field, another date format (`2026-08-17`) or a range over 90 days answers `500` with `{"success": false, "errorMessage": "HTTP 400 - "}`. This is the "HTTP 400" seen during prototyping, when the body was empty.
+
+**Response.** The response is a JSON array of `{"disclosureBasic": {...}, "disclosureDetail": {...}}`, newest first, with no paging. No cap on the number of results was seen: 16,815 disclosures came back in one response for August–September 2026 (16.8 MB, about 6 s). `Accept-Language` does not change the content. Useful fields in `disclosureBasic`:
+
+| Field | Example | Notes |
+|---|---|---|
+| `disclosureIndex` | `1651411` | **The `disclosure_id` in bulk file names.** All 778 files of the 2026/2 zip were found this way. |
+| `publishDate` | `17.08.2026 19:05:18` | Publication time (Istanbul). Decision 0002 orders versions by disclosure id because this was not known. |
+| `stockCode` | `KATMR`, `TEB, TEBNK` | Can list several codes |
+| `mkkMemberOid` | | Stable company id |
+| `title`, `summary` | `Finansal Rapor` | The statements themselves have the title `Finansal Rapor` |
+| `year`, `donem`, `period` | `2026`, `2`, `3AB` | Report year and quarter |
+| `isChanged` | `null`, `DUZELTILEN`, `DUZENLENEN` | `DUZELTILEN`: this disclosure was later corrected. `DUZENLENEN`: this disclosure is a correction of `relatedDisclosureOid`. |
+| `isLate` | `true` | Filed after the deadline |
+
+**Politeness.** No rate limit or blocking was seen over about 40 requests spaced one to three seconds apart. The responses set bot-protection cookies (`AGVY-Cookie`), so:
+
+- send one request at a time, at least a second apart;
+- query one day or one month rather than repeating large ranges;
+- cache the results: a past day's list does not change except through new corrections, which appear as new disclosures.
+
 ## File name
 
 ```
