@@ -85,7 +85,10 @@ def test_csv_and_summary(tmp_path):
     with open(out, encoding="utf-8", newline="") as f:
         lines = list(csv.DictReader(f))
     assert [(r["file"], r["status"]) for r in lines] == [("A_1_2026_2.xls", "pass"), ("B_2_2026_2.xls", "no_values")]
+    rows[0].period_start, rows[0].period_end, rows[0].company = "2026-02-01", "2026-07-31", "MAVI"
     summary = quality.markdown_summary(rows, "2026_2")
+    assert "Fiscal year not starting on 1 January: MAVI (2026-02-01 to 2026-07-31)." in summary
+    assert "B_2_2026_2.xls (no header dates)" in summary
     assert "| pass | 1 |" in summary
     assert "| cash_flow | 3 | 0 | 0 | 0 |" in summary
     assert "| B_2_2026_2.xls | no_values | the parser found no values |" in summary

@@ -105,6 +105,14 @@ Columns beyond these exist in some filings of the full quarter (EXIMB, VDFAS bal
 
 ## Periods
 
-Read periods from the header dates (`01.01.2026 - 30.06.2026`, or a single date for balance sheets), never from `Periyot`. Special fiscal periods exist: MAVI's 2026/2 covers `01.02.2026 - 31.07.2026`.
+Read periods from the header dates (`01.01.2026 - 30.06.2026`, or a single date for balance sheets), never from `Periyot` or the quarter in the file name. Special fiscal periods exist: MAVI's 2026/2 covers `01.02.2026 - 31.07.2026`, its balance sheet is at `31.07.2026` against `31.01.2026`, and its three-month columns are May–July.
+
+The parser (#36):
+
+- gives every column and every value `period_start` and `period_end` from its header; a balance sheet column has only `period_end`;
+- sets the period type from the dates: one date is `POINT_IN_TIME` (`_TP` / `_YP` for currency parts), a span of at most 100 days is `Q_STANDALONE`, a longer one `YTD_CUMULATIVE`. A first-quarter cumulative column is therefore `Q_STANDALONE`;
+- records the filing's reporting period (the earliest-starting current-period span) and whether it covers as many quarters as the file name says. The data quality report lists filings where it does not, filings without header dates and fiscal years that do not start on 1 January.
+
+In 2026/2 every value has header dates and every filing's period matches its file name; MAVI is the only special fiscal period.
 
 Under IAS 29 (TMS 29), every report restates its comparative columns in the purchasing power of its own period end, so the same period appears with different values in different reports (see `docs/SCHEMA.md`).

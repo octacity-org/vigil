@@ -40,6 +40,10 @@ class FileQuality:
     disclosure_id: Optional[int] = None
     year: Optional[int] = None
     quarter: Optional[int] = None
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    # False when the header period does not cover `quarter` quarters (#36); None without header dates.
+    period_matches_quarter: Optional[bool] = None
     template: Optional[str] = None
     scale_unit: Optional[str] = None
     facts: int = 0
@@ -72,6 +76,9 @@ def file_quality(path: str) -> FileQuality:
         disclosure_id=filing.disclosure_id,
         year=filing.year,
         quarter=filing.quarter,
+        period_start=str(filing.period_start) if filing.period_start else None,
+        period_end=str(filing.period_end) if filing.period_end else None,
+        period_matches_quarter=filing.period_matches_quarter,
         template=filing.template_family,
         scale_unit=filing.scale_unit,
         facts=len(filing.facts),
@@ -119,6 +126,9 @@ CSV_COLUMNS = (
     "disclosure_id",
     "year",
     "quarter",
+    "period_start",
+    "period_end",
+    "period_matches_quarter",
     "template",
     "scale_unit",
     "facts",
@@ -177,6 +187,26 @@ def markdown_summary(rows: List[FileQuality], title: str) -> str:
         f"Cells whose `title` and visible text disagree (the `title` is used): "
         f"{sum(r.text_disagreements for r in rows)} in {sum(1 for r in rows if r.text_disagreements)} files.",
     ]
+    special = [r for r in rows if r.period_start and not r.period_start.endswith("-01-01")]
+    if special:
+        lines += [
+            "",
+            "Fiscal year not starting on 1 January: "
+            + ", ".join(f"{r.company} ({r.period_start} to {r.period_end})" for r in special)
+            + ".",
+        ]
+    mismatched = [r for r in rows if r.period_matches_quarter is False]
+    undated = [r for r in rows if r.status not in ("parse_error",) and r.period_end is None]
+    if mismatched or undated:
+        lines += [
+            "",
+            "Period to check by hand: "
+            + ", ".join(
+                [f"{r.file} (header {r.period_start} to {r.period_end}, file name Q{r.quarter})" for r in mismatched]
+                + [f"{r.file} (no header dates)" for r in undated]
+            )
+            + ".",
+        ]
     problems = [r for r in rows if r.status in ("fail", "no_values", "parse_error")]
     if problems:
         lines += ["", "| File | Status | Detail |", "|---|---|---|"]

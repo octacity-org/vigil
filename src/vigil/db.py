@@ -12,7 +12,6 @@ import dataclasses
 import datetime
 import glob
 import os
-import re
 from typing import Dict, List, Optional, Tuple
 
 from vigil.parser import ParsedFiling, parse_filename, parse_kap_xls
@@ -42,7 +41,6 @@ FACT_COLUMNS = (
     "normalized_value_tl",
 )
 
-DATE_RE = re.compile(r"(\d{2})\.(\d{2})\.(\d{4})")
 
 # Rows per INSERT statement. executemany sends one statement per row: loading 2026/2 took ~90 s with it and
 # ~35 s with multi-row inserts. Larger batches did not help further.
@@ -74,24 +72,6 @@ class ParseReport:
     @property
     def total_facts(self) -> int:
         return sum(f.fact_count for f in self.ok_files)
-
-
-def period_dates(period_label: str) -> Tuple[Optional[datetime.date], Optional[datetime.date]]:
-    """
-    Read (start, end) from a column header such as "Cari Dönem 01.01.2026 - 30.06.2026".
-    A header with one date is a point in time: (None, date). Anything else is (None, None).
-    """
-    dates: List[datetime.date] = []
-    for d, m, y in DATE_RE.findall(period_label):
-        try:
-            dates.append(datetime.date(int(y), int(m), int(d)))
-        except ValueError:
-            return None, None
-    if len(dates) == 1:
-        return None, dates[0]
-    if len(dates) == 2 and dates[0] <= dates[1]:
-        return dates[0], dates[1]
-    return None, None
 
 
 def _duplicate_keys(filing: ParsedFiling) -> List[Tuple[str, str]]:
@@ -161,7 +141,6 @@ def connect(db_path: str):
 def _fact_rows(filing: ParsedFiling) -> List[tuple]:
     rows = []
     for f in filing.facts:
-        start, end = period_dates(f.period_label)
         rows.append(
             (
                 f.disclosure_id,
@@ -173,8 +152,8 @@ def _fact_rows(filing: ParsedFiling) -> List[tuple]:
                 f.footnote_ref,
                 f.period_type,
                 f.period_label,
-                start,
-                end,
+                f.period_start,
+                f.period_end,
                 f.is_restated_comparative,
                 f.raw_value,
                 f.scale_unit,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import datetime
 import html
 import os
 import re
@@ -41,6 +42,9 @@ class ColumnMeta:
     header_text: str  # e.g. "Cari Dönem 01.01.2026 - 30.06.2026"
     period_type: str  # "POINT_IN_TIME" | "YTD_CUMULATIVE" | "Q_STANDALONE"
     is_comparative: bool  # False for Cari Dönem, True for Önceki Dönem
+    # From the header dates (#36). A point in time has only an end date.
+    period_start: Optional[datetime.date] = None
+    period_end: Optional[datetime.date] = None
 
 
 @dataclasses.dataclass
@@ -65,6 +69,8 @@ class ParsedFinancialFact:
     scale_unit: str
     scale_multiplier: int
     normalized_value_tl: int
+    period_start: Optional[datetime.date] = None
+    period_end: Optional[datetime.date] = None
 
 
 @dataclasses.dataclass
@@ -82,10 +88,32 @@ class ParsedFiling:
     role_codes: List[str]
     has_tms29_monetary_item: bool
     facts: List[ParsedFinancialFact]
+    # The reporting period from the header dates, not from the file name (#36).
+    # MAVI's 2026/2 is 01.02.2026 - 31.07.2026.
+    period_start: Optional[datetime.date] = None
+    period_end: Optional[datetime.date] = None
     # Values read from the visible text because the cell had no `title` (decision 0004).
     text_values: int = 0
     # Cells whose `title` and visible text disagree (or the text cannot be read); the `title` is used.
     text_disagreements: int = 0
+
+    @property
+    def period_months(self) -> Optional[int]:
+        """Length of the reporting period in whole months, or None without header dates."""
+        if self.period_start is None or self.period_end is None:
+            return None
+        after = self.period_end + datetime.timedelta(days=1)
+        return (after.year - self.period_start.year) * 12 + after.month - self.period_start.month
+
+    @property
+    def special_fiscal_period(self) -> bool:
+        """True when the fiscal year does not start on 1 January (MAVI)."""
+        return self.period_start is not None and (self.period_start.month, self.period_start.day) != (1, 1)
+
+    @property
+    def period_matches_quarter(self) -> Optional[bool]:
+        """Whether the header period covers `quarter` quarters, as the file name says."""
+        return None if self.period_months is None else self.period_months == 3 * self.quarter
 
 
 FILENAME_RE = re.compile(r"^([A-Z0-9-]+)_(\d+)_(\d{4})_([1-4])\.xls$", re.IGNORECASE)
@@ -104,6 +132,9 @@ VALUE_CELL_RE = re.compile(
     r'<td\s+class="taxonomy-context-value\s+(col-order-class-\d+)[^"]*"[^>]*>(.*?)</td>',
     re.S,
 )
+DATE_RE = re.compile(r"(\d{2})\.(\d{2})\.(\d{4})")
+# A duration this short is one quarter, not a year-to-date total.
+MAX_QUARTER_DAYS = 100
 VALUE_TITLE_RE = re.compile(r'title="([-+]?\d+(?:[.,]\d+)?)"')
 # Visible text of a value cell: the same unscaled number with `.` thousands separators and a leading `-`.
 # Read only when the cell has no `title` (YONGA 2026/2, #137; decision 0004).
@@ -119,6 +150,40 @@ def _visible_value(cell_html: str) -> Optional[int]:
     if len(texts) > 1 or not VISIBLE_NUMBER_RE.match(texts[0]):
         raise ValueError(f"Unexpected value text {texts!r}")
     return int(texts[0].replace(".", ""))
+
+
+def period_dates(period_label: str) -> Tuple[Optional[datetime.date], Optional[datetime.date]]:
+    """
+    Read (start, end) from a column header such as "Cari Dönem 01.01.2026 - 30.06.2026".
+    A header with one date is a point in time: (None, date). Anything else is (None, None).
+    """
+    dates: List[datetime.date] = []
+    for d, m, y in DATE_RE.findall(period_label):
+        try:
+            dates.append(datetime.date(int(y), int(m), int(d)))
+        except ValueError:
+            return None, None
+    if len(dates) == 1:
+        return None, dates[0]
+    if len(dates) == 2 and dates[0] <= dates[1]:
+        return dates[0], dates[1]
+    return None, None
+
+
+def _with_dates(col: ColumnMeta) -> ColumnMeta:
+    """Attach the header dates and take the period type from them; keep the guess only without dates."""
+    start, end = period_dates(col.header_text)
+    col.period_start, col.period_end = start, end
+    if start is not None and end is not None:
+        short = (end - start).days + 1 <= MAX_QUARTER_DAYS
+        col.period_type = "Q_STANDALONE" if short else "YTD_CUMULATIVE"
+    return col
+
+
+def _reporting_period(columns: List[ColumnMeta]) -> Tuple[Optional[datetime.date], Optional[datetime.date]]:
+    """The current-period duration column that starts earliest: the year to date."""
+    spans = [(c.period_start, c.period_end) for c in columns if c.period_start is not None and c.period_end]
+    return min(spans) if spans else (None, None)
 
 
 def parse_filename(filepath: str) -> Tuple[str, str, int, int, int]:
@@ -181,7 +246,7 @@ def _build_columns_for_statement(statement_type: str, table_html_head: str, quar
         cols["col-order-class-4"] = ColumnMeta(
             col_class="col-order-class-4",
             header_text=period_headers[0] if len(period_headers) > 0 else "Cari Dönem",
-            period_type=p_type if (p_type := ptype_main) else "YTD_CUMULATIVE",
+            period_type=ptype_main,
             is_comparative=False,
         )
         cols["col-order-class-5"] = ColumnMeta(
@@ -217,7 +282,7 @@ def _build_columns_for_statement(statement_type: str, table_html_head: str, quar
             period_type=p_cf,
             is_comparative=True,
         )
-    return cols
+    return {k: _with_dates(c) for k, c in cols.items()}
 
 
 def parse_kap_xls(filepath: str) -> ParsedFiling:
@@ -252,6 +317,7 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
     has_tms29 = False
     text_values = 0
     text_disagreements = 0
+    current_columns: List[ColumnMeta] = []
 
     for idx, rm in enumerate(role_matches):
         family = rm.group(1)
@@ -268,6 +334,7 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
         end_pos = role_matches[idx + 1].start() if idx + 1 < len(role_matches) else len(raw_html)
         table_chunk = raw_html[start_pos:end_pos]
         col_map = _build_columns_for_statement(statement_type, table_chunk[:3500], quarter)
+        current_columns += [c for c in col_map.values() if not c.is_comparative]
 
         row_matches = list(ROW_START_RE.finditer(table_chunk))
         for r_idx, row_m in enumerate(row_matches):
@@ -339,9 +406,12 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
                         scale_unit=scale_unit,
                         scale_multiplier=scale_multiplier,
                         normalized_value_tl=raw_val * scale_multiplier,
+                        period_start=col_meta.period_start,
+                        period_end=col_meta.period_end,
                     )
                 )
 
+    period_start, period_end = _reporting_period(current_columns)
     return ParsedFiling(
         filepath=filepath,
         company_code=primary_ticker,
@@ -356,6 +426,8 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
         role_codes=role_codes,
         has_tms29_monetary_item=has_tms29,
         facts=facts,
+        period_start=period_start,
+        period_end=period_end,
         text_values=text_values,
         text_disagreements=text_disagreements,
     )
