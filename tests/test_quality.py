@@ -39,10 +39,25 @@ def test_file_without_values_is_reported(tmp_path):
     assert (row.status, row.facts) == ("no_values", 0)
 
 
-def test_values_read_from_text_are_counted(tmp_path):
+def test_values_come_from_text_and_title_problems_are_counted(tmp_path):
     # Values shown only as text, without `title` (YONGA 2026/2, #137).
     row = quality.file_quality(write(tmp_path, "TEST_6_2026_2.xls", NO_TITLES))
-    assert (row.facts, row.text_values, row.text_disagreements) == (1, 1, 0)
+    assert (row.facts, row.title_disagreements, row.titles_without_text) == (1, 0, 0)
+    # A `title` with another number than the text (AVHOL 2026/1, #148).
+    other = NO_TITLES.replace("<div>120.759.073</div>", '<div title="123759073">120.759.073</div>')
+    row = quality.file_quality(write(tmp_path, "TEST_7_2026_2.xls", other))
+    assert (row.facts, row.title_disagreements, row.titles_without_text) == (1, 1, 0)
+
+
+def test_known_filing_error_is_reported_with_its_reason(tmp_path, monkeypatch):
+    fake_groups(monkeypatch, CheckResult("profit", "blocking", "fail", left=-682616, right=0))
+    monkeypatch.setattr(quality, "KNOWN_FILING_ERRORS", {(8, "profit"): "row 62 is filed as 0"})
+    path = write(tmp_path, "TEST_8_2026_2.xls", NO_TITLES.replace("<div>120.759.073</div>", '<div title="1">1</div>'))
+    row = quality.file_quality(path)
+    assert (row.status, row.failed, row.known_errors, row.error) == ("known_error", 0, 1, "row 62 is filed as 0")
+    summary = quality.markdown_summary([row], "2026_2")
+    assert "| known_error | 1 |" in summary
+    assert "| TEST_8_2026_2.xls | known_error | row 62 is filed as 0 |" in summary
 
 
 def test_blocking_failure_fails_the_file(tmp_path, monkeypatch):
@@ -51,7 +66,7 @@ def test_blocking_failure_fails_the_file(tmp_path, monkeypatch):
         CheckResult("a", "blocking", "pass", left=1, right=1),
         CheckResult("b", "blocking", "fail", left=5, right=3, left_source="row-9 col-order-class-4"),
     )
-    path = write(tmp_path, "TEST_3_2026_2.xls", NO_TITLES.replace("<div>120.759.073</div>", '<div title="1"></div>'))
+    path = write(tmp_path, "TEST_3_2026_2.xls", NO_TITLES.replace("<div>120.759.073</div>", '<div title="1">1</div>'))
     row = quality.file_quality(path)
     assert (row.status, row.passed, row.failed) == ("fail", 1, 1)
     assert row.first_failure == "b at row-9 col-order-class-4: 5 vs 3 (difference 2)"
@@ -63,7 +78,7 @@ def test_informational_difference_does_not_fail_the_file(tmp_path, monkeypatch):
         CheckResult("balance", "blocking", "pass", left=1, right=1),
         CheckResult("cash", "informational", "fail", left=5, right=3),
     )
-    path = write(tmp_path, "TEST_4_2026_2.xls", NO_TITLES.replace("<div>120.759.073</div>", '<div title="1"></div>'))
+    path = write(tmp_path, "TEST_4_2026_2.xls", NO_TITLES.replace("<div>120.759.073</div>", '<div title="1">1</div>'))
     row = quality.file_quality(path)
     assert (row.status, row.failed, row.informational_differences) == ("pass", 0, 1)
     assert row.counts["checks"] == {"pass": 1, "difference": 1}
@@ -71,7 +86,7 @@ def test_informational_difference_does_not_fail_the_file(tmp_path, monkeypatch):
 
 def test_nothing_checkable_is_not_checked(tmp_path, monkeypatch):
     fake_groups(monkeypatch, CheckResult("x", "blocking", "not_checked", reason="template 'banks'"))
-    path = write(tmp_path, "TEST_5_2026_2.xls", NO_TITLES.replace("<div>120.759.073</div>", '<div title="1"></div>'))
+    path = write(tmp_path, "TEST_5_2026_2.xls", NO_TITLES.replace("<div>120.759.073</div>", '<div title="1">1</div>'))
     assert quality.file_quality(path).status == "not_checked"
 
 

@@ -92,10 +92,10 @@ class ParsedFiling:
     # MAVI's 2026/2 is 01.02.2026 - 31.07.2026.
     period_start: Optional[datetime.date] = None
     period_end: Optional[datetime.date] = None
-    # Values read from the visible text because the cell had no `title` (decision 0004).
-    text_values: int = 0
-    # Cells whose `title` and visible text disagree (or the text cannot be read); the `title` is used.
-    text_disagreements: int = 0
+    # Values come from the visible text (decision 0005). Cells whose `title` is a different number:
+    title_disagreements: int = 0
+    # Cells with a `title` but no visible text; they are treated as empty.
+    titles_without_text: int = 0
 
     @property
     def period_months(self) -> Optional[int]:
@@ -139,14 +139,14 @@ DATE_RE = re.compile(r"(\d{2})\.(\d{2})\.(\d{4})")
 # A duration this short is one quarter, not a year-to-date total.
 MAX_QUARTER_DAYS = 100
 VALUE_TITLE_RE = re.compile(r'title="([-+]?\d+(?:[.,]\d+)?)"')
-# Visible text of a value cell: the same unscaled number with `.` thousands separators and a leading `-`.
-# Read only when the cell has no `title` (YONGA 2026/2, #137; decision 0004).
+# Visible text of a value cell: the unscaled number with `.` thousands separators and a leading `-`.
+# It is the value: the `title` attribute can sit on the wrong row or hold another number (#148, decision 0005).
 VALUE_TEXT_RE = re.compile(r">\s*([^<\s][^<]*?)\s*<")
 VISIBLE_NUMBER_RE = re.compile(r"^-?\d{1,3}(?:\.\d{3})*$")
 
 
 def _visible_value(cell_html: str) -> Optional[int]:
-    """The value shown in a cell without `title`, or None for an empty cell. Unknown formats raise."""
+    """The value shown in a cell, or None for an empty cell. Unknown formats raise."""
     texts = VALUE_TEXT_RE.findall(">" + cell_html + "<")
     if not texts:
         return None
@@ -323,8 +323,8 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
     role_codes: List[str] = []
     facts: List[ParsedFinancialFact] = []
     has_tms29 = False
-    text_values = 0
-    text_disagreements = 0
+    title_disagreements = 0
+    titles_without_text = 0
     current_columns: List[ColumnMeta] = []
 
     for idx, rm in enumerate(role_matches):
@@ -366,21 +366,17 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
             for cell_m in VALUE_CELL_RE.finditer(row_chunk):
                 col_class = cell_m.group(1)
                 try:
-                    shown, text_error = _visible_value(cell_m.group(2)), None
+                    shown = _visible_value(cell_m.group(2))
                 except ValueError as e:
-                    shown, text_error = None, e
+                    raise ValueError(f"{e} in {row_id} {col_class} of {filepath}") from None
                 title_m = VALUE_TITLE_RE.search(cell_m.group(2))
-                if title_m:
-                    raw_val = int(float(title_m.group(1).replace(",", ".")))
-                    if text_error or (shown is not None and shown != raw_val):
-                        text_disagreements += 1
-                elif text_error:
-                    raise ValueError(f"{text_error} in {row_id} {col_class} of {filepath}")
-                elif shown is not None:
-                    raw_val = shown
-                    text_values += 1
-                else:
+                if title_m and shown is None:
+                    titles_without_text += 1
+                elif title_m and int(float(title_m.group(1).replace(",", "."))) != shown:
+                    title_disagreements += 1
+                if shown is None:
                     continue  # empty cell
+                raw_val = shown
 
                 col_meta = col_map.get(
                     col_class,
@@ -436,6 +432,6 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
         facts=facts,
         period_start=period_start,
         period_end=period_end,
-        text_values=text_values,
-        text_disagreements=text_disagreements,
+        title_disagreements=title_disagreements,
+        titles_without_text=titles_without_text,
     )

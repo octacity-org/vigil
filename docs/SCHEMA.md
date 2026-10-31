@@ -50,7 +50,7 @@ Valid time is read from the dates in the column header, never derived from the q
 | `period_label` | VARCHAR | Column header as written |
 | `period_start`, `period_end` | DATE | Valid time from the header dates |
 | `is_comparative` | BOOLEAN | Comparative (prior period) column |
-| `raw_value` | BIGINT | Cell `title` value |
+| `raw_value` | BIGINT | Number shown in the cell, unscaled (decision 0005) |
 | `scale_unit`, `scale_multiplier` | VARCHAR, BIGINT | Unit of `raw_value` |
 | `normalized_value_tl` | HUGEINT | `raw_value × scale_multiplier` |
 

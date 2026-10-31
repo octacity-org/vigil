@@ -13,11 +13,17 @@ from vigil.parser import parse_kap_xls
 from vigil.signals import detect_restatement_tripwire
 
 
+def shown(v):
+    """The visible text KAP shows for a value: `.` as thousands separator."""
+    return f"{v:,}".replace(",", ".")
+
+
+def value_cell(c, v):
+    return f'<td class="taxonomy-context-value col-order-class-{c}"><div><div title="{v}">{shown(v)}</div></div></td>'
+
+
 def filing(family):
-    cells = "".join(
-        f'<td class="taxonomy-context-value col-order-class-{c}"><div><div title="{v}">{v}</div></div></td>'
-        for c, v in zip(range(4, 10), (301992, 239721, 541713, 246018, 224981, 470999))
-    )
+    cells = "".join(value_cell(c, v) for c, v in zip(range(4, 10), (301992, 239721, 541713, 246018, 224981, 470999)))
     headers = "".join(
         f'<td class="context-header"><div>{h}</div></td>'
         for h in (
@@ -104,11 +110,7 @@ def test_third_tp_yp_period_is_mapped(tmp_path):
         )
         .replace(
             "</tr></table>",
-            "".join(
-                f'<td class="taxonomy-context-value col-order-class-{c}"><div><div title="{v}">{v}</div></div></td>'
-                for c, v in ((10, 340581), (11, 530808), (12, 871389))
-            )
-            + "</tr></table>",
+            "".join(value_cell(c, v) for c, v in ((10, 340581), (11, 530808), (12, 871389))) + "</tr></table>",
         )
     )
     path = tmp_path / "EXIMB-THR_1644741_2026_2.xls"

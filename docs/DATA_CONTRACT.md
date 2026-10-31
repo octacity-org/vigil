@@ -70,6 +70,7 @@ Her ana tablonun üstündeki `<table class="financial-header-table">` içinde `S
   * `1.000 TL`: **44 şirket** (Çarpan = $1.000$)
   * `1.000.000 TL`: **15 şirket** (Çarpan = $1.000.000$)
 * **Kritik Bulgu:** Hücre içindeki `<div class="... monetary-field-default" title="39369">` özniteliğindeki sayı **ölçeklenmemiştir** (`Sunum Para Birimi` `1.000.000 TL` ise `title="39369"` gerçekte $39.369.000.000\text{ TL}$'dir).
+* **Güncelleme (#148, karar 0005):** Değerin kaynağı `title` değil, hücrede görünen metindir (`39.369` → `39369`). Bazı dosyalarda `title` başka bir sayı tutar ya da komşu satıra yazılmıştır; görünen metin her iki çeyrekte de tutarlıdır.
 * **Kural:** Veritabanına hem `raw_value` (`39369`) hem `scale_multiplier` (`1000000`) hem de çarpılmış kanonik değer `normalized_value_tl` (`39369000000`) kaydedilir.
 
 ### 4.2. Deterministik Satır ve Kolon Sınıfları

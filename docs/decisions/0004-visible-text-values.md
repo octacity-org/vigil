@@ -1,6 +1,6 @@
 # 0004. Reading a value cell that has no `title`
 
-- **Status:** proposed
+- **Status:** superseded by [0005](0005-visible-text-is-the-value.md)
 - **Date:** 2026-10-29
 - **Decided by:** pending review by the methodology owner
 - **Discussion:** #137

@@ -7,7 +7,9 @@ Every methodology or project choice that changes results or how people work is r
 | [0001](0001-license.md) | License: Apache-2.0 for code, no redistribution of KAP data | accepted |
 | [0002](0002-bitemporal-schema.md) | Bitemporal storage schema | proposed |
 | [0003](0003-reconciliation-severity.md) | Which reconciliation checks block a filing | proposed |
-| [0004](0004-visible-text-values.md) | Reading a value cell that has no `title` | proposed |
+| [0004](0004-visible-text-values.md) | Reading a value cell that has no `title` | superseded by 0005 |
+| [0005](0005-visible-text-is-the-value.md) | The number shown in a cell is its value, not the `title` | proposed |
+| [0006](0006-known-filing-errors-and-single-value-tolerance.md) | Tolerance for single-value checks and known filing errors | accepted |
 
 ## Open decisions
 

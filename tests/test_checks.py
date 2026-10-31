@@ -104,6 +104,16 @@ def test_one_unit_difference_is_rounding():
     assert check.difference == -1
 
 
+def test_single_value_tolerance_is_five_units():
+    # GEREL, USAK, ARMGD, BVSAN differ by 2 to 4 units (#148, decision 0006).
+    def profit_check(delta):
+        filing = with_value(katmr_filing(), "general_role_210015-row-294", "col-order-class-4", 318919663 + delta)
+        return by_name(reconcile(filing))["balance_sheet_profit_equals_parent_profit"].status
+
+    assert [profit_check(d) for d in (-5, -4, 4, 5)] == ["pass"] * 4
+    assert [profit_check(d) for d in (-6, 6)] == ["fail"] * 2
+
+
 def test_unsupported_template_is_not_checked():
     filing = dataclasses.replace(katmr_filing(), template_family="banks")
     results = reconcile(filing)

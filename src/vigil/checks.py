@@ -29,6 +29,9 @@ CURRENT = "col-order-class-4"
 PRIOR = "col-order-class-5"
 
 ROUNDING_TOLERANCE = 1  # one unit of the reporting unit (1 TL, 1,000 TL or 1,000,000 TL)
+# Two reported figures compared directly (e.g. balance sheet profit vs parent-company profit) may each be the
+# result of several rounded amounts; 2026/1-2 show differences of 2 to 4 units (#148, decision 0006).
+SINGLE_VALUE_TOLERANCE = 5
 
 # (role code, row number) candidates and the label that must be on that row. The label guards against a
 # template that renumbers its rows: a different label gives `not_checked` instead of a wrong comparison.
@@ -93,7 +96,7 @@ def _compare(
     return CheckResult(
         name,
         severity,
-        "pass" if abs(lf.raw_value - rf.raw_value) <= ROUNDING_TOLERANCE else "fail",
+        "pass" if abs(lf.raw_value - rf.raw_value) <= SINGLE_VALUE_TOLERANCE else "fail",
         left=lf.raw_value,
         right=rf.raw_value,
         left_source=f"{lf.row_id} {left_column}",

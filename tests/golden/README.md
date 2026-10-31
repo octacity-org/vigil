@@ -44,7 +44,7 @@ Files are UTF-8, comma-separated, with a header row. Quote a field if it contain
 | `row_label` | `Yatırım Faaliyetlerinden Giderler` | Turkish row title as written |
 | `column` | `col-order-class-5` | Value cell class in the raw HTML |
 | `period_label` | `Önceki Dönem 01.01.2025 - 30.06.2025` | Column header text as written; see step 5 below for two-line headers |
-| `raw_value` | `-36464628` | The cell's `title` attribute. Empty if the cell has no `title` |
+| `raw_value` | `-36464628` | The number shown in the cell, without thousands separators (`-36.464.628` → `-36464628`). Empty if the cell shows nothing. Not the `title` attribute (decision 0005) |
 | `scale_unit` | `TL` | `Sunum Para Birimi` in the file header: `TL`, `1.000 TL` or `1.000.000 TL` |
 | `value_tl` | `-36464628` | `raw_value` × scale (1, 1,000 or 1,000,000). Empty if `raw_value` is empty |
 | `extracted_by` | `your-github-handle` | Who copied the value |
@@ -70,8 +70,8 @@ The `.xls` files from KAP are HTML pages.
 
 1. Copy the raw file and change the extension to `.html`, then open it in a browser.
 2. Find the row by its Turkish title (`Ctrl+F`).
-3. Right-click the value and choose **Inspect**. The surrounding `<tr class="...">` gives `row_id`. The cell's `<td class="taxonomy-context-value col-order-class-N">` gives `column`. The `title="..."` attribute is `raw_value`.
-4. Read `column` and `title` **inside that one cell only.** Do not take a `title` from the next cell.
+3. Right-click the value and choose **Inspect**. The surrounding `<tr class="...">` gives `row_id`. The cell's `<td class="taxonomy-context-value col-order-class-N">` gives `column`. The number shown in the cell is `raw_value`: drop the `.` thousands separators and keep a leading `-`.
+4. Read `column` and the number **inside that one cell only.** Do not use the cell's `title` attribute: in some filings it holds another number or sits on the neighbouring row (#148). If the `title` differs from the shown number, write both in `note`.
 5. Match the column to its header. Value cells start at `col-order-class-4` and follow the headers from left to right. Write `period_label` like this:
    - A header shown on two lines, such as `Önceki Dönem` over `01.01.2025 - 30.06.2025`, is one cell. Join the lines with a single space: `Önceki Dönem 01.01.2025 - 30.06.2025`.
    - Bank tables have a second header row (`TP` / `YP` / `Toplam`) under each period. Add it after ` · `: `Cari Dönem 30.06.2026 · TP`.

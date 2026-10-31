@@ -22,6 +22,7 @@ from vigil.checks import (
     income_statement_subtotals,
     reconcile,
 )
+from vigil.known_errors import KNOWN_FILING_ERRORS
 from vigil.parser import parse_kap_xls
 
 GROUPS = {
@@ -35,7 +36,7 @@ GROUPS = {
 @dataclasses.dataclass
 class FileQuality:
     file: str
-    status: str  # "pass" | "fail" | "not_checked" | "no_values" | "parse_error"
+    status: str  # "pass" | "fail" | "known_error" | "not_checked" | "no_values" | "parse_error"
     company: Optional[str] = None
     disclosure_id: Optional[int] = None
     year: Optional[int] = None
@@ -51,8 +52,10 @@ class FileQuality:
     failed: int = 0
     not_checked: int = 0
     informational_differences: int = 0
-    text_values: int = 0
-    text_disagreements: int = 0
+    # Blocking failures confirmed as errors in the filing (vigil.known_errors).
+    known_errors: int = 0
+    title_disagreements: int = 0
+    titles_without_text: int = 0
     first_failure: str = ""
     error: str = ""
     counts: Dict[str, Dict[str, int]] = dataclasses.field(default_factory=dict)
@@ -82,8 +85,8 @@ def file_quality(path: str) -> FileQuality:
         template=filing.template_family,
         scale_unit=filing.scale_unit,
         facts=len(filing.facts),
-        text_values=filing.text_values,
-        text_disagreements=filing.text_disagreements,
+        title_disagreements=filing.title_disagreements,
+        titles_without_text=filing.titles_without_text,
     )
     if not filing.facts:
         row.status = "no_values"
@@ -102,6 +105,9 @@ def file_quality(path: str) -> FileQuality:
                     row.informational_differences += 1
             elif result.status == "pass":
                 row.passed += 1
+            elif (filing.disclosure_id, result.name) in KNOWN_FILING_ERRORS:
+                row.known_errors += 1
+                row.error = KNOWN_FILING_ERRORS[(filing.disclosure_id, result.name)]
             else:
                 row.failed += 1
                 if not row.first_failure:
@@ -110,6 +116,8 @@ def file_quality(path: str) -> FileQuality:
 
     if row.failed:
         row.status = "fail"
+    elif row.known_errors:
+        row.status = "known_error"
     elif row.passed:
         row.status = "pass"
     return row
@@ -136,8 +144,9 @@ CSV_COLUMNS = (
     "failed",
     "not_checked",
     "informational_differences",
-    "text_values",
-    "text_disagreements",
+    "known_errors",
+    "title_disagreements",
+    "titles_without_text",
     "first_failure",
     "error",
 )
@@ -163,6 +172,7 @@ def markdown_summary(rows: List[FileQuality], title: str) -> str:
         "|---|---|---|",
         f"| pass | {by_status['pass']} | every blocking check that could run passed |",
         f"| fail | {by_status['fail']} | at least one blocking check failed |",
+        f"| known_error | {by_status['known_error']} | failures confirmed as errors in the filing (still blocked) |",
         f"| not_checked | {by_status['not_checked']} | template not supported by the checks yet |",
         f"| no_values | {by_status['no_values']} | parsed, but no values found |",
         f"| parse_error | {by_status['parse_error']} | the parser raised an error |",
@@ -181,11 +191,11 @@ def markdown_summary(rows: List[FileQuality], title: str) -> str:
         f"Cash differences between the cash flow statement and the balance sheet (informational, decision 0003): "
         f"{informational} in {sum(1 for r in rows if r.informational_differences)} files.",
         "",
-        f"Values read from the visible text because the cell had no `title` (decision 0004): "
-        f"{sum(r.text_values for r in rows)} in {sum(1 for r in rows if r.text_values)} files.",
+        f"Cells whose `title` is a different number than the visible text (the text is used, decision 0005): "
+        f"{sum(r.title_disagreements for r in rows)} in {sum(1 for r in rows if r.title_disagreements)} files.",
         "",
-        f"Cells whose `title` and visible text disagree (the `title` is used): "
-        f"{sum(r.text_disagreements for r in rows)} in {sum(1 for r in rows if r.text_disagreements)} files.",
+        f"Cells with a `title` but no visible text (treated as empty): "
+        f"{sum(r.titles_without_text for r in rows)} in {sum(1 for r in rows if r.titles_without_text)} files.",
     ]
     special = [r for r in rows if r.period_start and not r.period_start.endswith("-01-01")]
     if special:
@@ -207,7 +217,7 @@ def markdown_summary(rows: List[FileQuality], title: str) -> str:
             )
             + ".",
         ]
-    problems = [r for r in rows if r.status in ("fail", "no_values", "parse_error")]
+    problems = [r for r in rows if r.status in ("fail", "known_error", "no_values", "parse_error")]
     if problems:
         lines += ["", "| File | Status | Detail |", "|---|---|---|"]
         for r in problems:
