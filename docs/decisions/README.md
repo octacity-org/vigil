@@ -11,6 +11,9 @@ Every methodology or project choice that changes results or how people work is r
 | [0005](0005-visible-text-is-the-value.md) | The number shown in a cell is its value, not the `title` | accepted |
 | [0006](0006-known-filing-errors-and-single-value-tolerance.md) | Tolerance for single-value checks and known filing errors | accepted |
 | [0007](0007-golden-tests-in-ci.md) | Run golden tests in CI by downloading the raw files | accepted |
+| [0008](0008-local-first-release.md) | The first release runs locally, with Docker | accepted |
+| [0009](0009-zova-and-duckdb.md) | Zova for raw data and state, DuckDB for analysis | accepted |
+| [0010](0010-typescript-and-bun.md) | Move the whole project to TypeScript on Bun | accepted |
 
 ## Open decisions
 
