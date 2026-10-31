@@ -27,23 +27,25 @@ Every signal carries its inputs, its calculation steps and its source (file, sta
 
 ## Quick start
 
+Vigil is written in TypeScript and runs on [Bun](https://bun.sh) (decision 0010).
+
 ```bash
 git clone https://github.com/octacity-org/vigil.git
 cd vigil
-pip install -e ".[dev]"
-pytest
+bun install
+bun test
 ```
 
 KAP files are **not** part of this repository. Download a quarter locally into `data/raw/{year}_{quarter}/` (retries, recovers what it can from a cut-off download and lists lost files; exits 1 if the quarter is incomplete):
 
 ```bash
-python -m vigil.downloader 2026 2 data/raw
+bun run download 2026 2 data/raw
 ```
 
 Tests that need raw files are skipped when they are missing. To get just the files the tests use (about 11 MB instead of a whole quarter):
 
 ```bash
-python -m vigil.downloader --files tests/raw_files.txt data/raw
+bun run download --files tests/raw_files.txt data/raw
 ```
 
 CI does the same in its `golden` job, so a parser change that breaks a golden value fails the pull request (decision 0007).
@@ -51,7 +53,7 @@ CI does the same in its `golden` job, so a parser change that breaks a golden va
 Load a parsed quarter into DuckDB (re-running replaces each filing, it never duplicates rows):
 
 ```bash
-python -m vigil.db data/raw/2026_2 data/vigil.duckdb
+bun run load data/raw/2026_2 data/vigil.duckdb
 ```
 
 It prints the parse report (failed files and why) and checks that the row count of every filing in the database matches it.
@@ -59,7 +61,7 @@ It prints the parse report (failed files and why) and checks that the row count 
 Check a quarter before using it (parse status, subtotals and cross-statement reconciliation, one row per file):
 
 ```bash
-python -m vigil.quality data/raw/2026_2 reports/quality_2026_2.csv
+bun run quality data/raw/2026_2 reports/quality_2026_2.csv
 ```
 
 It writes the CSV and a Markdown summary next to it, and exits with an error if any file fails a blocking check or cannot be parsed.
@@ -68,6 +70,7 @@ It writes the CSV and a Markdown summary next to it, and exits with an error if 
 
 | Document | Content |
 |---|---|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Components, repository layout, storage, API principles |
 | [`docs/VIGIL.md`](docs/VIGIL.md) | Full project document (Turkish): methodology, worked KATMR example, roles, roadmap, known issues |
 | [`docs/DATA_CONTRACT.md`](docs/DATA_CONTRACT.md) | Data contract draft (Turkish) |
 | [`docs/SCHEMA.md`](docs/SCHEMA.md) | Bitemporal storage schema and example queries |

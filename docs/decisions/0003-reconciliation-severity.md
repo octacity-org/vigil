@@ -7,7 +7,7 @@
 
 ## Context
 
-The project document and CONTRIBUTING say that ratios are computed only after the statements of a filing agree with each other. #18 added four cross-statement checks (`src/vigil/checks.py`). Run on the 218 `general` and `holding` filings of 2026/2 that have values (246 files in the sample; 27 use other templates, YONGA parses with no values):
+The project document and CONTRIBUTING say that ratios are computed only after the statements of a filing agree with each other. #18 added four cross-statement checks (now `packages/core/src/checks.ts`). Run on the 218 `general` and `holding` filings of 2026/2 that have values (246 files in the sample; 27 use other templates, YONGA parses with no values):
 
 | Check | Pass | Fail |
 |---|---|---|

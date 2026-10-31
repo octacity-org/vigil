@@ -34,7 +34,7 @@ Option 3.
   - on 2026/1 and 2026/2, every parsed value of all 1,450 reports equals the Python output, and the quality report is the same.
 
   The Python outputs are recorded once as the reference. They are derived from KAP files, so they are kept by the team or in CI caches, not committed (decision 0001).
-- Later tools whose best libraries are in Python (US XBRL with `arelle` / `edgartools`, footnote PDF extraction; Phase 5) may stay separate Python tools.
+- Nothing stays in Python, including later work such as US XBRL or footnote PDF extraction (Phase 5). *(Updated 2026-11-01 by @BerkeDurdu; the first version allowed separate Python tools for that work.)*
 
 ## Consequences
 

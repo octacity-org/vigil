@@ -20,8 +20,8 @@ Golden tests (#20) compare the parser's output on a raw KAP file with a hand-che
 
 Option 3.
 
-- `tests/raw_files.txt` lists every raw file the tests use, one `{year}_{quarter}/{file}` per line. `tests/test_raw_files.py` fails if a golden CSV's raw file is not listed.
-- `python -m vigil.downloader --files tests/raw_files.txt data/raw` downloads each listed quarter once and keeps only the listed files: 9 files, 11 MB, about 6 s. It exits 1 if any listed file is missing.
+- `tests/raw_files.txt` lists every raw file the tests use, one `{year}_{quarter}/{file}` per line. `apps/server/test/raw-files.test.ts` fails if a golden CSV's raw file is not listed.
+- `bun run download --files tests/raw_files.txt data/raw` downloads each listed quarter once and keeps only the listed files: 9 files, 11 MB, about 6 s. It exits 1 if any listed file is missing.
 - The CI job `golden` runs it and then the whole test suite.
 - `data/raw` is cached under a key made from the list's hash, so KAP is contacted only when the list changes or the cache expires.
 

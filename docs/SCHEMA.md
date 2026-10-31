@@ -1,6 +1,6 @@
 # Storage schema
 
-Bitemporal DuckDB schema for parsed KAP facts. Code: [`src/vigil/schema.py`](../src/vigil/schema.py). Loader: [`src/vigil/db.py`](../src/vigil/db.py). Decision: [0002](decisions/0002-bitemporal-schema.md).
+Bitemporal DuckDB schema for parsed KAP facts. Code: [`apps/server/src/schema.ts`](../apps/server/src/schema.ts). Loader: [`apps/server/src/db.ts`](../apps/server/src/db.ts). Decision: [0002](decisions/0002-bitemporal-schema.md).
 
 ## Why bitemporal
 
@@ -119,7 +119,7 @@ Both quarters loaded into one database: 736 + 776 reports, 340,201 + 366,437 fac
 ## Loading
 
 ```bash
-python -m vigil.db data/raw/2026_2 data/vigil.duckdb
+bun run load data/raw/2026_2 data/vigil.duckdb
 ```
 
 Each report is deleted and rewritten in one transaction, so re-running never duplicates rows. The command exits with an error when a file fails to load, when a report's row count differs from the parse report, or when a file that failed this time still has rows from an earlier load (stale report), or when a report of the same year and quarter is in the database but its file is no longer in the directory (missing file). Stale and missing reports are listed, not deleted.

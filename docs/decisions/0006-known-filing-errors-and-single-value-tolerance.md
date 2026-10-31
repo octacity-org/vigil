@@ -18,7 +18,7 @@ The smallest difference seen that is not rounding is 1,248,245 units (ZOREN, bef
 
 - **Single-value comparisons** (the reconciliation checks: balance sheet balance, balance sheet profit vs. parent-company profit, cash) pass within **5 units** of the reporting unit.
 - **Subtotals** keep one unit per component.
-- **Known filing errors.** A blocking failure confirmed by reading the raw file is listed in `src/vigil/known_errors.py` with its reason, keyed by (disclosure id, check name).
+- **Known filing errors.** A blocking failure confirmed by reading the raw file is listed in `packages/core/src/known-errors.ts` with its reason, keyed by (disclosure id, check name).
   - The filing **stays blocked**: `blocking_failures()` still returns the failure, so no signal is built on it.
   - The data quality report shows it as `known_error` with the reason, not as `fail`, and it does not make the report exit with an error.
 - **No substitute values.** Vigil does not take the profit from another row (59 or 151) for a filing that filed row 62 as 0. That would be a guess about what the company meant.

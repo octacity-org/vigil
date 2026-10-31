@@ -2,7 +2,7 @@
 
 How Vigil is built for its first release. The reasoning is in decisions [0008](decisions/0008-local-first-release.md) (local release), [0009](decisions/0009-zova-and-duckdb.md) (Zova and DuckDB) and [0010](decisions/0010-typescript-and-bun.md) (TypeScript on Bun). Data rules are in [`kap.md`](kap.md), the schema in [`SCHEMA.md`](SCHEMA.md).
 
-> **Status:** target architecture. The code is still Python (`src/vigil/`) until the TypeScript port is merged (0010).
+> **Status:** the TypeScript port (0010) is done: `packages/core` and `apps/server` replace the Python code, with identical results on 2026/1–2026/3. Zova, the collector, the API and the frontend are still to be built.
 
 ## Overview
 
@@ -128,7 +128,7 @@ Raw and TL values are integers and are held as `bigint`. Ratios are computed wit
 
 - Unit tests in `packages/core` with synthetic fixtures.
 - Golden tests on the raw files listed in `tests/raw_files.txt`, downloaded in CI (decision 0007).
-- During the port: every value of all 1,450 reports of 2026/1–2 must equal the Python reference output, and the quality report must be the same (0010).
+- The port was checked against the Python implementation's recorded output (0010): every parsed value, check result, quality row and finding of the 1,577 files of 2026/1–2026/3, and every row of the database views for 2026/1–2, were identical.
 
 ## Later, not in this release
 
@@ -136,4 +136,4 @@ Raw and TL values are integers and are held as `bigint`. Ratios are computed wit
 - **US filings:** SEC EDGAR as a second source.
 - **Footnote extraction from PDFs.**
 
-US XBRL and PDF work may use separate Python tools, because the best libraries are there.
+These stay in TypeScript too; nothing in the project is written in Python (0010).

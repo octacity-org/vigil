@@ -17,7 +17,7 @@ Under IAS 29 (TMS 29) every report restates its comparative columns in its own b
 
 ## Decision
 
-Option 3, as implemented in `src/vigil/schema.py` and documented in [`docs/SCHEMA.md`](../SCHEMA.md):
+Option 3, as implemented in `apps/server/src/schema.ts` (originally `src/vigil/schema.py`) and documented in [`docs/SCHEMA.md`](../SCHEMA.md):
 
 - Tables `companies`, `reports` (one per disclosure) and `facts` (one per value cell, key `(disclosure_id, row_id, column_class)`).
 - Valid time is `period_start` / `period_end`, parsed from the column header dates. Point-in-time values have `period_start` NULL. Headers without dates give NULL and are not matched across reports.
@@ -32,7 +32,7 @@ Keeping every cell as written keeps every number traceable to its file, row and 
 
 ## Consequences
 
-- The loader (`src/vigil/db.py`) writes this schema; `docs/SCHEMA.md` holds example queries.
+- The loader (`apps/server/src/db.ts`) writes this schema; `docs/SCHEMA.md` holds example queries.
 - `row_id` contains the template family and role code. If a company switches role code between quarters (MSY's solo income statement is `310016` in 2025/2 and `310017` in 2026/2; the general template's income statement is `310003`, `310000` or `310002` depending on the report), or KAP renumbers a template, the same item gets a different `row_id` and its versions are not linked. The template row map (Phase 0) is needed to link them.
 - "Latest" means the most recent report period, not the most recent publication. Within one period the later publication wins. *Updated 2026-10-31 (#157): the original rule ordered by `disclosure_id` within a period, assuming KAP ids grow over time; every file now gives its publication time (`Gönderim Tarihi`), and `disclosure_id` only breaks ties.*
 - Checked on real restatements with 2025/2 and 2026/2 loaded together (results in `docs/SCHEMA.md`): KATMR H1 2025 revenue links 1,085,459,841 TL as first reported to 1,434,008,001 TL restated; no fact that should link was left unlinked.

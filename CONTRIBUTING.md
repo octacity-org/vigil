@@ -7,7 +7,7 @@ Thanks for helping. Vigil is built by volunteers who come and go, so the rules a
 | You know... | Good places to start |
 |---|---|
 | Financial statements, no code | Golden dataset entries, template row maps, methodology decisions, signal labeling — label [`no-code`](https://github.com/octacity-org/vigil/labels/no-code) |
-| Python | Parser, metrics, signals, data pipeline — labels `area: parser`, `area: metrics`, `area: data` |
+| TypeScript | Parser, metrics, signals, data pipeline, API — labels `area: parser`, `area: metrics`, `area: data`, `area: api` |
 | Frontend | Signal list, company page, signal card — label `area: frontend` |
 | LLMs | Row mapping assistant, signal explanations, footnote extraction — label `area: llm` |
 
@@ -20,10 +20,10 @@ Contributions come through **your own fork**. You do not need write access to th
 ```bash
 gh repo fork octacity-org/vigil --clone
 cd vigil
-pip install -e ".[dev]"
+bun install
 ```
 
-Without the GitHub CLI: click **Fork** on GitHub, then `git clone https://github.com/<your-user>/vigil.git`.
+You need [Bun](https://bun.sh) 1.4 or later (decision 0010). Without the GitHub CLI: click **Fork** on GitHub, then `git clone https://github.com/<your-user>/vigil.git`.
 
 If you already cloned `octacity-org/vigil` and have local commits, keep them and add your fork as a remote:
 
@@ -34,11 +34,14 @@ git push -u fork HEAD
 
 | Command | What it does |
 |---|---|
-| `ruff check .` | Lint |
-| `ruff format .` | Format |
-| `pytest` | Tests |
+| `bun run lint` | Lint and format check (Biome) |
+| `bun run format` | Format |
+| `bun run typecheck` | TypeScript type check |
+| `bun test` | Tests |
 
-CI runs all three on every pull request.
+CI runs lint, type check and tests on every pull request.
+
+Layout (`docs/ARCHITECTURE.md`): `packages/core` holds the parser, checks, quality report, metrics and findings, with no file or network access; `apps/server` holds the downloader, the DuckDB loader and the command-line tools. Raw and TL amounts are `bigint`, never `number`.
 
 ### Opening a pull request
 
@@ -51,7 +54,7 @@ Before starting new work, update your fork with `gh repo sync <your-user>/vigil`
 
 ### KAP data
 
-KAP files are not committed. Download a quarter into `data/raw/{year}_{quarter}/` with `src/vigil/downloader.py`. The bulk endpoint is:
+KAP files are not committed. Download a quarter into `data/raw/{year}_{quarter}/` with `bun run download 2026 2 data/raw`. The bulk endpoint is:
 
 ```
 GET https://www.kap.org.tr/tr/api/financialTable/download/{year}/{quarter}
@@ -59,7 +62,7 @@ GET https://www.kap.org.tr/tr/api/financialTable/download/{year}/{quarter}
 
 Downloads often truncate; the downloader salvages complete files from partial archives. Please be polite to the server: no parallel bulk downloads.
 
-For the tests, `python -m vigil.downloader --files tests/raw_files.txt data/raw` fetches only the raw files they use. CI runs the golden tests the same way (job `golden`, decision 0007). If you add a golden file or a test that needs another raw file, list it in `tests/raw_files.txt`.
+For the tests, `bun run download --files tests/raw_files.txt data/raw` fetches only the raw files they use. CI runs the golden tests the same way (job `golden`, decision 0007). If you add a golden file or a test that needs another raw file, list it in `tests/raw_files.txt`.
 
 ## Core rules
 
