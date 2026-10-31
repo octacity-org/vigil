@@ -1,8 +1,8 @@
 # 0002. Bitemporal storage schema
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-24
-- **Decided by:** pending review
+- **Decided by:** @BerkeDurdu
 - **Discussion:** #45, #46
 
 ## Context
