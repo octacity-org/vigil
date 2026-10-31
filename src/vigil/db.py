@@ -173,7 +173,9 @@ def load_filing(con, filing: ParsedFiling) -> int:
         con.execute("DELETE FROM reports WHERE disclosure_id = ?", [filing.disclosure_id])
         con.execute("INSERT INTO companies VALUES (?) ON CONFLICT DO NOTHING", [filing.company_code])
         con.execute(
-            "INSERT INTO reports VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO reports (disclosure_id, company_code, raw_ticker_group, year, quarter, consolidation_type, "
+            "template_family, scale_unit, scale_multiplier, has_tms29_monetary_item, filepath, fact_count, loaded_at, "
+            "published_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 filing.disclosure_id,
                 filing.company_code,
@@ -188,6 +190,7 @@ def load_filing(con, filing: ParsedFiling) -> int:
                 filing.filepath,
                 len(rows),
                 datetime.datetime.now(),
+                filing.published_at,
             ],
         )
         row_placeholder = "(" + ", ".join("?" for _ in FACT_COLUMNS) + ")"

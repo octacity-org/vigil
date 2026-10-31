@@ -9,6 +9,7 @@ import pytest
 from vigil.parser import parse_kap_xls
 
 TEMPLATE = """<html><head><meta http-equiv="Content-Type" content="text/html;" charset="utf-8"></head><body>
+<div> Gönderim Tarihi:17.08.2026 19:05:18 </div>
 <table><tr>{unit_cells}<td>Finansal Tablo Niteliği</td><td>Konsolide</td></tr></table>
 <table class="financial-table tbl_general_role_210015" border="1">
 <tr><td class="context-header"><div>Cari Dönem <br>30.06.2026</div></td></tr>

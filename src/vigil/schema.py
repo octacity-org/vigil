@@ -32,8 +32,12 @@ CREATE TABLE IF NOT EXISTS reports (
     has_tms29_monetary_item BOOLEAN NOT NULL,
     filepath                VARCHAR NOT NULL,
     fact_count              INTEGER NOT NULL,
-    loaded_at               TIMESTAMP NOT NULL
+    loaded_at               TIMESTAMP NOT NULL,
+    published_at            TIMESTAMP          -- `Gönderim Tarihi`, Istanbul time (#157)
 );
+
+-- Databases created before #157 get the column; new ones already have it.
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS published_at TIMESTAMP;
 
 CREATE TABLE IF NOT EXISTS facts (
     disclosure_id           BIGINT NOT NULL,   -- reports.disclosure_id
@@ -83,7 +87,8 @@ WITH keyed AS (
         f.is_comparative,
         r.year AS reported_year,
         r.quarter AS reported_quarter,
-        r.year || '_' || r.quarter AS as_reported_in
+        r.year || '_' || r.quarter AS as_reported_in,
+        r.published_at
     FROM facts f
     JOIN reports r USING (disclosure_id)
     WHERE f.period_end IS NOT NULL
@@ -93,7 +98,7 @@ WITH keyed AS (
         *,
         dense_rank() OVER (
             PARTITION BY company_code, consolidation_type, row_id, currency_part, period_start, period_end
-            ORDER BY reported_year, reported_quarter, disclosure_id
+            ORDER BY reported_year, reported_quarter, published_at NULLS LAST, disclosure_id
         ) AS version_no
     FROM keyed
 )

@@ -36,6 +36,7 @@ Valid time is read from the dates in the column header, never derived from the q
 | `filepath` | VARCHAR | Raw file the report was parsed from |
 | `fact_count` | INTEGER | Facts written; must equal the parse report |
 | `loaded_at` | TIMESTAMP | Last load |
+| `published_at` | TIMESTAMP | `Gönderim Tarihi` from the file header: when KAP published the report, Istanbul time (#157). Added to older databases on connect |
 
 ### `facts` — one row per value cell
 
@@ -89,11 +90,12 @@ Columns of `fact_versions` (and of `facts_first_reported` / `facts_latest`, whic
 | `label_tr`, `raw_value`, `scale_unit`, `normalized_value_tl` | The value as written in this report |
 | `disclosure_id`, `column_class`, `period_label`, `is_comparative` | Where it comes from |
 | `reported_year`, `reported_quarter`, `as_reported_in` | Report period, e.g. `as_reported_in = '2026_2'` |
+| `published_at` | When the report was published |
 | `version_no`, `version_count` | This report's place among the reports that carry the fact, and how many there are |
 
 `fact_conflicts` has the fact identity, `disclosure_id`, and the lists `column_classes` and `raw_values`.
 
-Versions are ordered by report period (`year`, `quarter`), then `disclosure_id`. "Latest" therefore means "from the most recent report period", not "most recently published": a correction to 2025/2 published in 2026 still ranks below the 2026/2 report. Within one report period the order assumes that KAP disclosure ids grow over time, so a corrected filing would count as the later version (2025/2 and 2026/2 have no second filing for the same company and consolidation). A version is a report, not a column: if one report carries the same fact in two columns (for example, a Q1 report whose cumulative and 3-month columns cover the same three months), both rows have the same `version_no`. If their values differ they appear in `fact_conflicts` and both stay in `facts_latest`; Vigil does not pick one.
+Versions are ordered by report period (`year`, `quarter`), then publication time (`published_at`), then `disclosure_id` (#157). "Latest" therefore means "from the most recent report period", not "most recently published": a correction to 2025/2 published in 2026 still ranks below the 2026/2 report. Within one report period the later publication is the later version; a report without a publication time ranks after those with one. On 2026/1–2 this gives the same order as `disclosure_id` alone, because each quarter's zip holds only the current version of a filing (`docs/kap.md`). A version is a report, not a column: if one report carries the same fact in two columns (for example, a Q1 report whose cumulative and 3-month columns cover the same three months), both rows have the same `version_no`. If their values differ they appear in `fact_conflicts` and both stay in `facts_latest`; Vigil does not pick one.
 
 ## Checked on real data (2025/2 + 2026/2)
 

@@ -233,7 +233,7 @@ def test_failing_insert_keeps_the_previous_version(con):
 def kap_html(rows_html, unit="TL"):
     head = f"<tr><td>Sunum Para Birimi</td><td>{unit}</td></tr>" if unit else ""
     return (
-        f"<html><body><table>{head}</table>"
+        f"<html><body><div> Gönderim Tarihi:17.08.2026 19:05:18 </div><table>{head}</table>"
         '<table class="financial-table tbl_general_role_210015" border="1">'
         '<tr><td class="context-header"><div>Cari Dönem <br>30.06.2026</div></td></tr>'
         f"{rows_html}</table></body></html>"

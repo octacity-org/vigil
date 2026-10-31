@@ -102,7 +102,7 @@ Before the tables, the file states:
 | Field | Example | Notes |
 |---|---|---|
 | Company name | `KATMERCİLER ARAÇ ÜSTÜ EKİPMAN SANAYİ VE TİCARET A.Ş.` | |
-| `Finansal Rapor Gönderim Tarihi` | `17.08.2026 19:05:18` | Submission timestamp. Decision 0002 orders versions by disclosure id because no publication time was known; this field could replace that assumption. |
+| `Gönderim Tarihi` | `17.08.2026 19:05:18` | Publication time, Istanbul. Not in the header table: a `<div>` reading `Gönderim Tarihi:17.08.2026 19:05:18`, after the `Finansal Rapor` title. Present in all 1,577 files of 2026/1–2026/3 and equal to `publishDate` in the disclosure list for all 778 of 2026/2. The parser stores it as `published_at` and fails without it; versions in one report period are ordered by it (#157). |
 | `Bildirim Tipi` | `FR` | |
 | `Yıl` | `2026` | Report year |
 | `Periyot` | `2` | Report quarter. Does not tell the period for special fiscal years; use column header dates. |
