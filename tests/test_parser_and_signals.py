@@ -109,6 +109,12 @@ class TestKapParserAndSignals(unittest.TestCase):
         self.assertIsNotNone(sig)
         self.assertIn("31.12.2024", sig.summary_metrics["third_column_period_label"])
 
+        # Evidence: total assets in the restated column and the prior period, from the golden file (#25, #130).
+        evidence = {(e.row_id, e.column_class): e.normalized_value_tl for e in sig.evidence_chain}
+        for column in ("col-order-class-6", "col-order-class-5"):
+            row_id = "general_role_210015-row-129"
+            self.assertEqual(evidence[(row_id, column)], golden_value("BIOEN_1652232", row_id, column))
+
 
 if __name__ == "__main__":
     unittest.main()
