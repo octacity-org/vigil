@@ -1,8 +1,8 @@
 # 0005. The number shown in a cell is its value, not the `title`
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-31
-- **Decided by:** pending review by the methodology owner
+- **Decided by:** @BerkeDurdu
 - **Discussion:** #148 (supersedes [0004](0004-visible-text-values.md), #137)
 
 ## Context
