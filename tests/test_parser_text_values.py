@@ -1,6 +1,7 @@
-"""A cell without `title` is read from its visible text (#137, decision 0004).
+"""Values come from the visible text of a cell, not from its `title` (#137, #148, decision 0005).
 
-Synthetic fixture modelled on YONGA 2026/2, whose value cells show the number only as text.
+Synthetic fixtures modelled on YONGA 2026/2 (no `title` at all), AVHOL 2026/1 (a `title` with another number)
+and ZOREN 2026/2 (a `title` on a cell whose number is shown in the next row).
 """
 
 import pytest
@@ -26,6 +27,10 @@ def parse(tmp_path, cells):
     return parse_kap_xls(str(path))
 
 
+def values(filing):
+    return {f.column_class: f.raw_value for f in filing.facts}
+
+
 def test_value_without_title_is_read_from_text(tmp_path):
     filing = parse(
         tmp_path,
@@ -35,23 +40,31 @@ def test_value_without_title_is_read_from_text(tmp_path):
             cell(6, '<div class="gwt-Label"> 0 </div>'),
         ],
     )
-    values = {f.column_class: f.raw_value for f in filing.facts}
-    assert values == {"col-order-class-4": 1432817618, "col-order-class-5": -27026098, "col-order-class-6": 0}
-    assert (filing.text_values, filing.text_disagreements) == (3, 0)
+    assert values(filing) == {"col-order-class-4": 1432817618, "col-order-class-5": -27026098, "col-order-class-6": 0}
+    assert (filing.title_disagreements, filing.titles_without_text) == (0, 0)
 
 
-def test_title_wins_and_disagreement_is_counted(tmp_path):
-    # MNDTR 2026/2 shows a different number than its `title` in nine income statement cells.
+def test_text_wins_over_a_different_title(tmp_path):
+    # AVHOL 2026/1, row 246 of the balance sheet: the text adds up to its total, the `title` is 3,000,000 more.
     filing = parse(
         tmp_path,
         [
-            cell(4, '<div class="gwt-Label" title="83028439"> 83.085.244 </div>'),
+            cell(4, '<div class="gwt-Label" title="468518587"> 465.518.587 </div>'),
             cell(5, '<div class="gwt-Label" title="45507361"> 45.507.361 </div>'),
         ],
     )
-    values = {f.column_class: f.raw_value for f in filing.facts}
-    assert values == {"col-order-class-4": 83028439, "col-order-class-5": 45507361}
-    assert (filing.text_values, filing.text_disagreements) == (0, 1)
+    assert values(filing) == {"col-order-class-4": 465518587, "col-order-class-5": 45507361}
+    assert (filing.title_disagreements, filing.titles_without_text) == (1, 0)
+
+
+def test_title_without_text_is_empty(tmp_path):
+    # ZOREN 2026/2: the `title` of row 140 holds the number that row 141 shows.
+    filing = parse(
+        tmp_path,
+        [cell(4, '<div class="gwt-Label" title="1248245"></div>'), cell(5, '<div class="gwt-Label"> 7 </div>')],
+    )
+    assert values(filing) == {"col-order-class-5": 7}
+    assert (filing.title_disagreements, filing.titles_without_text) == (0, 1)
 
 
 def test_empty_cell_stays_empty(tmp_path):
@@ -60,12 +73,7 @@ def test_empty_cell_stays_empty(tmp_path):
 
 
 @pytest.mark.parametrize("text", ["1,5", "(1.000)", "1.000,50", "12.34", "abc", "1 000"])
-def test_unknown_text_format_fails_loudly(tmp_path, text):
+@pytest.mark.parametrize("title", ["", ' title="1000"'])
+def test_unknown_text_format_fails_loudly(tmp_path, text, title):
     with pytest.raises(ValueError, match="Unexpected value text"):
-        parse(tmp_path, [cell(4, f'<div class="gwt-Label"> {text} </div>')])
-
-
-def test_unknown_text_next_to_a_title_only_counts_as_disagreement(tmp_path):
-    filing = parse(tmp_path, [cell(4, '<div class="gwt-Label" title="1500"> 1.500,00 </div>')])
-    assert [f.raw_value for f in filing.facts] == [1500]
-    assert filing.text_disagreements == 1
+        parse(tmp_path, [cell(4, f'<div class="gwt-Label"{title}> {text} </div>')])

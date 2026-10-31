@@ -30,7 +30,7 @@ Option 2, with a rounding tolerance:
 
 - `blocking`: balance sheet balance (current and prior period end) and balance sheet profit = parent-company profit.
 - `informational`: the two cash checks.
-- A difference of one unit of the reporting unit counts as rounding for every check.
+- A difference of one unit of the reporting unit counts as rounding for every check. *Amended by [0006](0006-known-filing-errors-and-single-value-tolerance.md): five units for single-value comparisons.*
 
 ## Reasoning
 

@@ -150,10 +150,9 @@ Within a family the code can differ by filing: the general income statement appe
 ## Value cells
 
 - A value cell is `<td class="taxonomy-context-value col-order-class-N ...">`.
-- The value is the cell's `title` attribute, **unscaled**: multiply by the reporting unit (`1`, `1,000`, `1,000,000`) to get TL. The visible text is the same number with thousands separators (`39.369`).
-- **Some cells have visible text but no `title`** (all of YONGA 2026/2, a few cells in six other files). Read the text only then, and only in the format `-?\d{1,3}(\.\d{3})*`; fail on anything else (decision [0004](decisions/0004-visible-text-values.md)).
-- `title` and visible text can disagree: 84 cells in 2026/2, 9 of them outside the equity statement (MNDTR, three-month income statement column). Use `title` and count the disagreement.
-- **An empty cell has neither `title` nor text.** Read `title` only inside its own `<td>...</td>`; searching forward from the cell start picks up the next cell's value (this is the column-shift bug, #14).
+- **The value is the number shown in the cell**, **unscaled**: `39.369` is `39369`; multiply by the reporting unit (`1`, `1,000`, `1,000,000`) to get TL. The format is always `-?\d{1,3}(\.\d{3})*` (`.` thousands separator, leading `-`); anything else is an error (decision [0005](decisions/0005-visible-text-is-the-value.md)).
+- **Do not use the `title` attribute.** It agrees with the shown number in 99.98% of cells, but not always: in 2026/1–2026/3 it holds another number in 166 cells (AVHOL 2026/1: 468,518,587 against a shown 465,518,587), sits on the neighbouring row in others (ZOREN 2026/2: row 140's `title` is the number shown in row 141), and is missing entirely in YONGA 2026/2. In 2026/1–2, reading `title` caused 6 of the 11 failing files (9 of 14 failed checks); reading the text adds no new failure (#148).
+- **An empty cell shows nothing.** It may still carry a `title` (46 cells); treat it as empty. Read each cell only inside its own `<td>...</td>`; searching forward from the cell start picks up the next cell's value (this is the column-shift bug, #14).
 - No decimal values were found in the 2026/2 sample.
 
 ### Columns
