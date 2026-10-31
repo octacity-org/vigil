@@ -38,7 +38,8 @@ def filing(family):
         )
     )
     return (
-        "<html><body><table><tr><td>Sunum Para Birimi</td><td>1.000.000 TL</td></tr></table>"
+        "<html><body><div> Gönderim Tarihi:17.08.2026 19:05:18 </div>"
+        "<table><tr><td>Sunum Para Birimi</td><td>1.000.000 TL</td></tr></table>"
         f'<table class="financial-table tbl_{family}_role_210013" border="1"><tr>{headers}</tr>'
         f'<tr class="{family}_role_210013-row-49 data-input-row presentation-enabled">'
         f'<td><div class="gwt-Label multi-language-content content-tr">VARLIKLAR TOPLAMI</div></td>{cells}</tr>'

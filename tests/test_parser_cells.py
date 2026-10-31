@@ -6,7 +6,7 @@ modelled on KATMR 2026/2 row 42, where the 2026 cells are empty and the 2025 cel
 
 from vigil.parser import parse_kap_xls
 
-FILING = """<html><body>
+FILING = """<html><body><div> Gönderim Tarihi:17.08.2026 19:05:18 </div>
 <table><tr><td>Sunum Para Birimi</td><td>TL</td><td>Finansal Tablo Niteliği</td><td>Konsolide</td></tr></table>
 <table class="financial-table tbl_general_role_310003" border="1">
 <tr>

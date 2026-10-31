@@ -88,6 +88,9 @@ class ParsedFiling:
     role_codes: List[str]
     has_tms29_monetary_item: bool
     facts: List[ParsedFinancialFact]
+    # `Gönderim Tarihi` in the file header: when KAP published the filing (Istanbul time, #157).
+    # It equals `publishDate` in the disclosure list. Required when parsing a file; None only for hand-built filings.
+    published_at: Optional[datetime.datetime] = None
     # The reporting period from the header dates, not from the file name (#36).
     # MAVI's 2026/2 is 01.02.2026 - 31.07.2026.
     period_start: Optional[datetime.date] = None
@@ -118,6 +121,7 @@ class ParsedFiling:
 
 FILENAME_RE = re.compile(r"^([A-Z0-9-]+)_(\d+)_(\d{4})_([1-4])\.xls$", re.IGNORECASE)
 HEADER_SCALE_RE = re.compile(r"Sunum Para Birimi\s*</td>\s*<td[^>]*>\s*([^<]+?)\s*</td>", re.S)
+HEADER_PUBLISHED_RE = re.compile(r"Gönderim Tarihi:\s*([^<]*?)\s*<")
 HEADER_CONSOL_RE = re.compile(r"Finansal Tablo Niteli[^<]*</td>\s*<td[^>]*>\s*([^<]+?)\s*</td>", re.S)
 # Template families seen in KAP files (docs/kap.md). `par-banks` (participation banks, ALBRK) has a hyphen (#124).
 KNOWN_FAMILIES = ("general", "banks", "par-banks", "finance", "holding", "insurance")
@@ -309,6 +313,14 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
     if scale_multiplier is None:
         raise ValueError(f"Unknown reporting unit {scale_unit!r} in {filepath}")
 
+    published_match = HEADER_PUBLISHED_RE.search(raw_html)
+    if not published_match:
+        raise ValueError(f"Publication time (Gönderim Tarihi) not found in {filepath}")
+    try:
+        published_at = datetime.datetime.strptime(published_match.group(1), "%d.%m.%Y %H:%M:%S")
+    except ValueError:
+        raise ValueError(f"Unexpected publication time {published_match.group(1)!r} in {filepath}") from None
+
     consol_match = HEADER_CONSOL_RE.search(raw_html)
     consolidation_type = _clean_text(consol_match.group(1)) if consol_match else "Bilinmiyor"
 
@@ -430,6 +442,7 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
         role_codes=role_codes,
         has_tms29_monetary_item=has_tms29,
         facts=facts,
+        published_at=published_at,
         period_start=period_start,
         period_end=period_end,
         title_disagreements=title_disagreements,

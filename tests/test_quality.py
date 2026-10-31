@@ -8,7 +8,7 @@ import pytest
 import vigil.quality as quality
 from vigil.checks import CheckResult
 
-NO_TITLES = """<html><body>
+NO_TITLES = """<html><body><div> Gönderim Tarihi:17.08.2026 19:05:18 </div>
 <table><tr><td>Sunum Para Birimi</td><td>TL</td></tr></table>
 <table class="financial-table tbl_general_role_210015" border="1">
 <tr class="general_role_210015-row-4 data-input-row presentation-enabled">

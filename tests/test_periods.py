@@ -30,7 +30,10 @@ def table(role, headers, columns):
 
 def parse(tmp_path, quarter, *tables):
     path = tmp_path / f"TEST_1000004_2026_{quarter}.xls"
-    html = "<html><body><table><tr><td>Sunum Para Birimi</td><td>TL</td></tr></table>" + "".join(tables)
+    html = (
+        "<html><body><div> Gönderim Tarihi:17.08.2026 19:05:18 </div>"
+        "<table><tr><td>Sunum Para Birimi</td><td>TL</td></tr></table>" + "".join(tables)
+    )
     path.write_text(html + "</body></html>", encoding="utf-8")
     return parse_kap_xls(str(path))
 

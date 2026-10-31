@@ -22,7 +22,7 @@ Option 3, as implemented in `src/vigil/schema.py` and documented in [`docs/SCHEM
 - Tables `companies`, `reports` (one per disclosure) and `facts` (one per value cell, key `(disclosure_id, row_id, column_class)`).
 - Valid time is `period_start` / `period_end`, parsed from the column header dates. Point-in-time values have `period_start` NULL. Headers without dates give NULL and are not matched across reports.
 - A fact is identified by `(company_code, consolidation_type, row_id, currency_part, period_start, period_end)`.
-- Versions are ordered by report `year`, `quarter`, then `disclosure_id`. Views: `fact_versions`, `facts_first_reported`, `facts_latest`, `fact_conflicts`.
+- Versions are ordered by report `year`, `quarter`, then publication time (`reports.published_at`), then `disclosure_id`. Views: `fact_versions`, `facts_first_reported`, `facts_latest`, `fact_conflicts`.
 - When one report has two different values for the same fact, both are kept and listed in `fact_conflicts`; none is chosen.
 - Loading replaces a report as a whole (idempotent). `reports → companies` and `facts → reports` are not declared as foreign keys, because DuckDB rejects deleting a report and its facts in one transaction; the loader keeps them consistent.
 
@@ -34,7 +34,7 @@ Keeping every cell as written keeps every number traceable to its file, row and 
 
 - The loader (`src/vigil/db.py`) writes this schema; `docs/SCHEMA.md` holds example queries.
 - `row_id` contains the template family and role code. If a company switches role code between quarters (MSY's solo income statement is `310016` in 2025/2 and `310017` in 2026/2; the general template's income statement is `310003`, `310000` or `310002` depending on the report), or KAP renumbers a template, the same item gets a different `row_id` and its versions are not linked. The template row map (Phase 0) is needed to link them.
-- "Latest" means the most recent report period, not the most recent publication. Within one period, ordering by `disclosure_id` assumes KAP ids grow over time. Revisit if a publication timestamp becomes available.
+- "Latest" means the most recent report period, not the most recent publication. Within one period the later publication wins. *Updated 2026-10-31 (#157): the original rule ordered by `disclosure_id` within a period, assuming KAP ids grow over time; every file now gives its publication time (`Gönderim Tarihi`), and `disclosure_id` only breaks ties.*
 - Checked on real restatements with 2025/2 and 2026/2 loaded together (results in `docs/SCHEMA.md`): KATMR H1 2025 revenue links 1,085,459,841 TL as first reported to 1,434,008,001 TL restated; no fact that should link was left unlinked.
 - This was written before a Discussion; it needs review by the methodology and data owners before it is accepted.
 - Revisit when moving from DuckDB to PostgreSQL.
