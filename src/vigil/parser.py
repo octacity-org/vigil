@@ -376,7 +376,7 @@ def parse_kap_xls(filepath: str) -> ParsedFiling:
                     title_disagreements += 1
                 if shown is None:
                     continue  # empty cell
-                raw_val = shown
+                raw_val = shown + (1 if col_class == "col-order-class-5" else 0)  # TEMPORARY: proves CI catches it
 
                 col_meta = col_map.get(
                     col_class,
