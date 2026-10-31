@@ -3,6 +3,7 @@
 Synthetic fixture with the layout of ALBRK 2026/2 (participation bank, TP / YP / Toplam balance sheet).
 """
 
+import datetime
 import glob
 import os
 
@@ -90,3 +91,42 @@ def test_albrk_key_totals(path):
     assert value("310019", "DÖNEM NET KARI VEYA ZARARI", "col-order-class-4") == value(
         "210013", "Dönem Net Kâr veya Zararı", "col-order-class-6"
     )
+
+
+def test_third_tp_yp_period_is_mapped(tmp_path):
+    # EXIMB and VDFAS 2026/2: a restated "Bir Önceki Dönem" group in columns 10-12 (#125).
+    html = (
+        filing("banks")
+        .replace(
+            '<td class="context-header"><div>Önceki Dönem <br>31.12.2025</div></td>',
+            '<td class="context-header"><div>Önceki Dönem <br>31.12.2025</div></td>'
+            '<td class="context-header"><div>Bir Önceki Dönem <br>31.12.2024</div></td>',
+        )
+        .replace(
+            "</tr></table>",
+            "".join(
+                f'<td class="taxonomy-context-value col-order-class-{c}"><div><div title="{v}">{v}</div></div></td>'
+                for c, v in ((10, 340581), (11, 530808), (12, 871389))
+            )
+            + "</tr></table>",
+        )
+    )
+    path = tmp_path / "EXIMB-THR_1644741_2026_2.xls"
+    path.write_text(html, encoding="utf-8")
+    facts = {x.column_class: x for x in parse_kap_xls(str(path)).facts}
+    third = {
+        c: (
+            facts[f"col-order-class-{c}"].period_type,
+            facts[f"col-order-class-{c}"].period_end,
+            facts[f"col-order-class-{c}"].raw_value,
+        )
+        for c in (10, 11, 12)
+    }
+    d = datetime.date(2024, 12, 31)
+    assert third == {
+        10: ("POINT_IN_TIME_TP", d, 340581),
+        11: ("POINT_IN_TIME_YP", d, 530808),
+        12: ("POINT_IN_TIME", d, 871389),
+    }
+    assert all(facts[f"col-order-class-{c}"].is_restated_comparative for c in (7, 8, 9, 10, 11, 12))
+    assert facts["col-order-class-9"].period_end == datetime.date(2025, 12, 31)
