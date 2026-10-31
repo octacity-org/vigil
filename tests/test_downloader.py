@@ -169,3 +169,29 @@ def test_nothing_downloaded(tmp_path):
     (tmp_path / "2026_2.zip").write_bytes(kap_zip())  # left by an earlier run, must not be used
     r = dl.download_quarter(2026, 2, str(tmp_path), retries=2, open_url=open_url, sleep=lambda s: None)
     assert (r.complete, r.recovered, r.lost, len(r.errors)) == (False, [], [], 2)
+
+
+def test_only_the_listed_files_are_extracted(tmp_path):
+    data = kap_zip()
+    open_url, _ = fake_server(lambda: FakeResponse(data))
+    wanted = ["CO1_1001_2026_2.xls", "CO3_1003_2026_2.xls"]
+    r = dl.download_quarter(2026, 2, str(tmp_path), open_url=open_url, sleep=lambda s: None, only=wanted)
+    assert r.complete
+    assert sorted(os.listdir(tmp_path / "2026_2")) == wanted
+
+
+def test_fetch_files_reports_missing_and_skips_present_files(tmp_path):
+    data = kap_zip()
+    listing = tmp_path / "files.txt"
+    listing.write_text("2026_2/CO0_1000_2026_2.xls\n2026_2/GONE_9_2026_2.xls\n", encoding="utf-8")
+    raw = tmp_path / "raw"
+    open_url, calls = fake_server(lambda: FakeResponse(data), lambda: FakeResponse(data))
+
+    missing = dl.fetch_files(str(listing), str(raw), open_url=open_url, sleep=lambda s: None)
+    assert missing == {(2026, 2): ["GONE_9_2026_2.xls"]}
+    assert os.listdir(raw / "2026_2") == ["CO0_1000_2026_2.xls"]
+    assert not os.path.exists(raw / "2026_2.zip")  # only the listed files are kept
+
+    listing.write_text("2026_2/CO0_1000_2026_2.xls\n", encoding="utf-8")
+    assert dl.fetch_files(str(listing), str(raw), open_url=open_url, sleep=lambda s: None) == {}
+    assert len(calls) == 1  # already present: not downloaded again

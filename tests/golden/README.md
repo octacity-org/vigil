@@ -28,6 +28,8 @@ The file name is `{company}_{disclosure_id}.csv`, taken from the raw file name `
 
 Files are UTF-8, comma-separated, with a header row. Quote a field if it contains a comma.
 
+**Add the raw file to [`tests/raw_files.txt`](../raw_files.txt)** (`2026_2/KATMR_1651411_2026_2.xls`) in the same pull request. CI downloads the listed files from KAP and runs the golden tests on them; a golden CSV without its listed raw file fails `tests/test_raw_files.py` (#128).
+
 ## Columns
 
 | Column | Example | Meaning |

@@ -1,6 +1,7 @@
 """Download a quarter of KAP financial statements and recover what a cut-off download contains (#38).
 
     python -m vigil.downloader 2026 2 data/raw
+    python -m vigil.downloader --files tests/raw_files.txt data/raw   # only the files the tests need (#128)
 
 KAP behaviour measured on 2026-10-29 (docs/kap.md):
 - `GET financialTable/download/{year}/{quarter}` streams one zip without `Content-Length` and ignores `Range`,
@@ -20,7 +21,7 @@ import time
 import urllib.request
 import zipfile
 import zlib
-from typing import BinaryIO, Callable, List, Optional, Tuple
+from typing import BinaryIO, Callable, Collection, Dict, List, Optional, Tuple
 
 KAP_BULK_URL = "https://www.kap.org.tr/tr/api/financialTable/download/{year}/{quarter}"
 
@@ -83,7 +84,7 @@ def _inflate(data: memoryview, start: int) -> Optional[Tuple[bytes, int]]:
     return None
 
 
-def _scan_local_headers(data: bytes, extract_dir: str) -> SalvageResult:
+def _scan_local_headers(data: bytes, extract_dir: str, only: Optional[Collection[str]] = None) -> SalvageResult:
     view = memoryview(data)
     result = SalvageResult(complete=False, recovered=[], lost=[])
     pos = data.find(LOCAL_HEADER)
@@ -125,21 +126,24 @@ def _scan_local_headers(data: bytes, extract_dir: str) -> SalvageResult:
         name = _safe_name(member)
         if (zlib.crc32(content) & 0xFFFFFFFF) != crc:
             result.lost.append(member)
-        elif name:
+        elif name and (only is None or name in only):
             result.recovered.append(_write(extract_dir, name, content))
         pos = data.find(LOCAL_HEADER, end)
     return result
 
 
-def salvage_zip(zip_path: str, extract_dir: str) -> SalvageResult:
-    """Write every complete `.xls` member of a zip, valid or cut off, to `extract_dir` (flat, by base name)."""
+def salvage_zip(zip_path: str, extract_dir: str, only: Optional[Collection[str]] = None) -> SalvageResult:
+    """
+    Write every complete `.xls` member of a zip, valid or cut off, to `extract_dir` (flat, by base name).
+    With `only`, write just the members with those base names.
+    """
     os.makedirs(extract_dir, exist_ok=True)
     if zipfile.is_zipfile(zip_path):
         result = SalvageResult(complete=True, recovered=[], lost=[])
         with zipfile.ZipFile(zip_path) as zf:
             for info in zf.infolist():
                 name = _safe_name(info.filename)
-                if not name:
+                if not name or (only is not None and name not in only):
                     continue
                 try:
                     result.recovered.append(_write(extract_dir, name, zf.read(info)))
@@ -148,7 +152,7 @@ def salvage_zip(zip_path: str, extract_dir: str) -> SalvageResult:
         result.complete = not result.lost
         return result
     with open(zip_path, "rb") as f:
-        return _scan_local_headers(f.read(), extract_dir)
+        return _scan_local_headers(f.read(), extract_dir, only)
 
 
 def _open_url(url: str, headers: dict, timeout: float) -> BinaryIO:
@@ -164,12 +168,14 @@ def download_quarter(
     backoff: float = 2.0,
     open_url: Callable[[str, dict, float], BinaryIO] = _open_url,
     sleep: Callable[[float], None] = time.sleep,
+    only: Optional[Collection[str]] = None,
 ) -> DownloadResult:
     """
     Download one quarter into `{raw_dir}/{year}_{quarter}.zip` and extract it to `{raw_dir}/{year}_{quarter}/`.
 
     Retries from the start with exponential backoff until the zip is complete. If it never is, the largest
     partial download is salvaged and the result lists what was recovered and what was lost.
+    With `only`, just those files are extracted; `complete` then means all of them were recovered.
     """
     os.makedirs(raw_dir, exist_ok=True)
     zip_path = os.path.join(raw_dir, f"{year}_{quarter}.zip")
@@ -205,11 +211,58 @@ def download_quarter(
         os.remove(part_path)
     if not os.path.exists(zip_path):
         return DownloadResult(zip_path, attempt, False, [], [], errors)
-    salvage = salvage_zip(zip_path, os.path.join(raw_dir, f"{year}_{quarter}"))
-    return DownloadResult(zip_path, attempt, salvage.complete, salvage.recovered, salvage.lost, errors)
+    salvage = salvage_zip(zip_path, os.path.join(raw_dir, f"{year}_{quarter}"), only)
+    complete = salvage.complete
+    if only is not None:
+        complete = set(only) <= {os.path.basename(p) for p in salvage.recovered}
+    return DownloadResult(zip_path, attempt, complete, salvage.recovered, salvage.lost, errors)
+
+
+def read_file_list(path: str) -> Dict[Tuple[int, int], List[str]]:
+    """
+    Read a list of raw files, one `{year}_{quarter}/{file name}` per line; `#` starts a comment.
+    Returns the file names grouped by (year, quarter).
+    """
+    wanted: Dict[Tuple[int, int], List[str]] = {}
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.split("#", 1)[0].strip()
+            if not line:
+                continue
+            folder, name = line.split("/")
+            year, quarter = (int(x) for x in folder.split("_"))
+            wanted.setdefault((year, quarter), []).append(name)
+    return wanted
+
+
+def fetch_files(list_path: str, raw_dir: str, keep_zip: bool = False, **kwargs) -> Dict[Tuple[int, int], List[str]]:
+    """
+    Download each quarter named in `list_path` and extract only the listed files (#128).
+    Files already present are not downloaded again. Returns the files still missing, by quarter.
+    """
+    missing: Dict[Tuple[int, int], List[str]] = {}
+    for (year, quarter), names in read_file_list(list_path).items():
+        folder = os.path.join(raw_dir, f"{year}_{quarter}")
+        needed = [n for n in names if not os.path.exists(os.path.join(folder, n))]
+        if not needed:
+            continue
+        result = download_quarter(year, quarter, raw_dir, only=needed, **kwargs)
+        if not keep_zip and os.path.exists(result.zip_path):
+            os.remove(result.zip_path)
+        got = {os.path.basename(p) for p in result.recovered}
+        if set(needed) - got:
+            missing[(year, quarter)] = sorted(set(needed) - got)
+    return missing
 
 
 if __name__ == "__main__":
+    if sys.argv[1] == "--files":
+        missing = fetch_files(sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else os.path.join("data", "raw"))
+        for (year, quarter), names in missing.items():
+            for name in names:
+                print(f"missing: {year}_{quarter}/{name}")
+        print("all listed files present" if not missing else "INCOMPLETE")
+        sys.exit(1 if missing else 0)
     year, quarter = int(sys.argv[1]), int(sys.argv[2])
     raw_dir = sys.argv[3] if len(sys.argv) > 3 else os.path.join("data", "raw")
     r = download_quarter(year, quarter, raw_dir)
