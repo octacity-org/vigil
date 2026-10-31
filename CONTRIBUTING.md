@@ -59,6 +59,8 @@ GET https://www.kap.org.tr/tr/api/financialTable/download/{year}/{quarter}
 
 Downloads often truncate; the downloader salvages complete files from partial archives. Please be polite to the server: no parallel bulk downloads.
 
+For the tests, `python -m vigil.downloader --files tests/raw_files.txt data/raw` fetches only the raw files they use. CI runs the golden tests the same way (job `golden`, decision 0007). If you add a golden file or a test that needs another raw file, list it in `tests/raw_files.txt`.
+
 ## Core rules
 
 These apply to code, docs, issues and pull requests.

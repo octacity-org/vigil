@@ -40,7 +40,13 @@ KAP files are **not** part of this repository. Download a quarter locally into `
 python -m vigil.downloader 2026 2 data/raw
 ```
 
-Tests that need raw files are skipped when they are missing.
+Tests that need raw files are skipped when they are missing. To get just the files the tests use (about 11 MB instead of a whole quarter):
+
+```bash
+python -m vigil.downloader --files tests/raw_files.txt data/raw
+```
+
+CI does the same in its `golden` job, so a parser change that breaks a golden value fails the pull request (decision 0007).
 
 Load a parsed quarter into DuckDB (re-running replaces each filing, it never duplicates rows):
 

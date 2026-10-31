@@ -10,6 +10,7 @@ Every methodology or project choice that changes results or how people work is r
 | [0004](0004-visible-text-values.md) | Reading a value cell that has no `title` | superseded by 0005 |
 | [0005](0005-visible-text-is-the-value.md) | The number shown in a cell is its value, not the `title` | proposed |
 | [0006](0006-known-filing-errors-and-single-value-tolerance.md) | Tolerance for single-value checks and known filing errors | accepted |
+| [0007](0007-golden-tests-in-ci.md) | Run golden tests in CI by downloading the raw files | accepted |
 
 ## Open decisions
 
