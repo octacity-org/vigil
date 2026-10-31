@@ -219,12 +219,14 @@ def _build_columns_for_statement(statement_type: str, table_html_head: str, quar
         c_label = period_headers[0] if len(period_headers) > 0 else "Cari Dönem"
         p_label = period_headers[1] if len(period_headers) > 1 else "Önceki Dönem"
         if has_tp_yp:
-            cols["col-order-class-4"] = ColumnMeta("col-order-class-4", f"{c_label} (TP)", "POINT_IN_TIME_TP", False)
-            cols["col-order-class-5"] = ColumnMeta("col-order-class-5", f"{c_label} (YP)", "POINT_IN_TIME_YP", False)
-            cols["col-order-class-6"] = ColumnMeta("col-order-class-6", f"{c_label} (Toplam)", "POINT_IN_TIME", False)
-            cols["col-order-class-7"] = ColumnMeta("col-order-class-7", f"{p_label} (TP)", "POINT_IN_TIME_TP", True)
-            cols["col-order-class-8"] = ColumnMeta("col-order-class-8", f"{p_label} (YP)", "POINT_IN_TIME_YP", True)
-            cols["col-order-class-9"] = ColumnMeta("col-order-class-9", f"{p_label} (Toplam)", "POINT_IN_TIME", True)
+            # One TP / YP / Toplam group per period header, from column 4. A third period ("Bir Önceki Dönem")
+            # holds restated comparatives in columns 10-12 (EXIMB, VDFAS; #125).
+            labels = [c_label, p_label] + period_headers[2:]
+            parts = (("TP", "POINT_IN_TIME_TP"), ("YP", "POINT_IN_TIME_YP"), ("Toplam", "POINT_IN_TIME"))
+            for period, label in enumerate(labels):
+                for part, (name, ptype) in enumerate(parts):
+                    col = f"col-order-class-{4 + 3 * period + part}"
+                    cols[col] = ColumnMeta(col, f"{label} ({name})", ptype, period > 0)
         else:
             cols["col-order-class-4"] = ColumnMeta(
                 col_class="col-order-class-4",

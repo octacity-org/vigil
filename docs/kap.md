@@ -1,6 +1,6 @@
 # KAP financial statement files
 
-What a quarterly KAP file looks like, for anyone touching the downloader, the parser or the golden dataset. Counts below come from 246 files of 2026/2 (a partial download); the full quarter has more files and may contain cases not listed here (see #124, #125).
+What a quarterly KAP file looks like, for anyone touching the downloader, the parser or the golden dataset. Counts below come from 246 files of 2026/2 (a partial download); the full quarter has more files and may contain cases not listed here; #124 and #125 were found that way.
 
 ## Download
 
@@ -169,7 +169,7 @@ Value columns start at `col-order-class-4` and follow the headers from left to r
 | Bank / finance income statement | 4–7 | as general |
 | Statement of changes in equity | up to 52 | one column per equity component |
 
-Columns beyond these exist in some filings of the full quarter (EXIMB, VDFAS balance sheets use 10–12, #125).
+A bank or finance balance sheet can have a third period, `Bir Önceki Dönem 31.12.2024`, with restated comparatives in columns 10–12 (TP, YP, Toplam). In 2026/1–2026/2 only EXIMB (both quarters) and VDFAS (2026/2) have it, the same case as the general template's column 6 (BIOEN). The parser maps one TP / YP / Toplam group per period header, so every value in 2026/1–2026/3 has a period (#125).
 
 ## Periods
 
