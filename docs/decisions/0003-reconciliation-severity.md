@@ -1,8 +1,8 @@
 # 0003. Which reconciliation checks block a filing
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-29
-- **Decided by:** pending review by the methodology owner
+- **Decided by:** @BerkeDurdu
 - **Discussion:** #18
 
 ## Context
