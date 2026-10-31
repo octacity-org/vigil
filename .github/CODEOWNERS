@@ -6,11 +6,12 @@
 *                         @BerkeDurdu
 
 # Data pipeline and parser -> data owner (person 2) and parser owner (person 3)
-/src/vigil/downloader.py  @BerkeDurdu
-/src/vigil/parser.py      @BerkeDurdu
+/apps/server/src/downloader.ts  @BerkeDurdu
+/packages/core/src/parser.ts    @BerkeDurdu
 
 # Metrics and signals -> technical lead (person 4) and methodology owner (person 1)
-/src/vigil/signals.py     @BerkeDurdu
+/packages/core/src/checks.ts    @BerkeDurdu
+/packages/core/src/signals.ts   @BerkeDurdu
 
 # Methodology and decisions -> methodology owner (person 1)
 /docs/decisions/          @BerkeDurdu

@@ -1,0 +1,9 @@
+{
+  "name": "@vigil/server",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@vigil/core": "workspace:*",
+    "@duckdb/node-api": "1.4.1-r.4"
+  }
+}

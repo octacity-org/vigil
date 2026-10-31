@@ -6,16 +6,10 @@ reports/
 *.duckdb.wal
 *.sqlite
 
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-build/
-dist/
-.venv/
-venv/
-.pytest_cache/
-.ruff_cache/
+# Bun / TypeScript
+node_modules/
+*.tsbuildinfo
+.bun/
 
 # Editors / OS
 .vscode/

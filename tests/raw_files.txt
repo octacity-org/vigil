@@ -1,19 +1,19 @@
 # Raw KAP files the tests need (#128). CI downloads them with:
-#   python -m vigil.downloader --files tests/raw_files.txt data/raw
+#   bun run download --files tests/raw_files.txt data/raw
 # One `{year}_{quarter}/{file name}` per line. Every golden CSV must have its raw file here
-# (checked by tests/test_raw_files.py). The files themselves are never committed (decision 0001).
+# (checked by apps/server/test/raw-files.test.ts). The files themselves are never committed (decision 0001).
 
 # Golden dataset (tests/golden/)
 2026_2/KATMR_1651411_2026_2.xls
 2026_2/BIOEN_1652232_2026_2.xls
 
-# tests/test_parser_and_signals.py
+# packages/core/test/signals.test.ts
 2026_2/SANFM_1650384_2026_2.xls
 2026_2/A1CAP-ACP_1645514_2026_2.xls
 2026_2/AKBNK_1637884_2026_2.xls
 2026_2/DOHOL_1648007_2026_2.xls
 2026_2/AKENR_1649474_2026_2.xls
 
-# tests/test_parser_families.py (par-banks, #124)
+# packages/core/test/families.test.ts (par-banks, #124)
 2026_2/ALBRK-ALK_1644744_2026_2.xls
 2026_2/ALBRK-ALK_1644748_2026_2.xls

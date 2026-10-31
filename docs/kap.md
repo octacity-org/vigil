@@ -12,7 +12,7 @@ GET https://www.kap.org.tr/tr/api/financialTable/download/{year}/{quarter}
 - The response has no `Content-Length` and **ignores `Range`** (it answers `200` from the first byte), so a cut-off download cannot be resumed; it has to start again.
 - Every member is deflated and written with a data descriptor: the local header has no sizes or CRC, they follow the data.
 - Downloads are often cut off (between 3.7 and 15 MB in earlier tests; two complete downloads in about 10 seconds on 2026-10-29). Complete members can still be recovered from a partial zip: read each local header (`PK\x03\x04`), inflate with `zlib.decompressobj(-15)` until the stream ends, then check the CRC from the data descriptor. Do not find a member's end by searching for the next `PK` signature; it can occur inside compressed data.
-- `python -m vigil.downloader {year} {quarter} data/raw` does all of this: it retries from the start with backoff, keeps the longest attempt, and reports recovered and lost files (#38).
+- `bun run download {year} {quarter} data/raw` does all of this: it retries from the start with backoff, keeps the longest attempt, and reports recovered and lost files (#38).
 - Raw files are never committed (decision [0001](decisions/0001-license.md)).
 
 ### What the zip contains

@@ -1,0 +1,25 @@
+{
+  "name": "vigil",
+  "private": true,
+  "description": "Deterministic findings from Borsa Istanbul financial statements published on KAP. Not investment advice.",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "tsc -p .",
+    "test": "bun test",
+    "download": "bun apps/server/src/cli/download.ts",
+    "quality": "bun apps/server/src/cli/quality.ts",
+    "load": "bun apps/server/src/cli/load.ts",
+    "signals": "bun apps/server/src/cli/signals.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.4",
+    "@types/bun": "1.2.22",
+    "typescript": "5.9.2"
+  }
+}

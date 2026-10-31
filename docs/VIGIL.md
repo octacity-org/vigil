@@ -453,13 +453,15 @@ KAP ─► Veri hattı ─► Ayrıştırıcı ─► Veritabanı ─► Hesap v
                                                   LLM açıklama katmanı
 ```
 
-| Katman | Önerilen teknoloji | Görev |
+Ayrıntılar ve gerekçeler: [`ARCHITECTURE.md`](ARCHITECTURE.md), kararlar [0008](decisions/0008-local-first-release.md) (ilk sürüm kullanıcının bilgisayarında, Docker ile), [0009](decisions/0009-zova-and-duckdb.md) (Zova ve DuckDB) ve [0010](decisions/0010-typescript-and-bun.md) (bütün proje TypeScript, Bun).
+
+| Katman | Teknoloji | Görev |
 |---|---|---|
-| Veri hattı | Python, GitHub Actions | İndirme, zip kurtarma, ham arşiv, TÜFE serisi, zamanlanmış indirme |
-| Ayrıştırıcı | Python | Beş şablon → ortak veri modeli; ölçek, dönem türü, özel hesap dönemleri |
-| Veritabanı | Başlangıçta DuckDB, sonra PostgreSQL | Bitemporal şema: ilk raporlanan ve yeniden ifade edilmiş değerler |
-| Hesap ve sinyal motoru | Python, pandas | Oranlar, net borç, FAVÖK, gün sayıları, 3 aylık türetme, S1–S3 |
-| API | FastAPI | Şirket, dönem, sinyal ve hesap adımı uç noktaları; her sayının kaynağı |
+| Veri hattı (toplayıcı) | TypeScript, Bun | Bildirim takibi, indirme, zip kurtarma, ham arşiv, TÜFE serisi |
+| Ayrıştırıcı | TypeScript (`packages/core`) | Altı şablon → ortak veri modeli; ölçek, dönem türü, özel hesap dönemleri |
+| Veritabanı | Zova (ham dosyalar, durum) + DuckDB (analiz) | Bitemporal şema: ilk raporlanan ve yeniden ifade edilmiş değerler |
+| Hesap ve sinyal motoru | TypeScript (`packages/core`) | Oranlar, net borç, FAVÖK, gün sayıları, 3 aylık türetme, S1–S3 |
+| API | Hono (Bun) | Şirket, dönem, bulgu ve hesap adımı uç noktaları; her sayının kaynağı |
 | Arayüz | Next.js / React, Recharts veya ECharts | Sinyal listesi, şirket sayfası, sinyal kartı, "hesaplanamadı" durumları |
 | LLM | Claude (Haiku 5.5 toplu işler, Sonnet 5.5 zor vakalar) | Açıklama, şablon eşleme önerisi, dipnot çıkarma |
 
@@ -507,12 +509,12 @@ Proje açık kaynak; işe alım yok. Ekip şu an 7 kişi, farklı üniversiteler
 | Kişi | Ana rol | Ek sorumluluk | Uygun profil |
 |---|---|---|---|
 | **1** | Finans uzmanı, metodoloji sahibi | Proje lideri | İşletme, iktisat, muhasebe; projeyi en çok sahiplenen |
-| **2** | Veri mühendisi | DevOps (CI, zamanlanmış indirme, yedek) | Python, SQL, otomasyon |
-| **3** | Backend: ayrıştırıcı | Veritabanı şeması (2 ile birlikte) | Python; titiz |
-| **4** | Backend: hesap ve sinyal motoru, API | Teknik lider, kod incelemesi koordinasyonu | Python, pandas, FastAPI; finansa meraklı |
+| **2** | Veri mühendisi | DevOps (CI, Docker, yedek) | TypeScript, SQL, otomasyon |
+| **3** | Backend: ayrıştırıcı | Veritabanı şeması (2 ile birlikte) | TypeScript; titiz |
+| **4** | Backend: hesap ve sinyal motoru, API | Teknik lider, kod incelemesi koordinasyonu | TypeScript, Hono; finansa meraklı |
 | **5** | QA ve veri kalitesi | Şablon eşlemede finans uzmanına destek | Finansal tabloları rahat okuyan; kod şart değil |
 | **6** | Frontend | UI/UX | React / Next.js |
-| **7** | LLM / yapay zekâ | Veri hattında 2'ye destek (Faz 0–1); isteğe bağlı ML deneyleri (Faz 5) | Python, LLM API'leri |
+| **7** | LLM / yapay zekâ | Veri hattında 2'ye destek (Faz 0–1); isteğe bağlı ML deneyleri (Faz 5) | TypeScript, LLM API'leri |
 
 ### Rol ayrıntıları
 
@@ -692,17 +694,19 @@ Kod bilen gönüllü bulmak, finans bilen gönüllü bulmaktan kolaydır:
 
 ## 16. Mevcut kod durumu
 
-Prototip kod Gemini tarafından yazıldı ve #1 ile repoya taşındı. İşler [issue listesinde](https://github.com/octacity-org/vigil/issues) fazlara göre takip ediliyor.
+Prototip kod Gemini tarafından Python ile yazıldı ve #1 ile repoya taşındı. Faz 0'da düzeltildi ve genişletildi, sonra bütünüyle TypeScript'e taşındı (karar 0010); Python kodu kaldırıldı. Taşıma, Python'un kayıtlı çıktısıyla karşılaştırıldı: 2026/1–2026/3'ün 1.577 dosyasında her değer, kontrol ve bulgu aynı. İşler [issue listesinde](https://github.com/octacity-org/vigil/issues) fazlara göre takip ediliyor.
 
 | Dosya | İçerik | Durum |
 |---|---|---|
 | `data/raw/2026_2/*.xls` | Kurtarılan 246 dosya | Depoda değil; herkes yerelde indirir (bkz. bölüm 15) |
 | `docs/DATA_CONTRACT.md` | Veri sözleşmesi taslağı: UTF-8, kurallar, KATMR örneği, Faz 0/1 ölçütleri | Güncel |
 | `README.md` | Proje tanımı | Bu dosyayla değiştirilebilir |
-| `src/vigil/downloader.py` | KAP indirme ve zip kurtarma | Çalışıyor |
-| `src/vigil/parser.py` | HTML → tablo | **Kolon kayması hatası var** (bölüm 17) |
-| `src/vigil/signals.py` | Sinyal hesapları | Elle yazılmış şirket listesi var (bölüm 17) |
-| `tests/test_parser_and_signals.py` | 7 test | Döngüsel (bölüm 17) |
+| `apps/server/src/downloader.ts` | KAP indirme ve zip kurtarma | Çalışıyor, testli (#38) |
+| `packages/core/src/parser.ts` | HTML → olgular | Çalışıyor; kolon kayması düzeltildi (#14), değer görünen sayıdan okunuyor (karar 0005) |
+| `packages/core/src/checks.ts`, `quality.ts` | Mutabakat, ara toplamlar, kalite raporu | Çalışıyor (#15–#19, #148) |
+| `packages/core/src/signals.ts` | Bulgu hesapları (S1–S3) | Prototip; elle yazılmış şirket listesi var (#37) |
+| `apps/server/src/db.ts`, `schema.ts` | DuckDB yükleyici, bitemporal şema | Çalışıyor (#45, #46, #157) |
+| `packages/core/test/`, `apps/server/test/` | Testler, altın veri testleri | CI'da ham dosyalarla çalışıyor (karar 0007) |
 | `SIGNAL_REPORT_2026_2.md` | Örnek sinyal raporu | Silindi (doğrulanmamış rakamlar içeriyordu) |
 
 ---
@@ -711,9 +715,9 @@ Prototip kod Gemini tarafından yazıldı ve #1 ile repoya taşındı. İşler [
 
 ### Ayrıştırıcı kolon kayması (düzeltildi, #14)
 
-**Durum:** #14 ile düzeltildi. Her hücre artık kendi kapanış etiketine kadar okunuyor; 2026/2'nin 246 dosyasında yanlış kolonda değer kalmadı. KATMR 42. satır altın veri testinde, boş hücreden sonra dolu hücre gelen durum da sentetik bir testte (`tests/test_parser_cells.py`) kontrol ediliyor. Aşağısı hatanın kaydı olarak duruyor.
+**Durum:** #14 ile düzeltildi. Her hücre artık kendi kapanış etiketine kadar okunuyor; 2026/2'nin 246 dosyasında yanlış kolonda değer kalmadı. KATMR 42. satır altın veri testinde, boş hücreden sonra dolu hücre gelen durum da sentetik bir testte (`packages/core/test/parser.test.ts`) kontrol ediliyor. Aşağısı hatanın kaydı olarak duruyor.
 
-Eski `src/vigil/parser.py` içindeki `VALUE_CELL_RE` hücre sınırını aşıyordu:
+Eski Python ayrıştırıcısındaki (`src/vigil/parser.py`, artık yok) `VALUE_CELL_RE` hücre sınırını aşıyordu:
 
 ```python
 VALUE_CELL_RE = re.compile(
@@ -736,9 +740,9 @@ Tembel `.*?` boş bir hücrenin `</td>` etiketinde durmuyor; sonraki hücrenin `
 
 ### Diğer
 
-- **Döngüsel testler:** `tests/test_parser_and_signals.py` içindeki beklenen değerler ayrıştırıcının kendi çıktısından alınmış. Altın veri setiyle değiştirilmeli.
-- **Elle yazılmış şirket listesi:** `src/vigil/signals.py` içinde `KNOWN_NON_REAL_SECTOR_TICKERS` (34 şirket). Gerçek sektör dışı şirketler şablon türünden otomatik belirlenmeli.
-- **Bildirim listesi servisi:** `POST disclosure/list/main` doğrudan istekte HTTP 400 dönüyor.
+- **Döngüsel testler:** Ayrıştırıcının kendi çıktısından alınmış beklenen değerler kaldırıldı (#20). Altın dosyası olmayan şirketler yalnızca yapısal olarak test ediliyor (`packages/core/test/signals.test.ts`, #130).
+- **Elle yazılmış şirket listesi:** `packages/core/src/signals.ts` içinde `KNOWN_NON_REAL_SECTOR_TICKERS` (34 şirket, #37). Gerçek sektör dışı şirketler şablon türünden otomatik belirlenmeli.
+- **Bildirim listesi servisi:** `POST disclosure/list/main` için doğru istek gövdesi bulundu (#40, `docs/kap.md`).
 - **Teknik sunumda eski ifade:** *Vigil — Teknik ve Finansal Tasarım* sunumunda hâlâ "0 hata" ifadesi geçiyor; düzeltilmeli.
 
 ---

@@ -11,4 +11,4 @@ Closes #
 - [ ] No approximations: missing inputs give *not computable*
 - [ ] No investment language (buy/sell, target price, forecasts)
 - [ ] Docs or decision records updated if behaviour or definitions changed
-- [ ] `ruff check .`, `ruff format --check .` and `pytest` pass locally
+- [ ] `bun run lint`, `bun run typecheck` and `bun test` pass locally

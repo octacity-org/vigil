@@ -10,13 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: oven-sh/setup-bun@v2
         with:
-          python-version: "3.11"
-      - run: pip install -e ".[dev]"
-      - run: ruff check .
-      - run: ruff format --check .
-      - run: pytest
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun test
 
   # Golden dataset and other raw-file tests (#128, decision 0007). The raw KAP files are not in the
   # repository: the files listed in tests/raw_files.txt are downloaded from KAP and cached, so KAP is
@@ -25,15 +25,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: oven-sh/setup-bun@v2
         with:
-          python-version: "3.11"
-      - run: pip install -e ".[dev]"
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
       - uses: actions/cache@v4
         with:
           path: data/raw
           key: kap-raw-${{ hashFiles('tests/raw_files.txt') }}
       - name: Download the raw KAP files the tests need
-        run: python -m vigil.downloader --files tests/raw_files.txt data/raw
+        run: bun run download --files tests/raw_files.txt data/raw
       - name: Run all tests with the raw files
-        run: pytest -rs
+        run: bun test
