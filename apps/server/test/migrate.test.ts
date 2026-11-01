@@ -7,6 +7,7 @@ import { type DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
 import { close, connect } from "../src/db.ts";
 import { CURRENT_VERSION, migrate, SchemaError, schemaVersion } from "../src/migrate.ts";
 import { MIGRATIONS } from "../src/schema.ts";
+import { FIXTURES, loadedDatabase } from "./fixtures/index.ts";
 
 async function memory(): Promise<DuckDBConnection> {
   return (await DuckDBInstance.create(":memory:")).connect();
@@ -45,11 +46,13 @@ describe("migrate", () => {
     expect(await all(con, "SELECT count(*) AS n FROM facts_latest")).toEqual([{ n: 0n }]);
   });
 
-  test("a current database is left alone", async () => {
-    const con = await memory();
-    await migrate(con);
+  test("a current database with data is left alone", async () => {
+    const db = await loadedDatabase();
+    const con = db.con;
     expect(await migrate(con)).toEqual([]);
+    expect(await all(con, "SELECT count(*) AS n FROM reports")).toEqual([{ n: BigInt(FIXTURES.length) }]);
     expect(await all(con, "SELECT count(*) AS n FROM schema_version")).toEqual([{ n: BigInt(CURRENT_VERSION) }]);
+    close(db);
   });
 
   test("a database made before versioning and before #157 is upgraded and keeps its data", async () => {
