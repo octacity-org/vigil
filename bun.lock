@@ -15,6 +15,7 @@
       "dependencies": {
         "@duckdb/node-api": "1.4.1-r.4",
         "@vigil/core": "workspace:*",
+        "zova-js": "1.3.0",
       },
     },
     "packages/core": {
@@ -76,5 +77,17 @@
     "typescript": ["typescript@5.9.2", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
 
     "undici-types": ["undici-types@8.9.0", "", {}, "sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg=="],
+
+    "zova-db-darwin-arm64": ["zova-db-darwin-arm64@1.3.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-rZPQYsVVD+Aucl/DaMiv2LqS6Yifl/OizQI8mJNFPrjQvd0lV6AshSrM9bVipo4zHKgN2cRCzVlE+wRGviiNGg=="],
+
+    "zova-db-darwin-x64": ["zova-db-darwin-x64@1.3.0", "", { "os": "darwin", "cpu": "x64" }, "sha512-wQkhH+KD0eOYEzh5UFQtCUeulJv7+wOD7Ld1EvsYjYtnxwl4R91stx/nMmvBV/NLD+clkk7oGmvtYdCOU7z87A=="],
+
+    "zova-db-linux-arm64-gnu": ["zova-db-linux-arm64-gnu@1.3.0", "", { "os": "linux", "cpu": "arm64", "libc": "glibc" }, "sha512-l/5oyqUyby0UcapJgIvCGpWN90mhmWHk4m2Lm8snHhI82R+iQSpU7iqo8RmbuXaoZGGhdJNCQbs01+/XVrtcKA=="],
+
+    "zova-db-linux-x64-gnu": ["zova-db-linux-x64-gnu@1.3.0", "", { "os": "linux", "cpu": "x64", "libc": "glibc" }, "sha512-9BbwtmXT46gRJt8r63tdZJVM0yAd+2y7n8L4TNUBaa/MglMYTWzITOf4CLMU2BkuVS9DhfrCIuyooOi/h/JNvg=="],
+
+    "zova-db-windows-x64": ["zova-db-windows-x64@1.3.0", "", { "os": "win32", "cpu": "x64" }, "sha512-NLE+aRpfkzODd6d3B5Gzloh0gZAIdqp9gj43TziS6Gjon4rUCIx5b+t//xeth/ieDovgRyTtPHjZ4a/Y/Kp1mQ=="],
+
+    "zova-js": ["zova-js@1.3.0", "", { "optionalDependencies": { "zova-db-darwin-arm64": "1.3.0", "zova-db-darwin-x64": "1.3.0", "zova-db-linux-arm64-gnu": "1.3.0", "zova-db-linux-x64-gnu": "1.3.0", "zova-db-windows-x64": "1.3.0" } }, "sha512-QISFGQNZzJh2KmhsTaYnS6dPlVPPV9iiZfo7Berh2KLV5tevPaswAjnvj1pOtUolLJ2RUfGOQsMH2fu0TuguAQ=="],
   }
 }
