@@ -48,6 +48,15 @@ CREATE INDEX raw_files_company ON raw_files (company_code, year, quarter);
 CREATE INDEX raw_files_quarter ON raw_files (year, quarter);
 `,
   },
+  {
+    version: 3,
+    name: "one row per disclosure and content (#177)",
+    sql: `
+DELETE FROM raw_files
+WHERE rowid NOT IN (SELECT min(rowid) FROM raw_files GROUP BY disclosure_id, object_id);
+CREATE UNIQUE INDEX raw_files_disclosure_content ON raw_files (disclosure_id, object_id);
+`,
+  },
 ];
 
 export class StoreSchemaError extends Error {

@@ -2,6 +2,7 @@
  * Raw KAP files in the Zova archive (#176). The bytes are a Zova object; `raw_files` says what they are and
  * where they came from. Identity comes from the KAP file name (docs/kap.md, "File name").
  */
+import { createHash } from "node:crypto";
 import { parseFilename } from "@vigil/core";
 import type { SqlRow, Store } from "./zova.ts";
 
@@ -44,16 +45,32 @@ function toRawFile(row: SqlRow): RawFile {
   };
 }
 
+export interface StoreResult {
+  file: RawFile;
+  /** True when this disclosure already had these exact bytes: nothing was written (#177). */
+  duplicate: boolean;
+}
+
 /**
- * Store the bytes as a Zova object and record its metadata, in one transaction. Returns the record.
- * Throws a `ParseError` for a file name that is not a KAP file name.
+ * Store the bytes as a Zova object and record its metadata, in one transaction.
+ * If the disclosure already has a file with the same SHA-256, nothing is written and the existing record is
+ * returned with `duplicate: true`; callers then emit no event. Different bytes for the same disclosure are a
+ * new version (#178). Throws a `ParseError` for a file name that is not a KAP file name.
  */
-export function storeRawFile(store: Store, bytes: Uint8Array, source: RawFileSource): RawFile {
+export function storeRawFile(store: Store, bytes: Uint8Array, source: RawFileSource): StoreResult {
   const id = parseFilename(source.fileName);
-  const fileName = source.fileName.split(/[/]/).pop() as string;
+  // A path from Windows or POSIX: keep the last part.
+  const fileName = source.fileName.split(/[\\/]/).pop() as string;
   const downloadedAt = (source.downloadedAt ?? new Date()).toISOString();
+  const hash = createHash("sha256").update(bytes).digest("hex");
   return store.transaction((s) => {
+    const existing = s.query("SELECT * FROM raw_files WHERE disclosure_id = ?1 AND object_id = ?2", [
+      id.disclosure_id,
+      hash,
+    ])[0];
+    if (existing) return { file: toRawFile(existing), duplicate: true };
     const objectId = s.putObject(bytes);
+    if (objectId !== hash) throw new Error(`Zova object id ${objectId} is not the SHA-256 of the content (${hash})`);
     s.run(
       `INSERT INTO raw_files (object_id, disclosure_id, company_code, raw_ticker_group, year, quarter, file_name,
          size_bytes, downloaded_at, source_url, stored_at)
@@ -72,7 +89,10 @@ export function storeRawFile(store: Store, bytes: Uint8Array, source: RawFileSou
         new Date().toISOString(),
       ],
     );
-    return toRawFile(s.query("SELECT * FROM raw_files WHERE rowid = last_insert_rowid()")[0] as SqlRow);
+    return {
+      file: toRawFile(s.query("SELECT * FROM raw_files WHERE rowid = last_insert_rowid()")[0] as SqlRow),
+      duplicate: false,
+    };
   });
 }
 
