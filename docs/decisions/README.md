@@ -14,12 +14,12 @@ Every methodology or project choice that changes results or how people work is r
 | [0008](0008-local-first-release.md) | The first release runs locally, with Docker | accepted |
 | [0009](0009-zova-and-duckdb.md) | Zova for raw data and state, DuckDB for analysis | accepted |
 | [0010](0010-typescript-and-bun.md) | Move the whole project to TypeScript on Bun | accepted |
+| [0011](0011-ebitda-definition.md) | Default EBITDA definition: A (core operations), B shown next to it | accepted |
 
 ## Open decisions
 
 These are tracked as issues with the [`decision`](https://github.com/octacity-org/vigil/labels/decision) label:
 
-- Default EBITDA definition
 - Net debt scope
 - Working capital scope
 - Annualisation method
