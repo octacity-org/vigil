@@ -463,7 +463,7 @@ Ayrıntılar ve gerekçeler: [`ARCHITECTURE.md`](ARCHITECTURE.md), kararlar [000
 | Hesap ve sinyal motoru | TypeScript (`packages/core`) | Oranlar, net borç, FAVÖK, gün sayıları, 3 aylık türetme, S1–S3 |
 | API | Hono (Bun) | Şirket, dönem, bulgu ve hesap adımı uç noktaları; her sayının kaynağı |
 | Arayüz | Next.js / React, Recharts veya ECharts | Sinyal listesi, şirket sayfası, sinyal kartı, "hesaplanamadı" durumları |
-| LLM | Claude (Haiku 5.5 toplu işler, Sonnet 5.5 zor vakalar) | Açıklama, şablon eşleme önerisi, dipnot çıkarma |
+| LLM | Kullanıcının seçtiği sağlayıcı: Anthropic, Gemini, OpenAI uyumlu bir servis (OpenRouter, OpenCode, Groq vb.) ya da Ollama ile yerel model | Açıklama, şablon eşleme önerisi, dipnot çıkarma |
 
 ---
 
@@ -476,6 +476,8 @@ Vigil'de klasik makine öğrenmesine çok az yer var:
 - Sinyallerin hesabı tek tek gösterilebilmeli; bu yüzden bilerek kural tabanlı tasarlandı.
 
 Asıl yapay zekâ işi **LLM** tarafında. Bu yüzden ekipteki rolün adı "ML" değil, **"LLM / yapay zekâ mühendisi"**.
+
+**Sağlayıcıdan bağımsız.** Vigil tek bir şirketin modeline bağlı değildir. LLM özellikleri isteğe bağlıdır ve kullanıcı ayarlardan nerede çalışacaklarını seçer (#253): kendi anahtarıyla Anthropic ya da Gemini; OpenRouter, OpenCode, Groq gibi OpenAI uyumlu bir servis (bazılarında ücretsiz modeller var); ya da Ollama ile bilgisayarındaki yerel bir model. Ollama anahtar istemez ve veri bilgisayardan çıkmaz. Sağlayıcı seçilmezse LLM özellikleri kapalıdır. Kod hiçbir sağlayıcıya bağımlı yazılmaz; her özelliğin değerlendirmesi en az bir barındırılan ve bir yerel modelle yapılır.
 
 ### Yapılacaklar (kullanışlılık sırasıyla)
 

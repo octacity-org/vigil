@@ -286,17 +286,43 @@ export interface Meta {
   quarters: { quarter: string; files: number; quality: Partial<Record<Quality, number>> }[];
 }
 
+/**
+ * Where LLM features run (#253). Vigil is not tied to one company:
+ * - `anthropic`, `gemini`: the provider's API with the user's key;
+ * - `openai_compatible`: any service with an OpenAI-style API (OpenRouter, OpenCode, Groq and others), at `base_url`;
+ * - `ollama`: a model on the user's computer, no key, nothing leaves the computer.
+ */
+export type LlmProvider = "anthropic" | "gemini" | "openai_compatible" | "ollama";
+
+export interface LlmSettings {
+  provider: LlmProvider;
+  /** Model name as the provider expects it. */
+  model: string;
+  /** Required for `openai_compatible`; `ollama` defaults to http://127.0.0.1:11434; `null` for the others. */
+  base_url: string | null;
+  /** Write-only: GET returns only whether a key is set. */
+  api_key_set: boolean;
+}
+
+export interface LlmSettingsUpdate {
+  provider: LlmProvider;
+  model: string;
+  base_url?: string | null;
+  /** Set a key, or `null` to remove it. Never returned. Not needed for `ollama`. */
+  api_key?: string | null;
+}
+
 export interface Settings {
   data_dir: string;
   quarters: string[];
-  /** Write-only: GET returns only whether one is set. */
-  anthropic_api_key_set: boolean;
+  /** `null` when LLM features are off (the default). */
+  llm: LlmSettings | null;
 }
 
 export interface SettingsUpdate {
   quarters?: string[];
-  /** Set a key, or `null` to remove it. Never returned. */
-  anthropic_api_key?: string | null;
+  /** Choose a provider, or `null` to turn LLM features off. */
+  llm?: LlmSettingsUpdate | null;
 }
 
 export interface DownloadRequest {

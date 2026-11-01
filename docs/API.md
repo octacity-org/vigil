@@ -158,7 +158,7 @@ Every error has the same shape and an HTTP status:
 | `GET /v1/findings?rule=&template=&quarter=&company=&sort=` | #223 | Findings, without steps |
 | `GET /v1/findings/{id}` | #224 | One finding with steps and sources |
 | `GET /v1/quality?quarter=` | #225 | Quality summary per quarter and the non-passing files |
-| `GET /v1/settings`, `PUT /v1/settings` | #226 | Settings; the API key is write-only |
+| `GET /v1/settings`, `PUT /v1/settings` | #226 | Settings, including the optional LLM provider (Anthropic, Gemini, OpenAI-compatible, Ollama; #253); the API key is write-only |
 | `POST /v1/downloads`, `GET /v1/downloads/events` | #227 | Start a download; progress as server-sent events |
 | `GET /v1/openapi.json` | #228 | Generated description of these routes |
 
