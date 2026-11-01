@@ -83,6 +83,24 @@ This is the list behind KAP's home page and disclosure search. Measured on 2026-
 
 The server enforces these rules in `apps/server/src/kap.ts` (#199): every request to KAP goes through one queue, at least `MIN_INTERVAL_MS` apart, with at most `MAX_ATTEMPTS` tries on network errors, 429 and 5xx. They are constants, not settings (decision 0008).
 
+## Sectors
+
+`GET https://www.kap.org.tr/tr/Sektorler` (checked 01.11.2026) is the only place found with KAP's sector classification. There is no documented API: the classification is embedded in the page as escaped JSON, two records per company:
+
+```json
+{"mainSectorName": "İMALAT", "mainSectorOid": "33E5FED802F600EAE0530A4A622B2AEA", "mainSectorNo": "003000.",
+ "mkkMemberOid": "4028e4a14184e9cf01419c001e945a74", "stockCode": "KATMR", "title": "KATMERCİLER ...", "kapTypes": ["IGS"]}
+{"sectorName": "METAL EŞYA MAKİNE ELEKTRİKLİ CİHAZLAR VE ULAŞIM ARAÇLARI", "sectorOid": "33E5FED803B300EAE0530A4A622B2AEA",
+ "sectorNo": "003000.008000.", "mkkMemberOid": "4028e4a14184e9cf01419c001e945a74", "stockCode": "KATMR", ...}
+```
+
+- 626 companies, 15 main sectors, 48 sub-sectors. All are listed companies (`kapTypes` contains `IGS`).
+- Match by `mkkMemberOid`: the ticker on the page can differ from the file name (Kardemir is `KRDMD` here, `KRDMA-KRDMB-KRDMD` in file names).
+- Companies that file statements only because they issue debt are not on the page: in 2026/2, 49 general-template filings, 22 of them lease certificate issuers (`Varlık Kiralama`). Their company summary page (`/tr/sirket-bilgileri/ozet/{mkkMemberOid}`) has no sector either.
+- Holdings are all under `MALİ KURULUŞLAR` → `HOLDİNGLER VE YATIRIM ŞİRKETLERİ`, industrial and investment holdings alike.
+
+How Vigil uses it: decision [0016](decisions/0016-sector-comparison-groups.md).
+
 ## File name
 
 ```
