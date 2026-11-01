@@ -88,6 +88,7 @@ A report that fails a blocking check is stored with its check results but produc
 
 - Every report is keyed by disclosure id and a hash of its raw file.
 - A raw file is always written to Zova first. DuckDB can be deleted and rebuilt from Zova at any time, for example after a parser change.
+- The server reaches Zova only through `apps/server/src/zova.ts` (#175), using `zova-js`. The file is `vigil.zova` in the data folder; a lock file next to it stops a second Vigil process from opening the same folder. Object ids are the SHA-256 of the content, so the same file is stored once.
 - The bitemporal schema (decision 0002, `SCHEMA.md`) stays in DuckDB. Versions are ordered by report period, then publication time, then disclosure id (#157).
 - DuckDB has one writer. Every write (collector, processor, settings) runs as a job on the write queue in `apps/server/src/queue.ts` (#197), one at a time, in order; a failed job does not stop the queue. Reads do not wait for it.
 
