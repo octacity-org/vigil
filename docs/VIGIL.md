@@ -28,7 +28,7 @@ Durum: **Taslak / Faz 0** · Model: açık kaynak, gönüllü ekip (7 kişi) · 
 16. [Mevcut kod durumu](#16-mevcut-kod-durumu)
 17. [Bilinen sorunlar](#17-bilinen-sorunlar)
 18. [Çapraz kontrolden çıkan dersler](#18-çapraz-kontrolden-çıkan-dersler)
-19. [Açık kararlar](#19-açık-kararlar)
+19. [Yöntem kararları](#19-yöntem-kararları)
 20. [Sunumlar ve kaynaklar](#20-sunumlar-ve-kaynaklar)
 
 ---
@@ -668,7 +668,7 @@ Analist kararları Faz 0'da başlamalı; sinyal işini bekleten en uzun iş budu
 - **Uyarı:** README'nin en üstünde ve her çıktıda yatırım tavsiyesi uyarısı. Açık kaynak olmak SPK yatırım danışmanlığı sınırını ortadan kaldırmaz.
 - **CONTRIBUTING.md:** Kurulum, veri indirme, "yaklaşık değer üretilmez" kuralı, on finansal kural, sahipsiz iş kuralı.
 - **Metodoloji tartışmaları:** GitHub Discussions. **Uygulama işleri:** Issues.
-- **Karar kayıtları (ADR):** `docs/kararlar/` altında her karar ayrı dosya: ne seçildi, alternatifler, gerekçe, ilgili tartışma. Altı açık karar ilk altı kayıt olur.
+- **Karar kayıtları (ADR):** `docs/decisions/` altında her karar ayrı dosya: ne seçildi, alternatifler, gerekçe, ilgili tartışma.
 - **Etiketler:** `good first issue`, `finans-bilgisi` (kod gerekmez), `veri`, `sinyal`, `metodoloji-karari`, `yardım-aranıyor`.
 - **CODEOWNERS:** Ayrıştırıcıya dokunan PR'ı veri sahibi, sinyale dokunanı metodoloji sahibi onaylar.
 - **CI kapısı:** Ara toplam, mutabakat ve altın veri seti testlerinden biri kırılırsa birleştirme yapılmaz.
@@ -771,18 +771,21 @@ Tasarım Claude ve Gemini arasında çapraz kontrol edildi. Yakalanan hatalar:
 
 ---
 
-## 19. Açık kararlar
+## 19. Yöntem kararları
 
-Finans uzmanı tarafından verilecek ve `docs/kararlar/` altında kaydedilecek:
+Altı açık yöntem kararı ve şirket türü kuralı 01.11.2026'da verildi ve `docs/decisions/` altında kaydedildi. Rakamlar 2026/2 verisinden:
 
-1. **FAVÖK:** Tanım A (çekirdek faaliyet) varsayılan olsun mu?
-2. **Net borç:** Kiralama yükümlülükleri ve finansal yatırımlar dahil mi?
-3. **İşletme sermayesi:** Müşteri avansları ve peşin ödenmiş giderler dahil mi?
-4. **Yıllıklaştırma:** 6 aylık × 2 mi, son 12 ay (TÜFE ile) mi?
-5. **Önem eşiği:** Payda ne olacak; X ve Z değerleri?
-6. **Sektör kıyası:** Oranlar hangi gruba göre kıyaslanacak? (KATMR'nin 1.577 günlük stok süresi gibi)
+| Soru | Karar |
+|---|---|
+| **FAVÖK** | Tanım A varsayılan; B her zaman yanında ve farkıyla gösterilir ([0011](decisions/0011-ebitda-definition.md)) |
+| **Net borç** | Borçlanmalar (KAP şablonunda kiralamalar dahil) − nakit; finansal yatırımlar düşülmez, yanında gösterilir ([0012](decisions/0012-net-debt-scope.md)) |
+| **İşletme sermayesi** | Alacak, stok, borç + sözleşme kalemleri, peşin giderler ve avanslar; bileşen bileşen. Gün sayıları yalnızca alacak, stok ve borçtan ([0013](decisions/0013-working-capital-scope.md)) |
+| **Yıllıklaştırma** | Son 12 ay, TÜFE ile; çarpma (× 2, × 4) hiç kullanılmaz ([0014](decisions/0014-annualisation-and-averages.md)) |
+| **Önem eşiği** | Payda toplam varlık; X = 1.000 baz puan, Z = %1 ([0015](decisions/0015-materiality-thresholds.md)) |
+| **Sektör kıyası** | KAP alt sektörü, en az 5 şirket; yoksa ana sektör ([0016](decisions/0016-sector-comparison-groups.md)) |
+| **Şirket türü** | Koddaki hisse listesi yerine KAP sektörü; holdingler ilk sürümde bulgu üretmez ([0017](decisions/0017-company-type-from-kap-sectors.md)) |
 
-Bu seçimler neyin "önemli" sayılacağını belirler. KATMR örneğinde tek bir tanım seçimi sonucu %79, tek bir payda seçimi 50 kattan fazla değiştiriyor.
+Bu belgedeki önceki tanımlarla çelişen yerlerde karar kayıtları geçerlidir.
 
 ---
 

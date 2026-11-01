@@ -99,7 +99,7 @@ The server enforces these rules in `apps/server/src/kap.ts` (#199): every reques
 - Companies that file statements only because they issue debt are not on the page: in 2026/2, 49 general-template filings, 22 of them lease certificate issuers (`Varlık Kiralama`). Their company summary page (`/tr/sirket-bilgileri/ozet/{mkkMemberOid}`) has no sector either.
 - Holdings are all under `MALİ KURULUŞLAR` → `HOLDİNGLER VE YATIRIM ŞİRKETLERİ`, industrial and investment holdings alike.
 
-How Vigil uses it: decision [0016](decisions/0016-sector-comparison-groups.md).
+How Vigil uses it: decisions [0016](decisions/0016-sector-comparison-groups.md) and [0017](decisions/0017-company-type-from-kap-sectors.md).
 
 ## File name
 
