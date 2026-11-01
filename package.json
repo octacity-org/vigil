@@ -16,7 +16,7 @@
     "quality": "bun apps/server/src/cli/quality.ts",
     "load": "bun apps/server/src/cli/load.ts",
     "signals": "bun apps/server/src/cli/signals.ts",
-    "web": "bun --cwd apps/web run dev"
+    "web": "bun run --cwd apps/web dev"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
