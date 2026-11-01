@@ -200,3 +200,30 @@ WHERE f.period_end IS NULL;
 |---|---|
 | 1 | `companies`, `reports`, `facts` (#45) |
 | 2 | `reports.published_at` (#157) |
+
+## Raw archive (Zova)
+
+The Zova store (`vigil.zova`, decision 0009) holds the raw files and app state. Its tables are versioned in [`store-schema.ts`](../apps/server/src/store-schema.ts) the same way as DuckDB's (`store_schema_version`).
+
+**`raw_files`** (#176): one row per stored file. The bytes are a Zova object; `object_id` is the SHA-256 of the content (hex). Code: [`raw-files.ts`](../apps/server/src/raw-files.ts).
+
+| Column | Meaning |
+|---|---|
+| `object_id` | Zova object id = SHA-256 of the bytes |
+| `disclosure_id` | KAP disclosure number, from the file name |
+| `company_code`, `raw_ticker_group` | First code and full ticker group (`A1CAP`, `A1CAP-ACP`) |
+| `year`, `quarter` | Report period, from the file name |
+| `file_name` | `{TICKER-GROUP}_{disclosure}_{year}_{quarter}.xls` |
+| `size_bytes` | Size of the bytes |
+| `downloaded_at` | When the bytes were downloaded (UTC) |
+| `source_url` | The KAP URL, or `file://…` for an import |
+| `stored_at` | When the row was written (UTC) |
+
+Look-ups: by disclosure (oldest download first), by company, by quarter.
+
+**`events`** (#179): `report_stored`, `report_processed`, `report_failed`; see `docs/ARCHITECTURE.md`.
+
+| Version | Change |
+|---|---|
+| 1 | `events` (#179) |
+| 2 | `raw_files` (#176) |
