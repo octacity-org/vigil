@@ -35,11 +35,22 @@ describe("requests", () => {
   });
 
   test("PUT sends JSON", async () => {
-    const { client, calls } = fake(() => json({ data_dir: "/data", quarters: [], anthropic_api_key_set: true }));
-    const s = await client.updateSettings({ anthropic_api_key: "sk-test" });
-    expect(s.anthropic_api_key_set).toBe(true);
+    const saved = {
+      data_dir: "/data",
+      quarters: [],
+      llm: { provider: "ollama", model: "qwen3:8b", base_url: "http://127.0.0.1:11434", api_key_set: false },
+    };
+    const { client, calls } = fake(() => json(saved));
+    const s = await client.updateSettings({ llm: { provider: "ollama", model: "qwen3:8b" } });
+    expect(s.llm?.provider).toBe("ollama");
     expect(calls[0]?.init?.method).toBe("PUT");
-    expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({ anthropic_api_key: "sk-test" });
+    expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({ llm: { provider: "ollama", model: "qwen3:8b" } });
+  });
+
+  test("LLM features can be turned off", async () => {
+    const { client, calls } = fake(() => json({ data_dir: "/data", quarters: [], llm: null }));
+    expect((await client.updateSettings({ llm: null })).llm).toBeNull();
+    expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({ llm: null });
   });
 });
 
