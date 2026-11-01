@@ -81,6 +81,8 @@ This is the list behind KAP's home page and disclosure search. Measured on 2026-
 - query one day or one month rather than repeating large ranges;
 - cache the results: a past day's list does not change except through new corrections, which appear as new disclosures.
 
+The server enforces these rules in `apps/server/src/kap.ts` (#199): every request to KAP goes through one queue, at least `MIN_INTERVAL_MS` apart, with at most `MAX_ATTEMPTS` tries on network errors, 429 and 5xx. They are constants, not settings (decision 0008).
+
 ## File name
 
 ```
