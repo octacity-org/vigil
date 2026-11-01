@@ -64,7 +64,13 @@ describe("WriteQueue", () => {
   test("stats show the running job", async () => {
     const q = new WriteQueue();
     let release = () => {};
-    const blocked = q.add("load KATMR", () => new Promise<void>((r) => (release = r)));
+    const blocked = q.add(
+      "load KATMR",
+      () =>
+        new Promise<void>((r) => {
+          release = r;
+        }),
+    );
     q.add("load SANFM", () => {});
     await tick();
     expect(q.stats()).toMatchObject({ pending: 1, running: { id: 1, name: "load KATMR" } });
