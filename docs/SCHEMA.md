@@ -221,9 +221,12 @@ The Zova store (`vigil.zova`, decision 0009) holds the raw files and app state. 
 
 Look-ups: by disclosure (oldest download first), by company, by quarter.
 
+The same bytes for the same disclosure are stored once (#177): `storeRawFile` returns the existing record with `duplicate: true` and the caller emits no event. Different bytes for the same disclosure are a new version. The same bytes under another disclosure get their own row and share the object.
+
 **`events`** (#179): `report_stored`, `report_processed`, `report_failed`; see `docs/ARCHITECTURE.md`.
 
 | Version | Change |
 |---|---|
 | 1 | `events` (#179) |
 | 2 | `raw_files` (#176) |
+| 3 | One row per disclosure and content: duplicates removed, unique index (#177) |
