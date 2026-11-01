@@ -1,7 +1,8 @@
 /** Single-writer job queue (#197). */
 import { describe, expect, test } from "bun:test";
-import { close, connect, rows } from "../src/db.ts";
+import { close, rows } from "../src/db.ts";
 import { type JobInfo, QueueClosedError, WriteQueue } from "../src/queue.ts";
+import { FIXTURES, loadedDatabase } from "./fixtures/index.ts";
 
 const tick = (ms = 1) => new Promise((r) => setTimeout(r, ms));
 
@@ -101,7 +102,7 @@ describe("WriteQueue", () => {
 });
 
 test("concurrent DuckDB transactions on one connection succeed through the queue", async () => {
-  const db = await connect(":memory:");
+  const db = await loadedDatabase();
   try {
     await db.con.run("CREATE TABLE t (id INTEGER, step INTEGER)");
     const write = async (id: number) => {
@@ -121,6 +122,8 @@ test("concurrent DuckDB transactions on one connection succeed through the queue
     const q = new WriteQueue();
     await Promise.all(Array.from({ length: 10 }, (_, i) => q.add(`write ${i}`, () => write(i))));
     expect(await rows(db, "SELECT count(*) AS n, count(DISTINCT id) AS ids FROM t")).toEqual([{ n: 30n, ids: 10n }]);
+    // The loaded reports are untouched by the queued writes.
+    expect(await rows(db, "SELECT count(*) AS n FROM reports")).toEqual([{ n: BigInt(FIXTURES.length) }]);
   } finally {
     close(db);
   }
