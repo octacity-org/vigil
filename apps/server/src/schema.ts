@@ -15,7 +15,8 @@
  * against the state before the transaction, so replacing a report (delete facts, delete report) fails.
  */
 
-export const TABLES_SQL = `
+/** Migration 1: the tables of #45. `IF NOT EXISTS`, so it also runs on databases made before versioning. */
+const BASE_TABLES_SQL = `
 CREATE TABLE IF NOT EXISTS companies (
     company_code            VARCHAR PRIMARY KEY
 );
@@ -33,12 +34,8 @@ CREATE TABLE IF NOT EXISTS reports (
     has_tms29_monetary_item BOOLEAN NOT NULL,
     filepath                VARCHAR NOT NULL,
     fact_count              INTEGER NOT NULL,
-    loaded_at               TIMESTAMP NOT NULL,
-    published_at            TIMESTAMP          -- \`Gönderim Tarihi\`, Istanbul time (#157)
+    loaded_at               TIMESTAMP NOT NULL
 );
-
--- Databases created before #157 get the column; new ones already have it.
-ALTER TABLE reports ADD COLUMN IF NOT EXISTS published_at TIMESTAMP;
 
 CREATE TABLE IF NOT EXISTS facts (
     disclosure_id           BIGINT NOT NULL,   -- reports.disclosure_id
@@ -126,4 +123,32 @@ GROUP BY ALL
 HAVING count(DISTINCT raw_value) > 1;
 `;
 
-export const SCHEMA_SQL = TABLES_SQL + VIEWS_SQL;
+export interface Migration {
+  version: number;
+  name: string;
+  sql: string;
+}
+
+/**
+ * Ordered schema changes (#182). Append only: never edit or reorder a released step. Each runs once, in its own
+ * transaction, and is recorded in `schema_version`. Steps must also be safe on databases created before
+ * versioning existed (2026), which have no `schema_version` table; `IF NOT EXISTS` covers that.
+ * Views are not migrations: they are recreated on every start.
+ */
+export const MIGRATIONS: readonly Migration[] = [
+  { version: 1, name: "companies, reports and facts (#45)", sql: BASE_TABLES_SQL },
+  {
+    version: 2,
+    name: "reports.published_at (#157)",
+    // `Gönderim Tarihi`, Istanbul time.
+    sql: "ALTER TABLE reports ADD COLUMN IF NOT EXISTS published_at TIMESTAMP;",
+  },
+];
+
+export const SCHEMA_VERSION_SQL = `
+CREATE TABLE IF NOT EXISTS schema_version (
+    version     INTEGER PRIMARY KEY,
+    name        VARCHAR NOT NULL,
+    applied_at  TIMESTAMP NOT NULL
+);
+`;

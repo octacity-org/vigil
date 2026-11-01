@@ -9,7 +9,7 @@ import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { type DuckDBAppender, type DuckDBConnection, DuckDBInstance, dateValue } from "@duckdb/node-api";
 import { type ParsedFiling, parseFilename, parseKapXls } from "@vigil/core";
-import { SCHEMA_SQL } from "./schema.ts";
+import { migrate } from "./migrate.ts";
 
 export const FACT_COLUMNS = [
   "disclosure_id",
@@ -148,12 +148,18 @@ export interface Database {
   con: DuckDBConnection;
 }
 
-/** Open (or create) a database and make sure the schema exists. `:memory:` for an in-memory database. */
+/** Open (or create) a database and bring its schema up to date (#182). `:memory:` for an in-memory database. */
 export async function connect(dbPath: string): Promise<Database> {
   if (dbPath !== ":memory:") mkdirSync(dirname(resolve(dbPath)), { recursive: true });
   const instance = await DuckDBInstance.create(dbPath);
   const con = await instance.connect();
-  await con.run(SCHEMA_SQL);
+  try {
+    await migrate(con);
+  } catch (e) {
+    con.closeSync();
+    instance.closeSync();
+    throw e;
+  }
   return { instance, con };
 }
 

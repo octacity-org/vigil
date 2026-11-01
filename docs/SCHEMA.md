@@ -184,3 +184,19 @@ SELECT r.company_code, f.disclosure_id, f.row_id, f.column_class, f.period_label
 FROM facts f JOIN reports r USING (disclosure_id)
 WHERE f.period_end IS NULL;
 ```
+
+## Schema versions
+
+`connect()` brings every database to the current schema on start (#182). The steps are `MIGRATIONS` in [`schema.ts`](../apps/server/src/schema.ts); the runner is [`migrate.ts`](../apps/server/src/migrate.ts).
+
+- `schema_version` lists the applied steps (`version`, `name`, `applied_at`). A database made before versioning has no such table and starts at 0; the first steps use `IF NOT EXISTS`, so they are safe on it.
+- Each step runs once, in its own transaction. If one fails, it is rolled back and the database stays at the previous version.
+- Steps are append-only: a released step is never edited or reordered. A new column or table is a new step.
+- Views are not steps; they are recreated on every start.
+- A database from a newer Vigil is refused.
+- DuckDB is derived data (decision 0009). If a database cannot be migrated, delete it and load again from the raw files.
+
+| Version | Change |
+|---|---|
+| 1 | `companies`, `reports`, `facts` (#45) |
+| 2 | `reports.published_at` (#157) |
