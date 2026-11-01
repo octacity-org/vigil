@@ -17,11 +17,11 @@ Every methodology or project choice that changes results or how people work is r
 | [0011](0011-ebitda-definition.md) | Default EBITDA definition: A (core operations), B shown next to it | accepted |
 | [0012](0012-net-debt-scope.md) | Net debt: borrowings including leases − cash; financial investments not subtracted | accepted |
 | [0013](0013-working-capital-scope.md) | Working capital: core items plus contract and prepayment items, by component | accepted |
+| [0014](0014-annualisation-and-averages.md) | Annualisation: trailing twelve months with CPI, never multiplied | accepted |
 
 ## Open decisions
 
 These are tracked as issues with the [`decision`](https://github.com/octacity-org/vigil/labels/decision) label:
 
-- Annualisation method
 - Materiality denominator and thresholds X, Z
 - Sector comparison groups
