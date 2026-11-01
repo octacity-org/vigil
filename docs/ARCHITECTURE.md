@@ -95,7 +95,7 @@ A report that fails a blocking check is stored with its check results but produc
 
 ### API
 
-Hono, under `/v1`, read-only. The API contract is described in a separate document; its principles:
+Hono, under `/v1`, read-only. The contract is [`API.md`](API.md) (#161); its principles:
 
 - **Every number comes with its source:** source system, document id (the KAP disclosure index), table, row, column, period label, and a link to the disclosure.
 - **Every number has a status:** `ok`, `not_reported` (the company left it empty) or `not_computable` (with the reason and the data that would be needed). A missing value is never shown as 0.
