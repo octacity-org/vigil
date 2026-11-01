@@ -16,12 +16,12 @@ Every methodology or project choice that changes results or how people work is r
 | [0010](0010-typescript-and-bun.md) | Move the whole project to TypeScript on Bun | accepted |
 | [0011](0011-ebitda-definition.md) | Default EBITDA definition: A (core operations), B shown next to it | accepted |
 | [0012](0012-net-debt-scope.md) | Net debt: borrowings including leases − cash; financial investments not subtracted | accepted |
+| [0013](0013-working-capital-scope.md) | Working capital: core items plus contract and prepayment items, by component | accepted |
 
 ## Open decisions
 
 These are tracked as issues with the [`decision`](https://github.com/octacity-org/vigil/labels/decision) label:
 
-- Working capital scope
 - Annualisation method
 - Materiality denominator and thresholds X, Z
 - Sector comparison groups
