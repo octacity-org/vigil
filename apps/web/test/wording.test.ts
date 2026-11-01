@@ -12,8 +12,13 @@ function files(dir: string): string[] {
   );
 }
 
+// The disclaimer names what Vigil does not give ("hedef fiyat ... içermez"); its text is checked against
+// docs/legal.md in disclaimer.test.ts instead.
+const EXEMPT = [join(SRC, "components", "Disclaimer.tsx")];
+
 test("no forbidden wording in the web app", () => {
   const hits = files(SRC).flatMap((f) => {
+    if (EXEMPT.includes(f)) return [];
     const text = readFileSync(f, "utf8");
     return FORBIDDEN.filter((re) => re.test(text)).map((re) => `${f}: ${re}`);
   });
