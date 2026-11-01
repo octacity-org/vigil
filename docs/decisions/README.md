@@ -19,9 +19,8 @@ Every methodology or project choice that changes results or how people work is r
 | [0013](0013-working-capital-scope.md) | Working capital: core items plus contract and prepayment items, by component | accepted |
 | [0014](0014-annualisation-and-averages.md) | Annualisation: trailing twelve months with CPI, never multiplied | accepted |
 | [0015](0015-materiality-thresholds.md) | Materiality: total assets, X = 1,000 bps, Z = 1% | accepted |
+| [0016](0016-sector-comparison-groups.md) | Sector comparison: KAP sub-sector, at least 5 companies | accepted |
 
 ## Open decisions
 
-These are tracked as issues with the [`decision`](https://github.com/octacity-org/vigil/labels/decision) label:
-
-- Sector comparison groups
+Open decisions are tracked as issues with the [`decision`](https://github.com/octacity-org/vigil/labels/decision) label.
