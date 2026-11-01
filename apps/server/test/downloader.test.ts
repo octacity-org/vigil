@@ -4,7 +4,13 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { crc32, deflateRawSync } from "node:zlib";
-import { downloadQuarter, fetchFiles, type OpenUrl, salvageZip } from "../src/downloader.ts";
+import { downloadQuarter, fetchFiles, salvageZip } from "../src/downloader.ts";
+import { KapClient } from "../src/kap.ts";
+
+type OpenUrl = (url: string) => Promise<Response>;
+
+/** A KAP client on a fake server, without waits. */
+const client = (open: OpenUrl) => new KapClient({ transport: (url) => open(url), sleep: async () => {} });
 
 /** Deterministic pseudo-random bytes, as hex text, so members do not compress to a few bytes. */
 function randomHex(seed: number, length: number): Buffer {
@@ -215,7 +221,7 @@ describe("download", () => {
       () => response(z.data),
     );
     const sleeps: number[] = [];
-    const r = await downloadQuarter(2026, 2, tmp, { openUrl: open, sleep: async (s) => void sleeps.push(s) });
+    const r = await downloadQuarter(2026, 2, tmp, { kap: client(open), sleep: async (s) => void sleeps.push(s) });
     expect([r.complete, r.attempts, r.recovered.length, r.lost]).toEqual([true, 2, 5, []]);
     expect(calls).toEqual(Array(2).fill("https://www.kap.org.tr/tr/api/financialTable/download/2026/2"));
     expect(sleeps).toEqual([2]);
@@ -236,7 +242,7 @@ describe("download", () => {
     const sleeps: number[] = [];
     const r = await downloadQuarter(2026, 2, tmp, {
       retries: 3,
-      openUrl: open,
+      kap: client(open),
       sleep: async (s) => void sleeps.push(s),
     });
     expect([r.complete, r.attempts]).toEqual([false, 3]);
@@ -250,14 +256,14 @@ describe("download", () => {
     const open: OpenUrl = async () => {
       throw Object.assign(new Error("timed out"), { name: "TimeoutError" });
     };
-    const r = await downloadQuarter(2026, 2, tmp, { retries: 2, openUrl: open, sleep: async () => {} });
+    const r = await downloadQuarter(2026, 2, tmp, { retries: 2, kap: client(open), sleep: async () => {} });
     expect([r.complete, r.recovered, r.lost, r.errors.length]).toEqual([false, [], [], 2]);
   });
 
   test("only the listed files are extracted", async () => {
     const [open] = fakeServer(() => response(kapZip().data));
     const wanted = ["CO1_1001_2026_2.xls", "CO3_1003_2026_2.xls"];
-    const r = await downloadQuarter(2026, 2, tmp, { openUrl: open, sleep: async () => {}, only: wanted });
+    const r = await downloadQuarter(2026, 2, tmp, { kap: client(open), sleep: async () => {}, only: wanted });
     expect(r.complete).toBe(true);
     expect(readdirSync(join(tmp, "2026_2")).sort()).toEqual(wanted);
   });
@@ -271,13 +277,13 @@ describe("download", () => {
       () => response(z.data),
       () => response(z.data),
     );
-    const missing = await fetchFiles(listing, raw, { openUrl: open, sleep: async () => {} });
+    const missing = await fetchFiles(listing, raw, { kap: client(open), sleep: async () => {} });
     expect(Object.fromEntries(missing)).toEqual({ "2026_2": ["GONE_9_2026_2.xls"] });
     expect(readdirSync(join(raw, "2026_2"))).toEqual(["CO0_1000_2026_2.xls"]);
     expect(existsSync(join(raw, "2026_2.zip"))).toBe(false); // only the listed files are kept
 
     writeFileSync(listing, "2026_2/CO0_1000_2026_2.xls\n");
-    expect((await fetchFiles(listing, raw, { openUrl: open, sleep: async () => {} })).size).toBe(0);
+    expect((await fetchFiles(listing, raw, { kap: client(open), sleep: async () => {} })).size).toBe(0);
     expect(calls).toHaveLength(1); // already present: not downloaded again
   });
 });

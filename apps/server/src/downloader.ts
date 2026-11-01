@@ -11,15 +11,9 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { crc32, inflateRawSync } from "node:zlib";
+import { type KapClient, kap as sharedKap } from "./kap.ts";
 
-export const KAP_BULK_URL = "https://www.kap.org.tr/tr/api/financialTable/download/{year}/{quarter}";
-
-export const DEFAULT_HEADERS: Readonly<Record<string, string>> = {
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-  Accept: "application/zip,application/octet-stream,*/*",
-  Referer: "https://www.kap.org.tr/tr/",
-};
+export const KAP_BULK_PATH = "/tr/api/financialTable/download/{year}/{quarter}";
 
 const LOCAL_HEADER = 0x04034b50;
 const CENTRAL_HEADER = 0x02014b50;
@@ -195,17 +189,13 @@ export function salvageZip(zipPath: string, extractDir: string, only: Iterable<s
   return scanLocalHeaders(data, extractDir, wanted);
 }
 
-/** Fetches a URL; replaceable in tests. */
-export type OpenUrl = (url: string, headers: Record<string, string>, timeoutMs: number) => Promise<Response>;
-
-const openUrl: OpenUrl = (url, headers, timeoutMs) => fetch(url, { headers, signal: AbortSignal.timeout(timeoutMs) });
-
 export interface DownloadOptions {
   retries?: number;
   timeoutMs?: number;
   /** Seconds before the first retry; doubles after each attempt. */
   backoff?: number;
-  openUrl?: OpenUrl;
+  /** All KAP requests go through this client (#199); tests pass one with a fake transport. */
+  kap?: KapClient;
   /** Waits `seconds`; replaceable in tests. */
   sleep?: (seconds: number) => Promise<void>;
   /** Extract only these file names; `complete` then means all of them were recovered. */
@@ -237,12 +227,12 @@ export async function downloadQuarter(
   rawDir: string,
   options: DownloadOptions = {},
 ): Promise<DownloadResult> {
-  const { retries = 5, timeoutMs = 60_000, backoff = 2, openUrl: open = openUrl, sleep = realSleep } = options;
+  const { retries = 5, timeoutMs = 60_000, backoff = 2, kap = sharedKap, sleep = realSleep } = options;
   const only = options.only == null ? null : [...options.only];
   mkdirSync(rawDir, { recursive: true });
   const zipPath = join(rawDir, `${year}_${quarter}.zip`);
   const partPath = `${zipPath}.part`;
-  const url = KAP_BULK_URL.replace("{year}", String(year)).replace("{quarter}", String(quarter));
+  const path = KAP_BULK_PATH.replace("{year}", String(year)).replace("{quarter}", String(quarter));
   if (existsSync(zipPath)) rmSync(zipPath); // never salvage a file left by an earlier run
   const errors: string[] = [];
   let best = 0;
@@ -250,9 +240,8 @@ export async function downloadQuarter(
   for (attempt = 1; attempt <= retries; attempt++) {
     const chunks: Uint8Array[] = [];
     try {
-      const resp = await open(url, { ...DEFAULT_HEADERS }, timeoutMs);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      await readBody(resp, chunks);
+      // One attempt per call: this loop retries a cut-off zip itself, from the start.
+      await kap.request(path, (resp) => readBody(resp, chunks), { timeoutMs, attempts: 1 });
     } catch (e) {
       // Network errors are retried and reported, never raised.
       errors.push(`attempt ${attempt}: ${(e as Error).name}: ${(e as Error).message}`);
