@@ -20,6 +20,7 @@ Every methodology or project choice that changes results or how people work is r
 | [0014](0014-annualisation-and-averages.md) | Annualisation: trailing twelve months with CPI, never multiplied | accepted |
 | [0015](0015-materiality-thresholds.md) | Materiality: total assets, X = 1,000 bps, Z = 1% | accepted |
 | [0016](0016-sector-comparison-groups.md) | Sector comparison: KAP sub-sector, at least 5 companies | accepted |
+| [0017](0017-company-type-from-kap-sectors.md) | Company type from KAP sectors instead of a ticker list | accepted |
 
 ## Open decisions
 
