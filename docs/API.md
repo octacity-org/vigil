@@ -1,6 +1,6 @@
 # API contract
 
-The HTTP API between the Vigil server (`apps/server`) and the web app (`apps/web`). Both build against this document (#161). Principles are in [`ARCHITECTURE.md`](ARCHITECTURE.md#api); this page is the detail. Types for every shape here live in one shared package (#213), so a mismatch between server and web fails the type check.
+The HTTP API between the Vigil server (`apps/server`) and the web app (`apps/web`). Both build against this document (#161). Principles are in [`ARCHITECTURE.md`](ARCHITECTURE.md#api); this page is the detail. Types for every shape here live in [`packages/api-types`](../packages/api-types/src/index.ts) (#213), used by the server and the web app, so a mismatch between them fails the type check. Its tests parse the example below and check it against the types.
 
 Status: **v1 draft for the local release.** Changes to shapes go through a PR that edits this file and the shared types together.
 
