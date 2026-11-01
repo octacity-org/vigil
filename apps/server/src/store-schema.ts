@@ -26,6 +26,28 @@ CREATE TABLE events (
 CREATE INDEX events_pending ON events (type, id) WHERE handled_at IS NULL;
 `,
   },
+  {
+    version: 2,
+    name: "raw KAP files (#176)",
+    sql: `
+CREATE TABLE raw_files (
+    object_id         TEXT NOT NULL,     -- Zova object id = SHA-256 of the content, hex
+    disclosure_id     INTEGER NOT NULL,  -- KAP disclosure number
+    company_code      TEXT NOT NULL,     -- first code of the ticker group
+    raw_ticker_group  TEXT NOT NULL,     -- e.g. A1CAP-ACP
+    year              INTEGER NOT NULL,
+    quarter           INTEGER NOT NULL CHECK (quarter BETWEEN 1 AND 4),
+    file_name         TEXT NOT NULL,     -- {TICKER-GROUP}_{disclosure}_{year}_{quarter}.xls
+    size_bytes        INTEGER NOT NULL,
+    downloaded_at     TEXT NOT NULL,     -- ISO 8601, UTC
+    source_url        TEXT NOT NULL,     -- KAP URL the bytes came from, or file:// for an import
+    stored_at         TEXT NOT NULL      -- ISO 8601, UTC
+);
+CREATE INDEX raw_files_disclosure ON raw_files (disclosure_id, downloaded_at);
+CREATE INDEX raw_files_company ON raw_files (company_code, year, quarter);
+CREATE INDEX raw_files_quarter ON raw_files (year, quarter);
+`,
+  },
 ];
 
 export class StoreSchemaError extends Error {
