@@ -10,12 +10,13 @@
   "scripts": {
     "lint": "biome check .",
     "format": "biome format --write .",
-    "typecheck": "tsc -p .",
+    "typecheck": "tsc -p . && tsc -p apps/web",
     "test": "bun test",
     "download": "bun apps/server/src/cli/download.ts",
     "quality": "bun apps/server/src/cli/quality.ts",
     "load": "bun apps/server/src/cli/load.ts",
-    "signals": "bun apps/server/src/cli/signals.ts"
+    "signals": "bun apps/server/src/cli/signals.ts",
+    "web": "bun --cwd apps/web run dev"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
