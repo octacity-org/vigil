@@ -1,6 +1,8 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
-  "files": { "includes": ["**", "!**/node_modules", "!data", "!reports", "!**/*.md"] },
+  "files": {
+    "includes": ["**", "!**/node_modules", "!**/.next", "!**/next-env.d.ts", "!data", "!reports", "!**/*.md"]
+  },
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 120 },
   "linter": { "rules": { "recommended": true } },
   "javascript": { "formatter": { "quoteStyle": "double" } }
