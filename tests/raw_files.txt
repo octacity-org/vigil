@@ -6,6 +6,7 @@
 # Golden dataset (tests/golden/)
 2026_2/KATMR_1651411_2026_2.xls
 2026_2/BIOEN_1652232_2026_2.xls
+2026_2/MOGAN_1645679_2026_2.xls
 
 # packages/core/test/signals.test.ts
 2026_2/SANFM_1650384_2026_2.xls
