@@ -101,6 +101,7 @@ Methodology choices change results by large factors (at KATMR, one EBITDA defini
 
 ## Issues and pull requests
 
+- **Issues have a priority** (the Priority field and a `priority:` label) that shows the order of the work: `urgent` first, then `high`, `medium` and `low`. Lower-priority issues often depend on work that is not done yet. You may take any issue; the urgent ones unblock the most. The pinned issue #308 lists them.
 - **Claim an issue** by commenting on it. If an assigned issue has no activity for **two weeks**, it is politely unassigned so someone else can pick it up. No hard feelings — school comes first.
 - **Pull requests come from forks.** You do not need write access to contribute (see [Setup](#setup)).
 - **One issue per pull request** where possible. Use `Closes #N` in the description.
