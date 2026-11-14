@@ -72,6 +72,8 @@ GET https://www.kap.org.tr/tr/api/financialTable/download/{year}/{quarter}
 
 Downloads often truncate; the downloader salvages complete files from partial archives. Please be polite to the server: no parallel bulk downloads.
 
+Quarters already in `data/raw/` go into the Zova archive (`data/vigil.zova`) with `bun run import`; running it again skips files already stored (`docs/SCHEMA.md`, "Raw archive (Zova)").
+
 For the tests, `bun run download --files tests/raw_files.txt data/raw` fetches only the raw files they use. CI runs the golden tests the same way (job `golden`, decision 0007). If you add a golden file or a test that needs another raw file, list it in `tests/raw_files.txt`.
 
 ### CPI series

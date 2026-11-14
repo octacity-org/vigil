@@ -51,13 +51,27 @@ export interface StoreResult {
   duplicate: boolean;
 }
 
+export interface StoreOptions {
+  /**
+   * Runs inside the same transaction, after a new file is recorded (not for a duplicate): the place to `emit` the
+   * `report_stored` event, so a file is never stored without its event or the other way round. Zova has no nested
+   * transactions, so the event cannot be added around this call. A throw rolls back the file too.
+   */
+  onStored?: (store: Store, file: RawFile) => void;
+}
+
 /**
  * Store the bytes as a Zova object and record its metadata, in one transaction.
  * If the disclosure already has a file with the same SHA-256, nothing is written and the existing record is
  * returned with `duplicate: true`; callers then emit no event. Different bytes for the same disclosure are a
  * new version (#178). Throws a `ParseError` for a file name that is not a KAP file name.
  */
-export function storeRawFile(store: Store, bytes: Uint8Array, source: RawFileSource): StoreResult {
+export function storeRawFile(
+  store: Store,
+  bytes: Uint8Array,
+  source: RawFileSource,
+  options: StoreOptions = {},
+): StoreResult {
   const id = parseFilename(source.fileName);
   // A path from Windows or POSIX: keep the last part.
   const fileName = source.fileName.split(/[\\/]/).pop() as string;
@@ -89,10 +103,9 @@ export function storeRawFile(store: Store, bytes: Uint8Array, source: RawFileSou
         new Date().toISOString(),
       ],
     );
-    return {
-      file: toRawFile(s.query("SELECT * FROM raw_files WHERE rowid = last_insert_rowid()")[0] as SqlRow),
-      duplicate: false,
-    };
+    const file = toRawFile(s.query("SELECT * FROM raw_files WHERE rowid = last_insert_rowid()")[0] as SqlRow);
+    options.onStored?.(s, file);
+    return { file, duplicate: false };
   });
 }
 

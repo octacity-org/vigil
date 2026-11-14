@@ -268,6 +268,16 @@ Look-ups: by disclosure (oldest download first), by company, by quarter.
 
 The same bytes for the same disclosure are stored once (#177): `storeRawFile` returns the existing record with `duplicate: true` and the caller emits no event. Different bytes for the same disclosure are a new version. The same bytes under another disclosure get their own row and share the object.
 
+A new file and its `report_stored` event are written in one Zova transaction: `storeRawFile` takes an `onStored` callback that runs inside its transaction, because Zova has no nested transactions.
+
+**Importing `data/raw/`** (#180): `bun run import [raw_dir] [data_dir]` stores the `.xls` files of every `{year}_{quarter}` folder (or of one such folder) and emits `report_stored` for each new one, with `source: "import"` in the payload. Code: [`import.ts`](../apps/server/src/import.ts).
+
+- `source_url` is the file's `file://` path.
+- `downloaded_at` is when the quarter was downloaded, not the time of the import, because versions are ordered by it: the time given with `--downloaded-at` (only with one quarter folder), else the modification time of the quarter's zip next to the folder (`{year}_{quarter}.zip`, the name `bun run download` uses, or `kap_{year}_{quarter}.zip`, a name some earlier local downloads used), else of the oldest file in the folder. Which of these was used is in the event's payload (`downloaded_at_source`). A time in the future or before the quarter ended is refused: it would rank the files wrongly against other versions.
+- An `.xls` file whose name is not a KAP file name, gives another quarter than its folder, or cannot be read is listed as failed and not stored; so is an entry named like a quarter that is not a readable folder. The others are still imported, and the command exits 1. Symbolic links are followed, as in `bun run load`. A file that is stored but does not parse is the processor's to report (`report_failed`).
+- An error of the store itself (for example a full disk) stops the run. Every file stored before it, including those of the quarter in progress, is kept with its event and counted in the summary; running it again continues.
+- Running it again skips every file already stored. If the app (or another import) holds the store, it stops with the lock message.
+
 **`events`** (#179): `report_stored`, `report_processed`, `report_failed`; see `docs/ARCHITECTURE.md`.
 
 | Version | Change |

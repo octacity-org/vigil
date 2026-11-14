@@ -4,6 +4,8 @@ data/processed/
 reports/
 *.duckdb
 *.duckdb.wal
+*.zova
+*.zova.lock
 *.sqlite
 
 # Bun / TypeScript
