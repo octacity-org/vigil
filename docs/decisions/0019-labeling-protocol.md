@@ -47,9 +47,9 @@ Every finding gets the same question, in Turkish:
 | Answer | When |
 |---|---|
 | `evet` (yes) | The change is real and large enough that an analyst following the company would want to look at it, even if the filing explains it |
-| `hayır` (no) | Anything else; one reason is required |
+| `hayir` (no) | Anything else; one reason is required |
 
-| Reason for `hayır` | Meaning |
+| Reason for `hayir` | Meaning |
 |---|---|
 | `onemsiz` | The numbers are right, but the change is small for this company, seasonal or routine |
 | `yontem` | The finding comes from the method, not the company. Examples: comparing periods with a different consolidation scope, or a reclassification that moves amounts between rows |
@@ -60,7 +60,7 @@ A note of one or two sentences is optional for `evet` and required for `diger`.
 
 **Examples**
 
-The labeler instructions include at least two `evet` and two `hayır` examples, one for each `hayır` reason where possible. Examples come from a quarter that is not sampled and are fixed before the sample is drawn. They show the reasoning, not a list of finding types to accept or reject.
+The labeler instructions include at least two `evet` and two `hayir` examples, one for each `hayir` reason where possible. Examples come from a quarter that is not sampled and are fixed before the sample is drawn. They show the reasoning, not a list of finding types to accept or reject.
 
 **What labelers may use**
 
@@ -84,7 +84,7 @@ The labeler instructions include at least two `evet` and two `hayır` examples, 
    | `disclosure_id` | The KAP disclosure |
    | `finding_type` | S1, S2 or S3 |
    | `answer` | `evet` or `hayir` |
-   | `reason` | One of the four reasons, for `hayır` |
+   | `reason` | One of the four reasons, for `hayir` |
    | `note` | Free text |
 
    No KAP numbers go in the file; the numbers stay on the finding card in each person's local Vigil.
