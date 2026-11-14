@@ -23,6 +23,7 @@ KAP labels are Turkish; code, issues and variable names are English. Use these n
 | Nakit ve nakit benzerleri | Cash and cash equivalents | `cash` | Cash and very short-term liquid investments |
 | Ticari alacaklar | Trade receivables | `trade_receivables` | Amounts owed by customers |
 | Stoklar | Inventories | `inventories` | Raw materials, work in progress, finished goods |
+| Müşteri sözleşmelerinden doğan varlıklar | Contract assets | `contract_assets` | Revenue recognised before the right to invoice |
 | Peşin ödenmiş giderler | Prepaid expenses | `prepaid_expenses` | Payments made for future goods or services (short + long term) |
 | Kısa vadeli yükümlülükler | Current liabilities | `current_liabilities` | Obligations due within a year |
 | Uzun vadeli yükümlülükler | Non-current liabilities | `non_current_liabilities` | Obligations due after a year |
@@ -30,6 +31,7 @@ KAP labels are Turkish; code, issues and variable names are English. Use these n
 | Finansal borçlar / Borçlanmalar | Financial debt / borrowings | `financial_debt` | Bank loans, bonds and similar |
 | Kiralama yükümlülükleri | Lease liabilities | `lease_liabilities` | Liabilities under IFRS 16 leases |
 | Ticari borçlar | Trade payables | `trade_payables` | Amounts owed to suppliers |
+| Müşteri sözleşmelerinden doğan yükümlülükler | Contract liabilities | `contract_liabilities` | Cash flow row 89; customer advances outside it are `customer_advances` (row 98, decision 0013) |
 | Müşteri avansları / Sözleşme yükümlülükleri | Customer advances / contract liabilities | `customer_advances` | Cash received before delivery |
 | Özkaynaklar | Equity | `equity` | Total equity |
 | Ana ortaklığa ait özkaynaklar | Equity attributable to owners of the parent | `equity_parent` | Equity excluding non-controlling interests |

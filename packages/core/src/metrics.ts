@@ -136,6 +136,52 @@ export function netDebtToEbitda(netDebtValue: Input<Amount>, ttmEbitdaA: Input<A
   return ratio("net_debt", netDebtValue, "ebitda_a_ttm", ttmEbitdaA);
 }
 
+/**
+ * Serbest nakit akışı: operating cash flow (cash flow row 2) − capital expenditure. Capex is cash flow row 133,
+ * filed as a negative outflow, so it is added.
+ */
+export function freeCashFlow(cfo: Input<bigint>, capex: Input<bigint>): Result<bigint> {
+  const c = collect({ cfo, capex });
+  if (!("values" in c)) return c;
+  return ok(c.values.cfo + c.values.capex);
+}
+
+/** Faaliyet nakit akışı / FAVÖK A, for flows of the same period. */
+export function cfoToEbitda(cfo: Input<bigint>, ebitdaAValue: Input<bigint>): Result<number> {
+  return ratio("cfo", cfo, "ebitda_a", ebitdaAValue);
+}
+
+/** Yatırım harcaması / amortisman: capex as a positive amount (−row 133) over D&A (row 7). */
+export function capexToDepreciation(capex: Input<bigint>, dAndA: Input<bigint>): Result<number> {
+  const c = collect({ capex, d_and_a: dAndA });
+  if (!("values" in c)) return c;
+  return ratio("capex", -c.values.capex, "d_and_a", c.values.d_and_a);
+}
+
+/**
+ * Tahakkuk oranı: (net profit − operating cash flow) / average total assets, where the average is (period end +
+ * previous year end) / 2, both from the same report (decision 0014). Flows of any length can be passed; S2 uses
+ * TTM flows (decision 0018).
+ */
+export function accrualRatio(
+  netProfit: Input<bigint>,
+  cfo: Input<bigint>,
+  totalAssets: Input<bigint>,
+  totalAssetsPriorYearEnd: Input<bigint>,
+): Result<number> {
+  const c = collect({
+    net_profit: netProfit,
+    cfo,
+    total_assets: totalAssets,
+    "total_assets:prior_year_end": totalAssetsPriorYearEnd,
+  });
+  if (!("values" in c)) return c;
+  const v = c.values;
+  const sum = v.total_assets + v["total_assets:prior_year_end"];
+  if (sum === 0n) return zeroDenominator("total_assets");
+  return ok((Number(v.net_profit - v.cfo) * 2) / Number(sum));
+}
+
 export interface BalanceSheetRatios {
   current_ratio: Result<number>;
   quick_ratio: Result<number>;

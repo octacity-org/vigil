@@ -62,6 +62,12 @@ export const INPUT_NAMES_TR: Readonly<Record<string, string>> = {
   ebitda_a: "FAVÖK (tanım A)",
   ebitda_b: "FAVÖK (tanım B)",
   ebitda_a_ttm: "Son 12 ay FAVÖK (tanım A)",
+  net_profit: "Dönem kârı",
+  cfo: "İşletme faaliyetlerinden nakit akışları",
+  capex: "Maddi ve maddi olmayan duran varlık alımları",
+  profit_in_cash_flow: "Nakit akış tablosundaki dönem kârı",
+  working_capital_change: "İşletme sermayesindeki değişim",
+  "total_assets:prior_year_end": "Önceki yıl sonu toplam varlıklar",
 };
 
 const nameTr = (code: string) => INPUT_NAMES_TR[code] ?? code;
