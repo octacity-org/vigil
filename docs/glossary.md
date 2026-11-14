@@ -60,6 +60,7 @@ KAP labels are Turkish; code, issues and variable names are English. Use these n
 | Ana ortaklık payları | Attributable to owners of the parent | `net_profit_parent` | Profit excluding non-controlling interests |
 | Amortisman ve itfa payları | Depreciation and amortisation (D&A) | `d_and_a` | Taken from the cash flow statement (cumulative) |
 | FAVÖK | EBITDA | `ebitda_a`, `ebitda_b` | Two definitions; see decisions |
+| Son 12 ay FAVÖK | Trailing-twelve-month EBITDA | `ebitda_a_ttm` | EBITDA A over the last twelve months, CPI-adjusted (decision 0014) |
 
 ## Cash flow
 

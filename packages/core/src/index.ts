@@ -9,3 +9,4 @@ export * from "./quality.ts";
 export * from "./result.ts";
 export * from "./signals.ts";
 export * from "./text.ts";
+export * from "./ttm.ts";

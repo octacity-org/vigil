@@ -28,3 +28,9 @@ export function nextDay(d: IsoDate): IsoDate {
   const date = new Date(toUtc(d) + 86_400_000);
   return isoDate(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()) as IsoDate;
 }
+
+/** The day before `d`. */
+export function previousDay(d: IsoDate): IsoDate {
+  const date = new Date(toUtc(d) - 86_400_000);
+  return isoDate(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()) as IsoDate;
+}

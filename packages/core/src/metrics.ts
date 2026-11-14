@@ -1,5 +1,5 @@
 /**
- * Balance sheet ratios (docs/VIGIL.md, docs/DATA_CONTRACT.md). Every metric returns a `Result` (#65): a value, or
+ * Balance sheet ratios and EBITDA (docs/VIGIL.md, docs/DATA_CONTRACT.md, decision 0011). Every metric returns a `Result` (#65): a value, or
  * "not computable" with the reason and the inputs that would make it computable. A missing input, a cell the
  * company left empty or a zero denominator is never turned into 0, NaN or a fallback value.
  *
@@ -71,6 +71,69 @@ export function netDebtToEquity(netDebtValue: Input<Amount>, equity: Input<Amoun
 /** Yükümlülük / varlık: toplam yükümlülükler / toplam varlıklar. */
 export function liabilitiesToAssets(totalLiabilities: Input<Amount>, totalAssets: Input<Amount>): Result<number> {
   return ratio("total_liabilities", totalLiabilities, "total_assets", totalAssets);
+}
+
+export interface EbitdaInputs {
+  /** `BRÜT KAR (ZARAR)`, income statement row 31. */
+  gross_profit?: Input<bigint>;
+  /** `Genel Yönetim Giderleri`, row 32 (negative). */
+  g_and_a?: Input<bigint>;
+  /** `Pazarlama Giderleri`, row 33 (negative). */
+  selling_expenses?: Input<bigint>;
+  /** `Araştırma ve Geliştirme Giderleri`, row 34 (negative). */
+  r_and_d?: Input<bigint>;
+  /** `ESAS FAALİYET KARI (ZARARI)`, row 38. */
+  operating_profit?: Input<bigint>;
+  /** Depreciation and amortisation, cash flow statement row 7 (cumulative only). */
+  d_and_a?: Input<bigint>;
+}
+
+/**
+ * EBITDA definition A (decision 0011, the default): gross profit + general and administrative + selling + R&D
+ * expenses + D&A. Expenses are filed as negative numbers, so they are added. Missing D&A makes it not computable;
+ * it is never computed with zero D&A.
+ */
+export function ebitdaA(i: EbitdaInputs): Result<bigint> {
+  const c = collect({
+    gross_profit: i.gross_profit,
+    g_and_a: i.g_and_a,
+    selling_expenses: i.selling_expenses,
+    r_and_d: i.r_and_d,
+    d_and_a: i.d_and_a,
+  });
+  if (!("values" in c)) return c;
+  const v = c.values;
+  return ok(v.gross_profit + v.g_and_a + v.selling_expenses + v.r_and_d + v.d_and_a);
+}
+
+/** EBITDA definition B (decision 0011, shown next to A): operating profit + D&A. */
+export function ebitdaB(i: EbitdaInputs): Result<bigint> {
+  const c = collect({ operating_profit: i.operating_profit, d_and_a: i.d_and_a });
+  if (!("values" in c)) return c;
+  return ok(c.values.operating_profit + c.values.d_and_a);
+}
+
+export interface Ebitda {
+  a: Result<bigint>;
+  b: Result<bigint>;
+  /** B − A: other operating income and expenses (decision 0011 shows it wherever EBITDA is shown). */
+  b_minus_a: Result<bigint>;
+}
+
+/** Both EBITDA definitions and their difference. */
+export function ebitda(i: EbitdaInputs): Ebitda {
+  const a = ebitdaA(i);
+  const b = ebitdaB(i);
+  const c = collect({ ebitda_b: b, ebitda_a: a });
+  return { a, b, b_minus_a: "values" in c ? ok(c.values.ebitda_b - c.values.ebitda_a) : c };
+}
+
+/**
+ * Net borç / FAVÖK: net debt over trailing-twelve-month EBITDA A (decisions 0011, 0014; TTM from `ttmFlow`, #93).
+ * A year-to-date EBITDA must not be passed here.
+ */
+export function netDebtToEbitda(netDebtValue: Input<Amount>, ttmEbitdaA: Input<Amount>): Result<number> {
+  return ratio("net_debt", netDebtValue, "ebitda_a_ttm", ttmEbitdaA);
 }
 
 export interface BalanceSheetRatios {

@@ -53,6 +53,15 @@ export const INPUT_NAMES_TR: Readonly<Record<string, string>> = {
   total_assets: "Toplam varlıklar",
   total_liabilities: "Toplam yükümlülükler",
   net_debt: "Net borç",
+  gross_profit: "Brüt kâr",
+  g_and_a: "Genel yönetim giderleri",
+  selling_expenses: "Pazarlama giderleri",
+  r_and_d: "Araştırma ve geliştirme giderleri",
+  operating_profit: "Esas faaliyet kârı",
+  d_and_a: "Amortisman ve itfa payları",
+  ebitda_a: "FAVÖK (tanım A)",
+  ebitda_b: "FAVÖK (tanım B)",
+  ebitda_a_ttm: "Son 12 ay FAVÖK (tanım A)",
 };
 
 const nameTr = (code: string) => INPUT_NAMES_TR[code] ?? code;
