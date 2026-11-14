@@ -9,8 +9,11 @@ import {
   liabilitiesToAssets,
   netDebt,
   netDebtToEquity,
+  notReported,
+  ok,
   pyRound,
   quickRatio,
+  type Result,
 } from "../src/index.ts";
 
 const katmr2026 = {
@@ -35,7 +38,13 @@ const katmr2025 = {
   total_liabilities: 16069.1 - 10181.0, // 5888.1
 };
 
-const r2 = (v: number | null) => pyRound(v as number, 2);
+/** The value of an ok result; anything else fails the test with the result in the message. */
+function val(r: Result<number | bigint>): number {
+  if (r.status !== "ok")
+    throw new Error(`expected a value, got ${JSON.stringify(r, (_k, x) => (typeof x === "bigint" ? String(x) : x))}`);
+  return Number(r.value);
+}
+const r2 = (r: Result<number | bigint>) => pyRound(val(r), 2);
 
 describe("KATMR ratios", () => {
   test("current ratio", () => {
@@ -55,10 +64,10 @@ describe("KATMR ratios", () => {
 
   test("net debt and net debt to equity", () => {
     const nd2026 = netDebt(katmr2026.borrowings, katmr2026.cash);
-    expect(pyRound(nd2026 as number, 1)).toBe(2193.0);
+    expect(pyRound(val(nd2026), 1)).toBe(2193.0);
     expect(r2(netDebtToEquity(nd2026, katmr2026.equity))).toBe(0.21);
     const nd2025 = netDebt(katmr2025.borrowings, katmr2025.cash);
-    expect(pyRound(nd2025 as number, 1)).toBe(2009.6);
+    expect(pyRound(val(nd2025), 1)).toBe(2009.6);
     expect(r2(netDebtToEquity(nd2025, katmr2025.equity))).toBe(0.2);
   });
 
@@ -68,26 +77,100 @@ describe("KATMR ratios", () => {
   });
 
   test("integers in TL (bigint) work too", () => {
-    expect(currentRatio(1290360n, 389710n)).toBeCloseTo(3.311, 3);
-    expect(netDebt(231380n, 12080n)).toBe(219300);
+    expect(val(currentRatio(1290360n, 389710n))).toBeCloseTo(3.311, 3);
+    // Amounts stay exact: 231,380 - 12,080 = 219,300 as a bigint.
+    expect(netDebt(231380n, 12080n)).toEqual(ok(219300n));
   });
 });
 
-test("missing inputs and zero denominators are not computable (null), never 0", () => {
-  expect(currentRatio(null, 100)).toBeNull();
-  expect(currentRatio(100, null)).toBeNull();
-  expect(quickRatio(100, null, 50)).toBeNull();
-  expect(cashRatio(null, 50)).toBeNull();
-  expect(netDebt(null, 50)).toBeNull();
-  expect(netDebtToEquity(null, 100)).toBeNull();
-  expect(liabilitiesToAssets(100, null)).toBeNull();
+describe("not computable (#65): never 0, NaN or a fallback", () => {
+  test("a missing input names the input", () => {
+    expect(currentRatio(null, 100)).toEqual({
+      status: "not_computable",
+      reason: {
+        code: "missing_input",
+        message: "Hesaplanamaz: Dönen varlıklar raporda yok veya hesaplanamadı.",
+        needs: ["current_assets"],
+      },
+    });
+    expect(currentRatio(100, undefined)).toMatchObject({ reason: { needs: ["current_liabilities"] } });
+    expect(cashRatio(null, 50)).toMatchObject({ reason: { needs: ["cash"] } });
+    expect(netDebt(null, 50)).toMatchObject({ reason: { needs: ["financial_debt"] } });
+    expect(liabilitiesToAssets(100, null)).toMatchObject({ reason: { needs: ["total_assets"] } });
+  });
 
-  expect(currentRatio(100, 0)).toBeNull();
-  expect(quickRatio(100, 20, 0)).toBeNull();
-  expect(cashRatio(10, 0)).toBeNull();
-  expect(netDebtToEquity(50, 0)).toBeNull();
-  expect(liabilitiesToAssets(50, 0)).toBeNull();
-  expect(currentRatio(100n, 0n)).toBeNull();
+  test("every missing input is named, in order", () => {
+    expect(quickRatio(null, null, 50)).toEqual({
+      status: "not_computable",
+      reason: {
+        code: "missing_input",
+        message: "Hesaplanamaz: Dönen varlıklar, Stoklar raporda yok veya hesaplanamadı.",
+        needs: ["current_assets", "inventories"],
+      },
+    });
+  });
+
+  test("a cell the company left empty is not computable too", () => {
+    expect(currentRatio(notReported(), 100)).toMatchObject({
+      status: "not_computable",
+      reason: { code: "missing_input", needs: ["current_assets"] },
+    });
+  });
+
+  test("a not computable input passes its own needs on", () => {
+    // Net debt is missing because borrowings are; net debt / equity then needs financial_debt, not net_debt.
+    expect(netDebtToEquity(netDebt(null, 50), 100)).toMatchObject({
+      status: "not_computable",
+      reason: { code: "missing_input", needs: ["financial_debt"] },
+    });
+    expect(netDebtToEquity(netDebt(null, null), null)).toMatchObject({
+      reason: { needs: ["financial_debt", "cash", "equity"] },
+    });
+  });
+
+  test("an ok result is used as its value", () => {
+    expect(val(netDebtToEquity(ok(50), ok(100)))).toBe(0.5);
+  });
+
+  test("a zero denominator is not computable and names the denominator", () => {
+    expect(currentRatio(100, 0)).toEqual({
+      status: "not_computable",
+      reason: { code: "zero_denominator", message: "Hesaplanamaz: Kısa vadeli yükümlülükler sıfır.", needs: [] },
+    });
+    expect(currentRatio(100n, 0n)).toMatchObject({ reason: { code: "zero_denominator" } });
+    expect(quickRatio(100, 20, 0)).toMatchObject({ reason: { code: "zero_denominator" } });
+    expect(cashRatio(10, 0)).toMatchObject({ reason: { code: "zero_denominator" } });
+    expect(netDebtToEquity(50, 0)).toMatchObject({
+      reason: { code: "zero_denominator", message: "Hesaplanamaz: Özkaynaklar sıfır." },
+    });
+    expect(liabilitiesToAssets(50, 0)).toMatchObject({ reason: { code: "zero_denominator" } });
+  });
+
+  test("a zero numerator is a value, not a missing input", () => {
+    expect(val(cashRatio(0, 50))).toBe(0);
+    expect(netDebt(0n, 0n)).toEqual(ok(0n));
+  });
+
+  test("no ratio is NaN or Infinity, whatever the inputs", () => {
+    const inputs = [null, undefined, 0, 0n, notReported<number>()];
+    for (const a of inputs) {
+      for (const b of inputs) {
+        for (const r of [currentRatio(a, b), cashRatio(a, b), liabilitiesToAssets(a, b), quickRatio(a, b, a)]) {
+          if (r.status === "ok") expect(Number.isFinite(r.value)).toBe(true);
+          else expect(r.status).toBe("not_computable");
+        }
+      }
+    }
+  });
+
+  test("calculateBalanceSheetRatios with no inputs gives a reason for every ratio", () => {
+    const all = calculateBalanceSheetRatios();
+    for (const r of [all.current_ratio, all.quick_ratio, all.cash_ratio, all.net_debt, all.net_debt_to_equity]) {
+      expect(r.status).toBe("not_computable");
+    }
+    expect(all.liabilities_to_assets).toMatchObject({ reason: { needs: ["total_liabilities", "total_assets"] } });
+    expect(all.liabilities_derived).toBe(false);
+  });
 });
 
 test("calculateBalanceSheetRatios derives liabilities only when they are missing", () => {
@@ -103,7 +186,7 @@ test("calculateBalanceSheetRatios derives liabilities only when they are missing
   expect(r2(derived.current_ratio)).toBe(3.31);
   expect(r2(derived.quick_ratio)).toBe(1.0);
   expect(r2(derived.cash_ratio)).toBe(0.03);
-  expect(pyRound(derived.net_debt as number, 1)).toBe(2193.0);
+  expect(pyRound(val(derived.net_debt), 1)).toBe(2193.0);
   expect(r2(derived.net_debt_to_equity)).toBe(0.21);
   expect(r2(derived.liabilities_to_assets)).toBe(0.29);
   expect(derived.liabilities_derived).toBe(true);

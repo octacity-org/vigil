@@ -6,5 +6,6 @@ export * from "./known-errors.ts";
 export * from "./metrics.ts";
 export * from "./parser.ts";
 export * from "./quality.ts";
+export * from "./result.ts";
 export * from "./signals.ts";
 export * from "./text.ts";

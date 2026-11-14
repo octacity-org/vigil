@@ -1,7 +1,12 @@
 /**
- * Balance sheet ratios (docs/VIGIL.md, docs/DATA_CONTRACT.md). No approximations: a missing input or a division by
- * zero gives null ("not computable"), never a fallback value.
+ * Balance sheet ratios (docs/VIGIL.md, docs/DATA_CONTRACT.md). Every metric returns a `Result` (#65): a value, or
+ * "not computable" with the reason and the inputs that would make it computable. A missing input, a cell the
+ * company left empty or a zero denominator is never turned into 0, NaN or a fallback value.
+ *
+ * Input names in reasons are glossary codes (`docs/glossary.md`): `financial_debt` for borrowings, `cash` for cash
+ * and cash equivalents.
  */
+import { collect, type Input, ok, type Result, zeroDenominator } from "./result.ts";
 
 export type Amount = number | bigint;
 
@@ -12,67 +17,82 @@ function minus(a: Amount, b: Amount): Amount {
   return typeof a === "bigint" && typeof b === "bigint" ? a - b : Number(a) - Number(b);
 }
 
-function ratio(numerator: Amount | null, denominator: Amount | null): number | null {
-  if (numerator === null || denominator === null || isZero(denominator)) return null;
-  return Number(numerator) / Number(denominator);
+/** numerator / denominator; the names are glossary codes used in the reason. */
+function ratio(
+  numeratorCode: string,
+  numerator: Input<Amount>,
+  denominatorCode: string,
+  denominator: Input<Amount>,
+): Result<number> {
+  const c = collect({ [numeratorCode]: numerator, [denominatorCode]: denominator } as Record<string, Input<Amount>>);
+  if (!("values" in c)) return c;
+  const d = c.values[denominatorCode] as Amount;
+  if (isZero(d)) return zeroDenominator(denominatorCode);
+  return ok(Number(c.values[numeratorCode]) / Number(d));
 }
 
 /** Cari oran: dönen varlıklar / kısa vadeli yükümlülükler. */
-export function currentRatio(currentAssets: Amount | null, currentLiabilities: Amount | null): number | null {
-  return ratio(currentAssets, currentLiabilities);
+export function currentRatio(currentAssets: Input<Amount>, currentLiabilities: Input<Amount>): Result<number> {
+  return ratio("current_assets", currentAssets, "current_liabilities", currentLiabilities);
 }
 
 /** Likidite oranı: (dönen varlıklar - stoklar) / kısa vadeli yükümlülükler. */
 export function quickRatio(
-  currentAssets: Amount | null,
-  inventories: Amount | null,
-  currentLiabilities: Amount | null,
-): number | null {
-  if (currentAssets === null || inventories === null) return null;
-  return ratio(minus(currentAssets, inventories), currentLiabilities);
+  currentAssets: Input<Amount>,
+  inventories: Input<Amount>,
+  currentLiabilities: Input<Amount>,
+): Result<number> {
+  const c = collect({ current_assets: currentAssets, inventories, current_liabilities: currentLiabilities });
+  if (!("values" in c)) return c;
+  const { current_assets, inventories: inv, current_liabilities } = c.values;
+  return ratio("current_assets", minus(current_assets, inv), "current_liabilities", current_liabilities);
 }
 
 /** Nakit oranı: nakit ve nakit benzerleri / kısa vadeli yükümlülükler. */
-export function cashRatio(cash: Amount | null, currentLiabilities: Amount | null): number | null {
-  return ratio(cash, currentLiabilities);
+export function cashRatio(cash: Input<Amount>, currentLiabilities: Input<Amount>): Result<number> {
+  return ratio("cash", cash, "current_liabilities", currentLiabilities);
 }
 
-/** Net borç: finansal borçlar - nakit ve nakit benzerleri (financial rule 5: one fixed definition). */
-export function netDebt(borrowings: Amount | null, cash: Amount | null): number | null {
-  if (borrowings === null || cash === null) return null;
-  return Number(minus(borrowings, cash));
+/**
+ * Net borç: finansal borçlar - nakit ve nakit benzerleri (financial rule 5, decision 0012). Exact (bigint) when
+ * both inputs are bigint.
+ */
+export function netDebt(borrowings: Input<Amount>, cash: Input<Amount>): Result<Amount> {
+  const c = collect({ financial_debt: borrowings, cash });
+  if (!("values" in c)) return c;
+  return ok(minus(c.values.financial_debt, c.values.cash));
 }
 
 /** Net borç / özkaynak. */
-export function netDebtToEquity(netDebtValue: Amount | null, equity: Amount | null): number | null {
-  return ratio(netDebtValue, equity);
+export function netDebtToEquity(netDebtValue: Input<Amount>, equity: Input<Amount>): Result<number> {
+  return ratio("net_debt", netDebtValue, "equity", equity);
 }
 
 /** Yükümlülük / varlık: toplam yükümlülükler / toplam varlıklar. */
-export function liabilitiesToAssets(totalLiabilities: Amount | null, totalAssets: Amount | null): number | null {
-  return ratio(totalLiabilities, totalAssets);
+export function liabilitiesToAssets(totalLiabilities: Input<Amount>, totalAssets: Input<Amount>): Result<number> {
+  return ratio("total_liabilities", totalLiabilities, "total_assets", totalAssets);
 }
 
 export interface BalanceSheetRatios {
-  current_ratio: number | null;
-  quick_ratio: number | null;
-  cash_ratio: number | null;
-  net_debt: number | null;
-  net_debt_to_equity: number | null;
-  liabilities_to_assets: number | null;
+  current_ratio: Result<number>;
+  quick_ratio: Result<number>;
+  cash_ratio: Result<number>;
+  net_debt: Result<Amount>;
+  net_debt_to_equity: Result<number>;
+  liabilities_to_assets: Result<number>;
   /** True when total liabilities were derived as total assets - equity. */
   liabilities_derived: boolean;
 }
 
 export interface BalanceSheetInputs {
-  current_assets?: Amount | null;
-  current_liabilities?: Amount | null;
-  inventories?: Amount | null;
-  cash_and_equivalents?: Amount | null;
-  borrowings?: Amount | null;
-  equity?: Amount | null;
-  total_assets?: Amount | null;
-  total_liabilities?: Amount | null;
+  current_assets?: Input<Amount>;
+  current_liabilities?: Input<Amount>;
+  inventories?: Input<Amount>;
+  cash_and_equivalents?: Input<Amount>;
+  borrowings?: Input<Amount>;
+  equity?: Input<Amount>;
+  total_assets?: Input<Amount>;
+  total_liabilities?: Input<Amount>;
 }
 
 /**
@@ -80,23 +100,27 @@ export interface BalanceSheetInputs {
  * liabilities are derived as total assets - equity and `liabilities_derived` is true.
  */
 export function calculateBalanceSheetRatios(inputs: BalanceSheetInputs = {}): BalanceSheetRatios {
-  const v = (x: Amount | null | undefined) => x ?? null;
-  const nd = netDebt(v(inputs.borrowings), v(inputs.cash_and_equivalents));
-  let liabilities = v(inputs.total_liabilities);
+  const nd = netDebt(inputs.borrowings, inputs.cash_and_equivalents);
+  let liabilities: Input<Amount> = inputs.total_liabilities;
   let derived = false;
-  const assets = v(inputs.total_assets);
-  const equity = v(inputs.equity);
-  if (liabilities === null && assets !== null && equity !== null) {
-    liabilities = minus(assets, equity);
-    derived = true;
+  const missingLiabilities =
+    liabilities === null ||
+    liabilities === undefined ||
+    (typeof liabilities === "object" && liabilities.status !== "ok");
+  if (missingLiabilities) {
+    const c = collect({ total_assets: inputs.total_assets, equity: inputs.equity });
+    if ("values" in c) {
+      liabilities = minus(c.values.total_assets, c.values.equity);
+      derived = true;
+    }
   }
   return {
-    current_ratio: currentRatio(v(inputs.current_assets), v(inputs.current_liabilities)),
-    quick_ratio: quickRatio(v(inputs.current_assets), v(inputs.inventories), v(inputs.current_liabilities)),
-    cash_ratio: cashRatio(v(inputs.cash_and_equivalents), v(inputs.current_liabilities)),
+    current_ratio: currentRatio(inputs.current_assets, inputs.current_liabilities),
+    quick_ratio: quickRatio(inputs.current_assets, inputs.inventories, inputs.current_liabilities),
+    cash_ratio: cashRatio(inputs.cash_and_equivalents, inputs.current_liabilities),
     net_debt: nd,
-    net_debt_to_equity: netDebtToEquity(nd, equity),
-    liabilities_to_assets: liabilitiesToAssets(liabilities, assets),
+    net_debt_to_equity: netDebtToEquity(nd, inputs.equity),
+    liabilities_to_assets: liabilitiesToAssets(liabilities, inputs.total_assets),
     liabilities_derived: derived,
   };
 }

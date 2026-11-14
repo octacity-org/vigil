@@ -5,7 +5,16 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { amount, ERROR_STATUS, type FindingDetail, parseAmount, type Value } from "../src/index.ts";
+import type { Reason as CoreReason, ReasonCode as CoreReasonCode } from "../../core/src/result.ts";
+import {
+  amount,
+  ERROR_STATUS,
+  type FindingDetail,
+  parseAmount,
+  type Reason,
+  type ReasonCode,
+  type Value,
+} from "../src/index.ts";
 
 // Git may check the file out with CRLF line endings on Windows.
 const API_MD = readFileSync(join(import.meta.dir, "..", "..", "..", "docs", "API.md"), "utf8").replaceAll("\r\n", "\n");
@@ -95,3 +104,20 @@ const _badNumber: Value = { status: "ok", value: 5, unit: "TRY" };
 // @ts-expect-error not_computable requires a reason
 const _noReason: Value = { status: "not_computable", value: null, unit: "ratio" };
 void [_notComputable, _badNumber, _noReason];
+
+test("the core result reason has the API's Reason shape and codes (#65)", () => {
+  // Type level: each side is assignable to the other, so neither can add a code or field alone.
+  const fromCore: Reason = {} as CoreReason;
+  const toCore: CoreReason = {} as Reason;
+  expect([fromCore, toCore]).toHaveLength(2);
+  const codes: Record<ReasonCode, true> = {
+    missing_input: true,
+    zero_denominator: true,
+    template_not_supported: true,
+    period_mismatch: true,
+    blocked_by_check: true,
+    not_applicable: true,
+  };
+  const coreCodes: Record<CoreReasonCode, true> = codes;
+  expect(Object.keys(coreCodes)).toHaveLength(6);
+});

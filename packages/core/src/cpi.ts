@@ -14,6 +14,7 @@
  * with the reason. The factor is an exact fraction of bigints and is rounded only for display.
  */
 import { type IsoDate, isoDate } from "./dates.ts";
+import type { Reason } from "./result.ts";
 
 /** A calendar month, `YYYY-MM`. */
 export type YearMonth = string;
@@ -44,12 +45,12 @@ export interface CpiSeries {
   values: ReadonlyMap<YearMonth, CpiValue>;
 }
 
-/** Why a factor cannot be computed. Same shape as `Reason` in `@vigil/api-types`; the message is Turkish. */
-export interface CpiReason {
+/**
+ * Why a factor cannot be computed: a `Reason` (#65) with one of two codes. `needs` lists the months, e.g.
+ * `cpi:2026-06` (glossary code `cpi`, then the month).
+ */
+export interface CpiReason extends Reason {
   code: "missing_input" | "period_mismatch";
-  message: string;
-  /** Inputs that would make the factor computable, e.g. `cpi:2026-06` (glossary code `cpi`, then the month). */
-  needs: string[];
 }
 
 export type CpiFactor =

@@ -19,12 +19,14 @@ KAP labels are Turkish; code, issues and variable names are English. Use these n
 |---|---|---|---|
 | Dönen varlıklar | Current assets | `current_assets` | Assets expected to be realised within a year |
 | Duran varlıklar | Non-current assets | `non_current_assets` | Long-term assets |
+| Toplam varlıklar | Total assets | `total_assets` | Current plus non-current assets |
 | Nakit ve nakit benzerleri | Cash and cash equivalents | `cash` | Cash and very short-term liquid investments |
 | Ticari alacaklar | Trade receivables | `trade_receivables` | Amounts owed by customers |
 | Stoklar | Inventories | `inventories` | Raw materials, work in progress, finished goods |
 | Peşin ödenmiş giderler | Prepaid expenses | `prepaid_expenses` | Payments made for future goods or services (short + long term) |
 | Kısa vadeli yükümlülükler | Current liabilities | `current_liabilities` | Obligations due within a year |
 | Uzun vadeli yükümlülükler | Non-current liabilities | `non_current_liabilities` | Obligations due after a year |
+| Toplam yükümlülükler | Total liabilities | `total_liabilities` | Current plus non-current liabilities |
 | Finansal borçlar / Borçlanmalar | Financial debt / borrowings | `financial_debt` | Bank loans, bonds and similar |
 | Kiralama yükümlülükleri | Lease liabilities | `lease_liabilities` | Liabilities under IFRS 16 leases |
 | Ticari borçlar | Trade payables | `trade_payables` | Amounts owed to suppliers |
