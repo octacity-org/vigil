@@ -201,6 +201,36 @@ WHERE f.period_end IS NULL;
 | 1 | `companies`, `reports`, `facts` (#45) |
 | 2 | `reports.published_at` (#157) |
 
+## CPI series
+
+Amounts from two reports are in the prices of two different period ends (IAS 29). Before they are added or subtracted, the older one is multiplied by CPI(newer period end) / CPI(older period end) ([0014](decisions/0014-annualisation-and-averages.md)). A period that ends on the last day of a month uses that month's index.
+
+- The factor is computed in `packages/core` (`cpiFactor`, #47) as an exact fraction. A date that is not a month end, or a month missing from the series, gives "not computable" with the reason; nothing is estimated.
+
+### The series file
+
+The series ships with Vigil as [`apps/server/reference/cpi-tr.csv`](../apps/server/reference/cpi-tr.csv): TÜİK's monthly general index for Türkiye from TÜİK's dataset `DF_TUFE_SDMX_TT10` ("Tüketici fiyat endeksi ve değişim oranları"), one row per month with the index as published, its base year, the source, the dataset id and the retrieval time (UTC). A file with a bad value, a month listed twice or more than one base year is refused with the line number; nothing is loaded.
+
+TÜİK rebased the CPI to 2025=100 from January 2026 and republished the earlier months in the new base (up to six decimals), keeping the headline changes. The file holds only the 2025=100 series, so a factor never mixes bases.
+
+Maintainers refresh the file once a month, after TÜİK publishes the new month:
+
+1. On [TÜİK's bulk download page](https://veriportali.tuik.gov.tr/tr/bulk-download), download `DF_TUFE_SDMX_TT10` as CSV.
+2. `bun run cpi:import "<downloaded file>.csv"` updates `apps/server/reference/cpi-tr.csv` and prints the new and revised months. New or revised months get the retrieval time given with `--retrieved-at=…`, or else the downloaded file's modification time (UTC); unchanged months keep theirs, so a normal refresh adds one line.
+3. Check the summary and the diff, then commit.
+
+The import refuses an export that is not complete or not one chain:
+
+- every month between the first and the last must have an index, with one base year, and no monthly change may come without its index;
+- for every month after the first, the index must reproduce TÜİK's published monthly change to within 0.02 points. Both are rounded (the change to two decimals, the 2026 index values to two decimals). A mix of base years moves the change by far more; a small revision of one value can pass, and then shows among the revised months;
+- it must have every month the current file has, so an export that lost months at either end is refused too. If TÜİK rebases the series again and the new export starts later, move the current file away and import into a new one.
+
+A download cut inside the rows it reads, a missing month or a mix of base years stops it with the reason, and the file is not written. On the export of 2026-11-14 (2005-01 to 2026-10), all 261 monthly changes match, the largest gap being about 0.005 points (2012-04).
+
+Check against the filings: CPI(June 2026) / CPI(December 2025) = 129.99 / 110.386963 = 1.177585, the 1.1776 that decision [0018](decisions/0018-profit-cash-divergence-trigger.md) measured from restated balance sheets.
+
+Fetching the series automatically needs an account and a key at both TÜİK (SDMX service) and TCMB EVDS, so it is left for a later issue. Both allow reuse with the source named (`legal.md`).
+
 ## Raw archive (Zova)
 
 The Zova store (`vigil.zova`, decision 0009) holds the raw files and app state. Its tables are versioned in [`store-schema.ts`](../apps/server/src/store-schema.ts) the same way as DuckDB's (`store_schema_version`).

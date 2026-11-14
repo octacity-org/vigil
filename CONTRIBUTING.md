@@ -64,6 +64,10 @@ Downloads often truncate; the downloader salvages complete files from partial ar
 
 For the tests, `bun run download --files tests/raw_files.txt data/raw` fetches only the raw files they use. CI runs the golden tests the same way (job `golden`, decision 0007). If you add a golden file or a test that needs another raw file, list it in `tests/raw_files.txt`.
 
+### CPI series
+
+The monthly CPI (TÜFE) series ships in `apps/server/reference/cpi-tr.csv` and is refreshed by maintainers once a month with `bun run cpi:import` from TÜİK's bulk download; the steps are in `docs/SCHEMA.md`, "CPI series".
+
 ## Core rules
 
 These apply to code, docs, issues and pull requests.

@@ -1,4 +1,5 @@
 export * from "./checks.ts";
+export * from "./cpi.ts";
 export * from "./dates.ts";
 export * from "./formulas.ts";
 export * from "./known-errors.ts";

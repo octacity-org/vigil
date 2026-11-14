@@ -65,6 +65,15 @@ Vigil should stay in the **financial information** category, which is the safest
 - Does KAP / MKK have written terms for automated bulk download through the `financialTable/download` endpoint? → #103 asks MKK in writing (kapdestek@mkk.com.tr is the support address shown on KAP's error pages).
 - Are hand-extracted values from filings in `tests/golden/` acceptable as test fixtures? Likely yes (facts, small amounts, attributed), but confirm together with the question above.
 
+## 2a. TÜİK CPI data
+
+Vigil ships TÜİK's monthly CPI general index (`apps/server/reference/cpi-tr.csv`, #47) to compare amounts from different reports (`SCHEMA.md`, "CPI series").
+
+- TÜİK's [legal notice](https://www.tuik.gov.tr/Kurumsal/Yasal_Uyari) allows its content to be reused without permission when the source is named: "kaynak gösterilmek suretiyle herhangi bir izine gerek duymaksızın yeniden kullanımı mümkündür."
+- Every row of the file names TÜİK and the dataset (`DF_TUFE_SDMX_TT10`), with the retrieval time.
+- The file is downloaded by hand from TÜİK's bulk download page once a month; Vigil makes no automated requests to TÜİK.
+- TCMB EVDS republishes the same index; its terms also allow reuse with the source named, but it needs a personal API key, which is why it is not used for now.
+
 ## 3. Proposed disclaimer
 
 **Turkish (README, every page footer, every generated report):**
