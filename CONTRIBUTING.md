@@ -66,7 +66,7 @@ For the tests, `bun run download --files tests/raw_files.txt data/raw` fetches o
 
 ### CPI series
 
-The monthly CPI (TÜFE) series ships in `apps/server/reference/cpi-tr.csv` and is refreshed by maintainers once a month with `bun run cpi:import` from TÜİK's bulk download; the steps are in `docs/SCHEMA.md`, "CPI series".
+The monthly CPI (TÜFE) series ships in `apps/server/reference/cpi-tr.csv` and is refreshed by maintainers once a month with `bun run cpi:import` from TÜİK's bulk download; the steps are in `docs/SCHEMA.md`, "CPI series". `bun run cpi` loads it into DuckDB.
 
 ## Core rules
 

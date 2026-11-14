@@ -194,18 +194,33 @@ WHERE f.period_end IS NULL;
 - Steps are append-only: a released step is never edited or reordered. A new column or table is a new step.
 - Views are not steps; they are recreated on every start.
 - A database from a newer Vigil is refused.
-- DuckDB is derived data (decision 0009). If a database cannot be migrated, delete it and load again from the raw files.
+- DuckDB is derived data (decision 0009). If a database cannot be migrated, delete it and load again from the raw files, then load the CPI series with `bun run cpi`. A new or upgraded database has an empty `cpi_monthly` until then.
 
 | Version | Change |
 |---|---|
 | 1 | `companies`, `reports`, `facts` (#45) |
 | 2 | `reports.published_at` (#157) |
+| 3 | `cpi_monthly` (#188) |
 
 ## CPI series
 
 Amounts from two reports are in the prices of two different period ends (IAS 29). Before they are added or subtracted, the older one is multiplied by CPI(newer period end) / CPI(older period end) ([0014](decisions/0014-annualisation-and-averages.md)). A period that ends on the last day of a month uses that month's index.
 
+**`cpi_monthly`** (#188): the monthly CPI (TÜFE) general index, one row per month.
+
+| Column | Type | Meaning |
+|---|---|---|
+| `month` | DATE, PK | First day of the month |
+| `index_value` | DECIMAL(18, 6) | The index as published (TÜİK gives the months before 2026 with up to six decimals) |
+| `base` | VARCHAR | Base year, e.g. `2025=100` |
+| `source` | VARCHAR | Publisher |
+| `series_code` | VARCHAR | The publisher's id of the series |
+| `retrieved_at` | TIMESTAMP | When the value was retrieved (UTC) |
+
+- The table holds one series. `bun run cpi [series.csv] [db]` replaces it as a whole in one transaction, so values of two base years never mix and re-running changes nothing. Without arguments it loads the series that ships with Vigil into `data/vigil.duckdb`. Code: [`apps/server/src/cpi.ts`](../apps/server/src/cpi.ts).
+- `retrieved_at` is UTC, like the Zova tables. The other DuckDB timestamps are not: `reports.loaded_at` and `schema_version.applied_at` are local time, `reports.published_at` is Istanbul time.
 - The factor is computed in `packages/core` (`cpiFactor`, #47) as an exact fraction. A date that is not a month end, or a month missing from the series, gives "not computable" with the reason; nothing is estimated.
+- To use the table, read `index_value` as text (`index_value::VARCHAR`) and build the series for `cpiFactor`. `@duckdb/node-api` returns a DECIMAL as a JavaScript number, and dividing in SQL gives a floating-point result; neither is exact. The text has six decimals (`140.770000` for the published `140.77`); the value is the same, and the file keeps the published text.
 
 ### The series file
 

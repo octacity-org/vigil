@@ -58,6 +58,21 @@ CREATE TABLE IF NOT EXISTS facts (
 );
 `;
 
+/**
+ * Migration 3: the monthly CPI (TÜFE) series (#188; the series file and the factor are #47). The table holds one
+ * series: loading replaces it as a whole, so values of two base years never mix.
+ */
+const CPI_TABLE_SQL = `
+CREATE TABLE cpi_monthly (
+    month                   DATE PRIMARY KEY,         -- first day of the month
+    index_value             DECIMAL(18, 6) NOT NULL,  -- as published
+    base                    VARCHAR NOT NULL,         -- e.g. 2025=100
+    source                  VARCHAR NOT NULL,
+    series_code             VARCHAR NOT NULL,
+    retrieved_at            TIMESTAMP NOT NULL        -- UTC
+);
+`;
+
 // Versions are numbered per report: a report that carries the same fact in two columns (e.g. a Q1 report whose
 // cumulative and 3-month columns cover the same months) gives one version with two rows. Such rows are listed
 // by fact_conflicts when they disagree.
@@ -143,6 +158,7 @@ export const MIGRATIONS: readonly Migration[] = [
     // `Gönderim Tarihi`, Istanbul time.
     sql: "ALTER TABLE reports ADD COLUMN IF NOT EXISTS published_at TIMESTAMP;",
   },
+  { version: 3, name: "cpi_monthly (#188)", sql: CPI_TABLE_SQL },
 ];
 
 export const SCHEMA_VERSION_SQL = `

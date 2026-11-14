@@ -58,7 +58,7 @@ describe("migrate", () => {
   test("a database made before versioning and before #157 is upgraded and keeps its data", async () => {
     const con = await memory();
     await con.run(PRE_157);
-    expect(await migrate(con)).toEqual([1, 2]);
+    expect(await migrate(con)).toEqual(MIGRATIONS.map((m) => m.version));
     expect((await columns(con, "reports")).at(-1)).toBe("published_at");
     expect(await all(con, "SELECT company_code, published_at FROM reports")).toEqual([
       { company_code: "KATMR", published_at: null },
@@ -68,7 +68,7 @@ describe("migrate", () => {
   test("a database made after #157 but before versioning is upgraded", async () => {
     const con = await memory();
     await con.run(`${PRE_157} ALTER TABLE reports ADD COLUMN published_at TIMESTAMP;`);
-    expect(await migrate(con)).toEqual([1, 2]);
+    expect(await migrate(con)).toEqual(MIGRATIONS.map((m) => m.version));
     expect(await schemaVersion(con)).toBe(CURRENT_VERSION);
   });
 

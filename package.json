@@ -16,6 +16,7 @@
     "quality": "bun apps/server/src/cli/quality.ts",
     "load": "bun apps/server/src/cli/load.ts",
     "signals": "bun apps/server/src/cli/signals.ts",
+    "cpi": "bun apps/server/src/cli/cpi.ts",
     "cpi:import": "bun apps/server/src/cli/cpi-import.ts",
     "web": "bun run --cwd apps/web dev"
   },

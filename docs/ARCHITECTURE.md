@@ -83,8 +83,8 @@ A report that fails a blocking check is stored with its check results but produc
 
 | | Zova (source of truth) | DuckDB (derived) |
 |---|---|---|
-| Holds | raw KAP files and footnote PDFs; seen disclosures, downloads, errors; app events; local settings and watchlist | companies, reports, facts; version views; check results; metrics; findings |
-| Rebuilt from | KAP (only if lost) | Zova |
+| Holds | raw KAP files and footnote PDFs; seen disclosures, downloads, errors; app events; local settings and watchlist | companies, reports, facts; version views; CPI series; check results; metrics; findings |
+| Rebuilt from | KAP (only if lost) | Zova; the CPI series from `apps/server/reference/cpi-tr.csv` (#47) |
 
 - Every report is keyed by disclosure id and a hash of its raw file.
 - A raw file is always written to Zova first. DuckDB can be deleted and rebuilt from Zova at any time, for example after a parser change.
