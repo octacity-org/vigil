@@ -773,7 +773,7 @@ Tasarım Claude ve Gemini arasında çapraz kontrol edildi. Yakalanan hatalar:
 
 ## 19. Yöntem kararları
 
-Altı açık yöntem kararı ve şirket türü kuralı 01.11.2026'da verildi ve `docs/decisions/` altında kaydedildi. Rakamlar 2026/2 verisinden:
+Altı açık yöntem kararı ve şirket türü kuralı 01.11.2026'da, S2 tetikleyicisi 14.11.2026'da verildi ve `docs/decisions/` altında kaydedildi. Rakamlar 2026/2 verisinden:
 
 | Soru | Karar |
 |---|---|
@@ -784,6 +784,7 @@ Altı açık yöntem kararı ve şirket türü kuralı 01.11.2026'da verildi ve 
 | **Önem eşiği** | Payda toplam varlık; X = 1.000 baz puan, Z = %1 ([0015](decisions/0015-materiality-thresholds.md)) |
 | **Sektör kıyası** | KAP alt sektörü, en az 5 şirket; yoksa ana sektör ([0016](decisions/0016-sector-comparison-groups.md)) |
 | **Şirket türü** | Koddaki hisse listesi yerine KAP sektörü; holdingler ilk sürümde bulgu üretmez ([0017](decisions/0017-company-type-from-kap-sectors.md)) |
+| **Kâr–nakit bulgusu (S2)** | Son 12 aylık tahakkuk oranı, yani (net kâr − faaliyet nakit akışı) / ortalama toplam varlık, en az %7,5; zarar edenler dahil; her bulguda kârdan nakde köprü ([0018](decisions/0018-profit-cash-divergence-trigger.md)) |
 
 Bu belgedeki önceki tanımlarla çelişen yerlerde karar kayıtları geçerlidir.
 
