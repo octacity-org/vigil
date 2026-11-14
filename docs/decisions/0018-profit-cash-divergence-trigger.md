@@ -49,7 +49,7 @@ The two windows pick different companies. At 5%, the year-to-date list has 23 co
   - **TTM:** built as in [0014](0014-annualisation-and-averages.md). In a year-end report it is the reported full year.
   - **Average total assets:** (current period end + previous year end) / 2, both from the current report (row 129).
 - **Trigger:** accrual ratio ≥ **7.5%**, roughly the top tenth of companies. Loss-making companies are included, and the finding shows the sign of profit.
-- **Size floor:** year-to-date revenue at least 100 mn TL, the same as S1.
+- **Size floor:** year-to-date revenue (income statement row 3) of at least 100 mn TL. This is the same amount as S1's floor, which applies to three-month revenue.
 - **Eligibility:** real-sector filings under [0017](0017-company-type-from-kap-sectors.md).
 - **Not computable:** if the previous year-end report or the CPI value is missing, the finding is "not computable" and names the missing input. It is never computed from year-to-date values instead.
 - **Configuration:** the threshold and the size floor are read from the configuration file (#69), never hard-coded.
@@ -63,7 +63,7 @@ The two windows pick different companies. At 5%, the year-to-date list has 23 co
 | + Non-cash adjustments | Row 6, with depreciation and amortisation (row 7) shown separately |
 | + Working capital changes | Row 65, by component as in [0013](0013-working-capital-scope.md) |
 | = Cash from operations | Row 102 |
-| + Interest, tax, employee benefit and other payments | Rows 103–118 |
+| + Dividends, interest, rent, tax, provision and other operating cash flows, discontinued operations | Rows 103–118, each non-zero row shown |
 | + Inflation effect | Row 119 |
 | = Operating cash flow | Row 2 |
 
