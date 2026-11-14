@@ -22,6 +22,7 @@ Every methodology or project choice that changes results or how people work is r
 | [0016](0016-sector-comparison-groups.md) | Sector comparison: KAP sub-sector, at least 5 companies | accepted |
 | [0017](0017-company-type-from-kap-sectors.md) | Company type from KAP sectors instead of a ticker list | accepted |
 | [0018](0018-profit-cash-divergence-trigger.md) | Profit–cash divergence (S2): TTM accrual ratio ≥ 7.5% of average total assets | accepted |
+| [0019](0019-labeling-protocol.md) | Labeling protocol: two blind labelers, third-person adjudication | accepted |
 
 ## Open decisions
 
