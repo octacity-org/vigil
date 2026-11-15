@@ -8,7 +8,7 @@
 import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { type DuckDBAppender, type DuckDBConnection, DuckDBInstance, dateValue } from "@duckdb/node-api";
-import { type ParsedFiling, parseFilename, parseKapXls } from "@vigil/core";
+import { checkFiling, type FilingCheck, type ParsedFiling, parseFilename, parseKapXls } from "@vigil/core";
 import { migrate } from "./migrate.ts";
 
 export const FACT_COLUMNS = [
@@ -228,11 +228,53 @@ function placeholders(columns: number, rowCount: number): string {
   return Array.from({ length: rowCount }, row).join(", ");
 }
 
-/** Replace one filing in the database inside a transaction. Returns the number of facts written. */
+function appendNullableBigInt(app: DuckDBAppender, v: bigint | null): void {
+  if (v === null) app.appendNull();
+  else app.appendBigInt(v);
+}
+
+/** Write a filing's check results, in the order of the `check_results` columns (#183). */
+async function appendChecks(db: Database, disclosureId: bigint, checks: readonly FilingCheck[]): Promise<void> {
+  if (checks.length === 0) return;
+  const app = await db.con.createAppender("check_results");
+  try {
+    checks.forEach((c, position) => {
+      for (const v of [c.left, c.right, c.tolerance]) {
+        if (v !== null && (v > 2n ** 63n - 1n || v < -(2n ** 63n))) {
+          // A subtotal is a sum the parser does not range-check; name it instead of a bare overflow.
+          throw new RangeError(
+            `check ${c.name} at ${c.left_source} of disclosure ${disclosureId}: ${v} is out of BIGINT range`,
+          );
+        }
+      }
+      app.appendBigInt(disclosureId);
+      app.appendInteger(position);
+      app.appendVarchar(c.group);
+      app.appendVarchar(c.name);
+      app.appendVarchar(c.severity);
+      app.appendVarchar(c.status);
+      appendNullableBigInt(app, c.left);
+      appendNullableBigInt(app, c.right);
+      appendText(app, c.left_source);
+      appendText(app, c.right_source);
+      appendNullableBigInt(app, c.tolerance);
+      appendText(app, c.reason);
+      appendText(app, c.known_error);
+      app.endRow();
+    });
+    app.flushSync();
+  } finally {
+    app.closeSync();
+  }
+}
+
+/** Replace one filing and its check results (#183) in the database inside a transaction. Returns the facts written. */
 export async function loadFiling(db: Database, filing: ParsedFiling): Promise<number> {
+  const checks = checkFiling(filing);
   const id = BigInt(filing.disclosure_id);
   await db.con.run("BEGIN TRANSACTION");
   try {
+    await db.con.run("DELETE FROM check_results WHERE disclosure_id = $1", [id]);
     await db.con.run("DELETE FROM facts WHERE disclosure_id = $1", [id]);
     await db.con.run("DELETE FROM reports WHERE disclosure_id = $1", [id]);
     await db.con.run("INSERT INTO companies VALUES ($1) ON CONFLICT DO NOTHING", [filing.company_code]);
@@ -256,6 +298,7 @@ export async function loadFiling(db: Database, filing: ParsedFiling): Promise<nu
       ] as never,
     );
     await appendFacts(db, filing);
+    await appendChecks(db, id, checks);
     await db.con.run("COMMIT");
   } catch (e) {
     await db.con.run("ROLLBACK");

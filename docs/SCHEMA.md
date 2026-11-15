@@ -57,7 +57,34 @@ Valid time is read from the dates in the column header, never derived from the q
 
 Primary key: `(disclosure_id, row_id, column_class)`, i.e. one value per cell. Every value traces back to its file, report, statement, row and column.
 
-The links marked → are not declared as foreign keys. DuckDB checks foreign keys against the state before the transaction, so replacing a report (delete its facts, then the report) would fail. Whatever writes the tables keeps the links consistent by always replacing a report and its facts together.
+The links marked → are not declared as foreign keys. DuckDB checks foreign keys against the state before the transaction, so replacing a report (delete its facts, then the report) would fail. Whatever writes the tables keeps the links consistent by always replacing a report, its facts and its check results together.
+
+### `check_results` — one row per consistency check of a report (#183)
+
+The checks of `packages/core` (`checks.ts`; decisions 0003 and 0006): reconciliation across statements and the subtotals of the income statement, balance sheet and cash flow statement. The same results that `bun run quality` counts, from the same function (`checkFiling`).
+
+| Column | Type | Meaning |
+|---|---|---|
+| `disclosure_id` | BIGINT → `reports` | Report id |
+| `position` | INTEGER | Order the checks ran in, from 0 |
+| `check_group` | VARCHAR | `reconciliation`, `income_statement`, `balance_sheet`, `cash_flow` |
+| `name` | VARCHAR | Check name, e.g. `total_assets_equal_liabilities_and_equity_current` |
+| `severity` | VARCHAR | `blocking`, or `informational` (a difference that does not block the report) |
+| `status` | VARCHAR | `pass`, `fail`, `not_checked` |
+| `left_value`, `right_value` | BIGINT | Compared values, raw, in the report's reporting unit (× `reports.scale_multiplier` gives TL) |
+| `left_source` | VARCHAR | `row_id column` of the left value |
+| `right_source` | VARCHAR | `row_id column` of the right value; for a subtotal, the row ids of the components that have a value (same column as the left; `tolerance` counts every component of the formula) |
+| `tolerance` | BIGINT | Largest difference accepted as a pass, in reporting units: 5 for two single values, one per formula component for a subtotal (decision 0006); NULL when not checked |
+| `reason` | VARCHAR | Why a check is `not_checked` |
+| `known_error` | VARCHAR | For a blocking failure confirmed as an error in the filing (`known-errors.ts`), the reason; the status stays `fail` and the report stays blocked |
+
+Primary key: `(disclosure_id, position)`. A check name is not unique within a report: a subtotal check has one row per column, and the column is in `left_source` (for checked and not checked rows alike). `position` follows the order the checks run in, so it changes when checks are added or reordered; it is not a stable check id.
+
+- The rows are replaced together with the report, in the same transaction, so reloading never duplicates them.
+- A report with no values has no rows, as in `bun run quality`. A file that fails to parse has no report and no rows.
+- A report with values but no check rows has not been checked (for example after the upgrade to version 4): treat it as blocked until it is loaded again.
+- The rows are what the code produced when the report was loaded. After a change to the checks (`checks.ts`, `formulas.ts`), to `known-errors.ts` or to the parser, reload the reports.
+
 
 ## Fact identity
 
@@ -122,7 +149,7 @@ Both quarters loaded into one database: 736 + 776 reports, 340,201 + 366,437 fac
 bun run load data/raw/2026_2 data/vigil.duckdb
 ```
 
-Each report is deleted and rewritten in one transaction, so re-running never duplicates rows. The command exits with an error when a file fails to load, when a report's row count differs from the parse report, or when a file that failed this time still has rows from an earlier load (stale report), or when a report of the same year and quarter is in the database but its file is no longer in the directory (missing file). Stale and missing reports are listed, not deleted.
+Each report, its facts and its check results are deleted and rewritten in one transaction, so re-running never duplicates rows. The command exits with an error when a file fails to load, when a report's row count differs from the parse report, or when a file that failed this time still has rows from an earlier load (stale report), or when a report of the same year and quarter is in the database but its file is no longer in the directory (missing file). Stale and missing reports are listed, not deleted.
 
 ## Example queries
 
@@ -185,6 +212,26 @@ FROM facts f JOIN reports r USING (disclosure_id)
 WHERE f.period_end IS NULL;
 ```
 
+The `bun run quality` counts of one report, from `check_results` (here KATMR 2026/2: 141 passed, 0 failed, 12 not checked):
+
+```sql
+SELECT count(*) FILTER (severity = 'blocking' AND status = 'pass')                          AS passed,
+       count(*) FILTER (severity = 'blocking' AND status = 'fail' AND known_error IS NULL)  AS failed,
+       count(*) FILTER (status = 'not_checked')                                             AS not_checked,
+       count(*) FILTER (severity = 'informational' AND status = 'fail')                     AS informational_differences,
+       count(*) FILTER (known_error IS NOT NULL)                                            AS known_errors
+FROM check_results
+WHERE disclosure_id = 1651411;
+```
+
+Reports blocked from findings (any blocking failure, known errors included):
+
+```sql
+SELECT DISTINCT r.company_code, r.disclosure_id
+FROM check_results c JOIN reports r USING (disclosure_id)
+WHERE c.severity = 'blocking' AND c.status = 'fail';
+```
+
 ## Schema versions
 
 `connect()` brings every database to the current schema on start (#182). The steps are `MIGRATIONS` in [`schema.ts`](../apps/server/src/schema.ts); the runner is [`migrate.ts`](../apps/server/src/migrate.ts).
@@ -201,6 +248,7 @@ WHERE f.period_end IS NULL;
 | 1 | `companies`, `reports`, `facts` (#45) |
 | 2 | `reports.published_at` (#157) |
 | 3 | `cpi_monthly` (#188) |
+| 4 | `check_results` (#183); a database upgraded to it has no check rows until its reports are loaded again |
 
 ## CPI series
 

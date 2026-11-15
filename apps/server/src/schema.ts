@@ -73,6 +73,31 @@ CREATE TABLE cpi_monthly (
 );
 `;
 
+/**
+ * Migration 4: the consistency check results of each report (#183; checks in `packages/core` `checks.ts`, decisions
+ * 0003 and 0006). One row per check result, in the order the checks ran; a check name repeats for each column, so
+ * the key is the position. Values are raw, in the report's reporting unit, like `facts.raw_value`. Written and
+ * replaced together with the report.
+ */
+const CHECK_RESULTS_SQL = `
+CREATE TABLE check_results (
+    disclosure_id           BIGINT NOT NULL,          -- reports.disclosure_id
+    position                INTEGER NOT NULL,         -- order the checks ran in, from 0
+    check_group             VARCHAR NOT NULL,         -- reconciliation, income_statement, balance_sheet, cash_flow
+    name                    VARCHAR NOT NULL,
+    severity                VARCHAR NOT NULL CHECK (severity IN ('blocking', 'informational')),
+    status                  VARCHAR NOT NULL CHECK (status IN ('pass', 'fail', 'not_checked')),
+    left_value              BIGINT,
+    right_value             BIGINT,
+    left_source             VARCHAR,                  -- "row_id column"
+    right_source            VARCHAR,                  -- "row_id column", or the component row ids of a subtotal
+    tolerance               BIGINT,                   -- largest difference accepted as a pass; NULL when not checked
+    reason                  VARCHAR,                  -- why a check is not_checked
+    known_error             VARCHAR,                  -- a blocking failure confirmed as an error in the filing
+    PRIMARY KEY (disclosure_id, position)
+);
+`;
+
 // Versions are numbered per report: a report that carries the same fact in two columns (e.g. a Q1 report whose
 // cumulative and 3-month columns cover the same months) gives one version with two rows. Such rows are listed
 // by fact_conflicts when they disagree.
@@ -159,6 +184,7 @@ export const MIGRATIONS: readonly Migration[] = [
     sql: "ALTER TABLE reports ADD COLUMN IF NOT EXISTS published_at TIMESTAMP;",
   },
   { version: 3, name: "cpi_monthly (#188)", sql: CPI_TABLE_SQL },
+  { version: 4, name: "check_results (#183)", sql: CHECK_RESULTS_SQL },
 ];
 
 export const SCHEMA_VERSION_SQL = `

@@ -51,13 +51,15 @@ export interface CheckResult {
   left_source: string | null;
   right_source: string | null;
   reason: string | null;
+  /** Largest difference accepted as a pass, in the filing's reporting unit (#183); null when not checked. */
+  tolerance: bigint | null;
 }
 
 export function result(
   name: string,
   severity: Severity,
   status: CheckStatus,
-  fields: Partial<Pick<CheckResult, "left" | "right" | "left_source" | "right_source" | "reason">> = {},
+  fields: Partial<Pick<CheckResult, "left" | "right" | "left_source" | "right_source" | "reason" | "tolerance">> = {},
 ): CheckResult {
   return {
     name,
@@ -68,6 +70,7 @@ export function result(
     left_source: fields.left_source ?? null,
     right_source: fields.right_source ?? null,
     reason: fields.reason ?? null,
+    tolerance: fields.tolerance ?? null,
   };
 }
 
@@ -155,6 +158,7 @@ function compare(
     right: rf.raw_value,
     left_source: `${lf.row_id} ${leftColumn}`,
     right_source: `${rf.row_id} ${rightColumn}`,
+    tolerance: SINGLE_VALUE_TOLERANCE,
   });
 }
 
@@ -280,33 +284,36 @@ function subtotals(
       const source = `${rowId(totalRow)} ${column}`;
       if (components.size === 0) {
         if (total !== undefined) {
-          results.push(result(name, "blocking", "not_checked", { reason: `${source}: components not reported` }));
+          results.push(
+            result(name, "blocking", "not_checked", {
+              left_source: source,
+              reason: `${source}: components not reported`,
+            }),
+          );
         }
         continue;
       }
       if (total === undefined) {
         const reason = `${source}: total not reported; its components count in the group above`;
-        results.push(result(name, "blocking", "not_checked", { reason }));
+        results.push(result(name, "blocking", "not_checked", { left_source: source, reason }));
         continue;
       }
       if (total.label_tr !== label) {
         const reason = `${total.row_id} is ${pyRepr(total.label_tr)}, expected ${pyRepr(label)}`;
-        results.push(result(name, "blocking", "not_checked", { reason }));
+        results.push(result(name, "blocking", "not_checked", { left_source: source, reason }));
         continue;
       }
       const sum = [...components.values()].reduce((a, b) => a + b, 0n);
+      // One unit per component of the formula, reported or not.
+      const tolerance = ROUNDING_TOLERANCE * BigInt(parts.length);
       results.push(
-        result(
-          name,
-          "blocking",
-          abs(total.raw_value - sum) <= ROUNDING_TOLERANCE * BigInt(parts.length) ? "pass" : "fail",
-          {
-            left: total.raw_value,
-            right: sum,
-            left_source: source,
-            right_source: [...components.keys()].map(rowId).join(", "),
-          },
-        ),
+        result(name, "blocking", abs(total.raw_value - sum) <= tolerance ? "pass" : "fail", {
+          left: total.raw_value,
+          right: sum,
+          left_source: source,
+          right_source: [...components.keys()].map(rowId).join(", "),
+          tolerance,
+        }),
       );
     }
   }

@@ -20,6 +20,31 @@ export const GROUPS: Record<string, (filing: ParsedFiling) => CheckResult[]> = {
   cash_flow: cashFlowSubtotals,
 };
 
+/** A check result with its group and, for a blocking failure listed in known-errors.ts, the reason (#183). */
+export interface FilingCheck extends CheckResult {
+  group: string;
+  /** Set only for a blocking failure confirmed as an error in the filing (decision 0006); the status stays `fail`. */
+  known_error: string | null;
+}
+
+/**
+ * Every check on a filing, in a fixed order (group, then result): what `bun run quality` counts and what the loader
+ * stores (`check_results`, #183). A filing without values has no checks.
+ */
+export function checkFiling(filing: ParsedFiling): FilingCheck[] {
+  if (filing.facts.length === 0) return [];
+  return Object.entries(GROUPS).flatMap(([group, check]) =>
+    check(filing).map((r) => ({
+      ...r,
+      group,
+      known_error:
+        r.severity === "blocking" && r.status === "fail"
+          ? (KNOWN_FILING_ERRORS.get(knownErrorKey(filing.disclosure_id, r.name)) ?? null)
+          : null,
+    })),
+  );
+}
+
 export type QualityStatus = "pass" | "fail" | "known_error" | "not_checked" | "no_values" | "parse_error";
 
 export interface FileQuality {
@@ -115,30 +140,25 @@ export function filingQuality(filing: ParsedFiling): FileQuality {
     return row;
   }
 
-  for (const [group, check] of Object.entries(GROUPS)) {
-    const counts: Record<string, number> = {};
-    for (const r of check(filing)) {
-      const informational = r.severity === "informational" && r.status === "fail";
-      const k = informational ? "difference" : r.status;
-      counts[k] = (counts[k] ?? 0) + 1;
-      if (r.status === "not_checked") {
-        row.not_checked += 1;
-      } else if (r.severity === "informational") {
-        if (r.status === "fail") row.informational_differences += 1;
-      } else if (r.status === "pass") {
-        row.passed += 1;
-      } else {
-        const known = KNOWN_FILING_ERRORS.get(knownErrorKey(filing.disclosure_id, r.name));
-        if (known !== undefined) {
-          row.known_errors += 1;
-          row.error = known;
-        } else {
-          row.failed += 1;
-          if (!row.first_failure) row.first_failure = describe(r);
-        }
-      }
+  for (const group of Object.keys(GROUPS)) row.counts[group] = {};
+  for (const r of checkFiling(filing)) {
+    const counts = row.counts[r.group] as Record<string, number>;
+    const informational = r.severity === "informational" && r.status === "fail";
+    const k = informational ? "difference" : r.status;
+    counts[k] = (counts[k] ?? 0) + 1;
+    if (r.status === "not_checked") {
+      row.not_checked += 1;
+    } else if (r.severity === "informational") {
+      if (r.status === "fail") row.informational_differences += 1;
+    } else if (r.status === "pass") {
+      row.passed += 1;
+    } else if (r.known_error !== null) {
+      row.known_errors += 1;
+      row.error = r.known_error;
+    } else {
+      row.failed += 1;
+      if (!row.first_failure) row.first_failure = describe(r);
     }
-    row.counts[group] = counts;
   }
 
   if (row.failed) row.status = "fail";
