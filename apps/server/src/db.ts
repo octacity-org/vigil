@@ -76,7 +76,7 @@ function fileReport(filepath: string, status: FileStatus, fields: Partial<FileRe
   };
 }
 
-function duplicateKeys(filing: ParsedFiling): [string, string][] {
+export function duplicateKeys(filing: ParsedFiling): [string, string][] {
   const seen = new Map<string, number>();
   for (const f of filing.facts) {
     const k = `${f.row_id}\u0000${f.column_class}`;

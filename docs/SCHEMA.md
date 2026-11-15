@@ -328,6 +328,11 @@ A new file and its `report_stored` event are written in one Zova transaction: `s
 
 **`events`** (#179): `report_stored`, `report_processed`, `report_failed`; see `docs/ARCHITECTURE.md`.
 
+The processor (#207) records the outcome of a `report_stored` event with the same subject (the object id of the event's file). The payload names the file it processed: `disclosure_id`, `object_id`, `file_name`, `superseded` (true when the event's file was an older version and the latest one was processed instead), and `event`, the id of the `report_stored` event.
+
+- `report_processed` adds `facts`, the check counts of `bun run quality` (`passed`, `failed`, `not_checked`, `informational_differences`, `known_errors`) and `blocked`: any blocking failure, known errors included. `blocked: false` does not mean verified: a report whose template the checks do not support yet has only `not_checked` results, and one without values has `facts: 0` and no checks.
+- `report_failed` adds `reason`: the file cannot be parsed, has two values for one cell, cannot be checked, or is not stored under the event's disclosure (or the event has no valid disclosure id). When the failing file is the latest version and not the event's own file, the reason names it. A failed file is not retried (#211): with the same bytes and the same code it fails again; after a fix to the parser or the checks, the rebuild from Zova (#162) processes it again.
+
 | Version | Change |
 |---|---|
 | 1 | `events` (#179) |

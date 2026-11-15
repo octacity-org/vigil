@@ -79,6 +79,8 @@ Turns a raw file into checked data. It runs when the collector emits an event, a
 
 A report that fails a blocking check is stored with its check results but produces no findings.
 
+Steps 1 and 2 are [`processor.ts`](../apps/server/src/processor.ts) (#207): for each pending `report_stored` event, a job on the write queue reads the latest version of the disclosure from Zova, parses and checks it, and records `report_processed` or `report_failed` with `finish`. Step 3 (#208) plugs in through its `handle` callback, so the load and `finish` run in the same job. Until then nothing starts the processor: an event finished without a load would not be offered again. The processor always takes the latest version of a disclosure; if that version fails while an older one is loaded, whether the older one stays is for #208 to decide.
+
 ### Storage
 
 | | Zova (source of truth) | DuckDB (derived) |

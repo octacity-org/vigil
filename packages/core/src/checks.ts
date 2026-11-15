@@ -197,7 +197,7 @@ export function reconcile(filing: ParsedFiling): CheckResult[] {
 }
 
 /** Blocking checks that failed. A filing with any of these produces no findings. */
-export function blockingFailures(results: readonly CheckResult[]): CheckResult[] {
+export function blockingFailures<T extends CheckResult>(results: readonly T[]): T[] {
   return results.filter((r) => r.severity === "blocking" && r.status === "fail");
 }
 
