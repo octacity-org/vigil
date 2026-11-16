@@ -1,0 +1,17 @@
+{
+  "version": "2026-11-01",
+  "ebitda_definition": "A",
+  "real_sector": {
+    "max_financial_row_share_of_revenue": 0.05
+  },
+  "s1_gross_margin": {
+    "x_min_abs_delta_bps": 1000,
+    "z_min_share_of_denominator": 0.01,
+    "denominator": "total_assets",
+    "min_three_month_revenue_tl": 100000000
+  },
+  "s2_profit_cash": {
+    "min_net_profit_ytd_tl": 100000000,
+    "max_operating_cash_flow_ytd_tl": -100000000
+  }
+}

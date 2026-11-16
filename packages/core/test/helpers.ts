@@ -1,11 +1,17 @@
 /** Shared test helpers: hand-built facts and filings, golden files, raw file paths. */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { ParsedFiling, ParsedFinancialFact } from "../src/index.ts";
+import { type ParsedFiling, type ParsedFinancialFact, parseConfig, type VigilConfig } from "../src/index.ts";
 
 export const REPO = join(import.meta.dir, "..", "..", "..");
 export const GOLDEN_DIR = join(REPO, "tests", "golden");
 export const RAW_DIR = join(REPO, "data", "raw");
+
+/** The repository's configuration file (`config/vigil.json`, #69): the thresholds the detectors run with. */
+export const CONFIG: VigilConfig = parseConfig(
+  readFileSync(join(REPO, "config", "vigil.json"), "utf8"),
+  "config/vigil.json",
+);
 
 /** First line of every synthetic KAP file: the publication time (#157). */
 export const PUBLISHED = "<div> Gönderim Tarihi:17.08.2026 19:05:18 </div>";

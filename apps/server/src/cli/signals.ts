@@ -4,7 +4,8 @@
  *   bun run signals data/raw/2026_2
  *   bun run signals data/raw/2026_2 --db data/vigil.duckdb   # also store the findings (#185)
  *
- * With `--db`, the findings of every file in the folder are stored under the current config version: a rerun replaces
+ * Thresholds come from the configuration file (`config/vigil.json`, or `VIGIL_CONFIG`; #69); an invalid file exits 2.
+ * With `--db`, the findings of every file in the folder are stored under its `version`: a rerun replaces
  * them and never adds duplicates; a finding no longer found is removed. Exits 1 if the database cannot be written.
  */
 import { readFileSync } from "node:fs";
@@ -17,6 +18,7 @@ import {
   parseKapXls,
   type SignalObject,
 } from "@vigil/core";
+import { loadConfig } from "../config.ts";
 import { close, connect, kapFiles } from "../db.ts";
 import { writeFindings } from "../findings-store.ts";
 
@@ -29,6 +31,13 @@ if (dbAt !== -1 && (dbPath == null || dbPath.startsWith("--"))) {
 }
 const positional = argv.filter((_, i) => i !== dbAt && i !== dbAt + 1);
 const rawDir = positional[0] ?? join("data", "raw", "2026_2");
+let config: ReturnType<typeof loadConfig>;
+try {
+  config = loadConfig();
+} catch (e) {
+  console.error(`${(e as Error).name}: ${(e as Error).message}`);
+  process.exit(2);
+}
 const files = kapFiles(rawDir);
 let realSector = 0;
 const excluded = new Map<string, number>();
@@ -40,12 +49,12 @@ const disclosures: number[] = [];
 for (const path of files) {
   const pf = parseKapXls(readFileSync(path), basename(path));
   disclosures.push(pf.disclosure_id);
-  const [ok, reason] = isRealSectorFiling(pf);
+  const [ok, reason] = isRealSectorFiling(pf, config);
   if (ok) realSector += 1;
   else excluded.set(reason, (excluded.get(reason) ?? 0) + 1);
-  const a = detectGrossMarginDeviation(pf);
+  const a = detectGrossMarginDeviation(pf, config);
   if (a) s1.push(a);
-  const b = detectCashProfitQualityDivergence(pf);
+  const b = detectCashProfitQualityDivergence(pf, config);
   if (b) s2.push(b);
   const c = detectRestatementTripwire(pf);
   if (c) s3.push(c);
@@ -55,10 +64,13 @@ for (const list of [s1, s2, s3]) list.sort((x, y) => y.severity_rank_score - x.s
 const pct = (v: unknown) => `${(Number(v) * 100).toFixed(2).padStart(6)}%`;
 const millions = (v: unknown, width: number) => (Number(v) / 1e6).toFixed(1).padStart(width);
 
+console.log(`Config: ${config.version}`);
 console.log(`Total files: ${files.length} | Real-sector filings: ${realSector}`);
 console.log("Excluded breakdown:", Object.fromEntries(excluded));
 
-console.log(`\n=== S1: GROSS MARGIN YoY DEVIATION (|delta| >= 1000 bps) -> ${s1.length} companies ===`);
+console.log(
+  `\n=== S1: GROSS MARGIN YoY DEVIATION (|delta| >= ${config.s1_gross_margin.x_min_abs_delta_bps} bps) -> ${s1.length} companies ===`,
+);
 for (const item of s1.slice(0, 10)) {
   const m = item.summary_metrics;
   const delta = Number(m.delta_bps);
@@ -91,7 +103,7 @@ for (const item of s3) {
 if (dbPath) {
   const db = await connect(dbPath);
   try {
-    const w = await writeFindings(db, disclosures, [...s1, ...s2, ...s3]);
+    const w = await writeFindings(db, disclosures, [...s1, ...s2, ...s3], { configVersion: config.version });
     console.log(`
 Findings in ${dbPath}: ${w.added} new, ${w.kept} found again, ${w.removed} no longer found`);
   } catch (e) {

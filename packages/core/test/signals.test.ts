@@ -14,7 +14,7 @@ import {
   parseKapXls,
   pyRound,
 } from "../src/index.ts";
-import { GOLDEN_DIR, RAW_DIR, rawFile, readCsv } from "./helpers.ts";
+import { CONFIG, GOLDEN_DIR, RAW_DIR, rawFile, readCsv } from "./helpers.ts";
 
 /** value_tl of one hand-copied golden cell. */
 function goldenValue(filing: string, rowId: string, column: string): bigint {
@@ -39,14 +39,14 @@ describe.skipIf(!have)("real filings (raw files)", () => {
     ]);
     expect(pf.role_codes).toContain("310003");
     expect(pf.has_tms29_monetary_item).toBe(true);
-    expect(isRealSectorFiling(pf)[0]).toBe(true);
+    expect(isRealSectorFiling(pf, CONFIG)[0]).toBe(true);
 
     const golden = (row: number, col: number) =>
       goldenValue("KATMR_1651411", `general_role_310003-row-${row}`, `col-order-class-${col}`);
     const [revC, revP, gpC, gpP] = [golden(3, 6), golden(3, 7), golden(5, 6), golden(5, 7)];
     const expectedDelta = pyRound((Number(gpC) / Number(revC) - Number(gpP) / Number(revP)) * 10_000);
 
-    const sig = detectGrossMarginDeviation(pf);
+    const sig = detectGrossMarginDeviation(pf, CONFIG);
     expect(sig).not.toBeNull();
     expect(sig?.summary_metrics.current_q_revenue_tl).toBe(revC);
     expect(sig?.summary_metrics.prior_year_q_revenue_restated_tl).toBe(revP);
@@ -57,15 +57,15 @@ describe.skipIf(!have)("real filings (raw files)", () => {
     const pf = load("SANFM_1650384_2026_2.xls");
     expect([pf.company_code, pf.template_family]).toEqual(["SANFM", "general"]);
     expect(pf.role_codes).toEqual(expect.arrayContaining(["310000", "420000"]));
-    expect(isRealSectorFiling(pf)[0]).toBe(true);
-    expect(detectGrossMarginDeviation(pf)).not.toBeNull();
+    expect(isRealSectorFiling(pf, CONFIG)[0]).toBe(true);
+    expect(detectGrossMarginDeviation(pf, CONFIG)).not.toBeNull();
   });
 
   test("A1CAP: a brokerage is excluded from the real-sector margin finding", () => {
     const pf = load("A1CAP-ACP_1645514_2026_2.xls");
     expect([pf.company_code, pf.raw_ticker_group]).toEqual(["A1CAP", "A1CAP-ACP"]);
-    expect(isRealSectorFiling(pf)[0]).toBe(false);
-    expect(detectGrossMarginDeviation(pf)).toBeNull();
+    expect(isRealSectorFiling(pf, CONFIG)[0]).toBe(false);
+    expect(detectGrossMarginDeviation(pf, CONFIG)).toBeNull();
   });
 
   test("AKBNK: banks template, million TL scale, TP / YP / Toplam columns", () => {
@@ -104,7 +104,7 @@ describe.skipIf(!have)("real filings (raw files)", () => {
   });
 
   test("AKENR: S2 cash-profit divergence", () => {
-    expect(detectCashProfitQualityDivergence(load("AKENR_1649474_2026_2.xls"))).not.toBeNull();
+    expect(detectCashProfitQualityDivergence(load("AKENR_1649474_2026_2.xls"), CONFIG)).not.toBeNull();
   });
 
   test("BIOEN: S3 restated third balance sheet column, evidence from the golden file (#25, #130)", () => {

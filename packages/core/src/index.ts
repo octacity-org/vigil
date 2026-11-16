@@ -1,5 +1,6 @@
 export * from "./cashflow.ts";
 export * from "./checks.ts";
+export * from "./config.ts";
 export * from "./cpi.ts";
 export * from "./dates.ts";
 export * from "./formulas.ts";

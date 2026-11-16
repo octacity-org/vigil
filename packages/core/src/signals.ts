@@ -2,6 +2,7 @@
  * Rule-based findings (prototype, docs/VIGIL.md §9). Code names S1-S3; user-facing text calls them findings
  * ("bulgu"), never signals (docs/legal.md). Thresholds are prototype values pending the Phase 2 decisions.
  */
+import type { VigilConfig } from "./config.ts";
 import type { ParsedFiling, ParsedFinancialFact } from "./parser.ts";
 import { pyRound } from "./text.ts";
 
@@ -70,13 +71,6 @@ export interface SignalObject {
   llm_constraints: { allow_price_commentary: boolean; allow_external_causal_claims: boolean };
 }
 
-/**
- * Version of the thresholds the detectors use by default (S1: 100 million TL revenue, 1,000 bps; S2: 100 million TL
- * profit, -100 million TL operating cash flow). A finding is stored with it (#185); a change of thresholds gets a new
- * version, so findings under the old ones stay traceable.
- */
-export const SIGNALS_CONFIG_VERSION = "2026-11-01";
-
 const LLM_CONSTRAINTS = { allow_price_commentary: false, allow_external_causal_claims: false } as const;
 const INCOME_ROLES = ["310003", "310000", "310002"] as const;
 
@@ -93,7 +87,7 @@ const abs = (n: bigint) => (n < 0n ? -n : n);
  * Whether a filing comes from a real-sector (industrial, commercial, service) company rather than a financial
  * company, real estate investment trust or holding.
  */
-export function isRealSectorFiling(filing: ParsedFiling): [boolean, string] {
+export function isRealSectorFiling(filing: ParsedFiling, config: VigilConfig): [boolean, string] {
   if (filing.template_family !== "general") return [false, `template_family=${filing.template_family}`];
   if (KNOWN_NON_REAL_SECTOR_TICKERS.has(filing.company_code))
     return [false, "known_financial_or_investment_holding_ticker"];
@@ -102,15 +96,16 @@ export function isRealSectorFiling(filing: ParsedFiling): [boolean, string] {
   }
   if (filing.company_code.endsWith("GYO") || filing.company_code.endsWith("GY")) return [false, "gyo_ticker_suffix"];
 
-  // Financial-sector revenue or cost above 5% of commercial revenue.
+  // Financial-sector revenue or cost above the configured share of commercial revenue.
+  const maxShare = config.real_sector.max_financial_row_share_of_revenue;
   const idx = indexFacts(filing);
   for (const role of INCOME_ROLES) {
     const rev = idx.get(`${role}|3|col-order-class-4`);
     const finRev = idx.get(`${role}|6|col-order-class-4`);
     const finCost = idx.get(`${role}|17|col-order-class-4`);
-    // As in the original implementation: the threshold 0.05 * revenue is a double; values stay below 2^53.
+    // As in the original implementation: the threshold share * revenue is a double; values stay below 2^53.
     const revVal = rev ? Number(abs(rev.normalized_value_tl)) : 0;
-    const material = (f: ParsedFinancialFact) => revVal === 0 || Number(abs(f.normalized_value_tl)) > 0.05 * revVal;
+    const material = (f: ParsedFinancialFact) => revVal === 0 || Number(abs(f.normalized_value_tl)) > maxShare * revVal;
     if (finRev && abs(finRev.normalized_value_tl) > 0n && material(finRev)) {
       return [false, "material_financial_sector_revenue_row_6"];
     }
@@ -137,14 +132,11 @@ function evidence(metric: string, f: ParsedFinancialFact): EvidenceItem {
 
 /**
  * S1: 3-month commercial gross margin (row 5 / row 3) against the same quarter of the prior year, restated
- * (col-order-class-6 vs col-order-class-7).
+ * (col-order-class-6 vs col-order-class-7). Thresholds: X and the revenue floor from the configuration (#69).
  */
-export function detectGrossMarginDeviation(
-  filing: ParsedFiling,
-  minRevenueTl = 100_000_000n,
-  minAbsDeltaBps = 1_000,
-): SignalObject | null {
-  if (!isRealSectorFiling(filing)[0]) return null;
+export function detectGrossMarginDeviation(filing: ParsedFiling, config: VigilConfig): SignalObject | null {
+  if (!isRealSectorFiling(filing, config)[0]) return null;
+  const { min_three_month_revenue_tl: minRevenueTl, x_min_abs_delta_bps: minAbsDeltaBps } = config.s1_gross_margin;
   const idx = indexFacts(filing);
   for (const role of INCOME_ROLES) {
     const get = (row: string, col: string) => idx.get(`${role}|${row}|${col}`);
@@ -195,15 +187,14 @@ export function detectGrossMarginDeviation(
 }
 
 /**
- * S2: year-to-date net profit at least 100 million TL while operating cash flow is at most -100 million TL, with the
+ * S2: year-to-date net profit at least `min_net_profit_ytd_tl` while operating cash flow is at most
+ * `max_operating_cash_flow_ytd_tl` (the configuration, #69), with the
  * IAS 29 net monetary position (row 52) shown separately.
  */
-export function detectCashProfitQualityDivergence(
-  filing: ParsedFiling,
-  minNetProfitTl = 100_000_000n,
-  maxOperatingCfTl = -100_000_000n,
-): SignalObject | null {
-  if (!isRealSectorFiling(filing)[0]) return null;
+export function detectCashProfitQualityDivergence(filing: ParsedFiling, config: VigilConfig): SignalObject | null {
+  if (!isRealSectorFiling(filing, config)[0]) return null;
+  const { min_net_profit_ytd_tl: minNetProfitTl, max_operating_cash_flow_ytd_tl: maxOperatingCfTl } =
+    config.s2_profit_cash;
   const idx = indexFacts(filing);
   const incRole = INCOME_ROLES.find((r) => filing.role_codes.includes(r));
   const cfRole = (["520003", "510011"] as const).find((r) => filing.role_codes.includes(r));

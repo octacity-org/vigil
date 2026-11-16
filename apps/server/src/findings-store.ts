@@ -9,7 +9,7 @@
  *
  * Where each number came from is #186; loading a report again removes its findings, which were found in the old facts.
  */
-import { SIGNALS_CONFIG_VERSION, type SignalObject } from "@vigil/core";
+import type { SignalObject } from "@vigil/core";
 import { type Database, rows } from "./db.ts";
 
 export type Rule = "gross_margin_change" | "profit_cash_divergence" | "restated_comparatives";
@@ -76,7 +76,8 @@ export interface FindingsWrite {
 }
 
 /**
- * Store the findings of a run over `disclosureIds` under `configVersion`, in one transaction. For those reports and
+ * Store the findings of a run over `disclosureIds` under `configVersion` (the configuration's `version`, #69), in one
+ * transaction. For those reports and
  * that config, the stored findings become exactly `signals`: a finding found again keeps when it was first found, one
  * no longer found is removed. Findings of other reports, or under other configs, are not touched.
  */
@@ -84,9 +85,9 @@ export async function writeFindings(
   db: Database,
   disclosureIds: readonly number[],
   signals: readonly SignalObject[],
-  options: { configVersion?: string; now?: Date } = {},
+  options: { configVersion: string; now?: Date },
 ): Promise<FindingsWrite> {
-  const config = options.configVersion ?? SIGNALS_CONFIG_VERSION;
+  const config = options.configVersion;
   const now = (options.now ?? new Date()).toISOString().replace("Z", "");
   const scope = new Set(disclosureIds);
   const found = signals.map(findingRow);

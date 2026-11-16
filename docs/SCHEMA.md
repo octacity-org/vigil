@@ -134,7 +134,7 @@ The output of the rules (S1–S3, `packages/core/src/signals.ts`), named as in `
 | `rank_score` | DOUBLE | What a list sorts by within a rule |
 | `summary` | VARCHAR | JSON of the rule's summary numbers; amounts as text, exact |
 | `formula` | VARCHAR | How the rule computed it |
-| `config_version` | VARCHAR | Version of the thresholds in force (`SIGNALS_CONFIG_VERSION`, `2026-11-01`) |
+| `config_version` | VARCHAR | `version` of the configuration file the rules ran with (`config/vigil.json`, #69) |
 | `created_at` | TIMESTAMP | UTC, when the finding was first found under this config |
 
 Primary key: `(rule, disclosure_id, config_version)`.

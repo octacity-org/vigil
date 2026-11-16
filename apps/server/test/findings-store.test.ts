@@ -5,15 +5,16 @@
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { DuckDBInstance } from "@duckdb/node-api";
-import { detectGrossMarginDeviation, SIGNALS_CONFIG_VERSION, type SignalObject } from "@vigil/core";
-import { katmrFromGolden } from "../../../packages/core/test/helpers.ts";
+import { detectGrossMarginDeviation, type SignalObject } from "@vigil/core";
+import { CONFIG, katmrFromGolden } from "../../../packages/core/test/helpers.ts";
 import { close, connect, type Database, loadFiling, removeReport, rows } from "../src/db.ts";
 import { findingRow, writeFindings } from "../src/findings-store.ts";
 import { migrate } from "../src/migrate.ts";
 import { MIGRATIONS } from "../src/schema.ts";
 
 const KATMR = 1651411;
-const s1 = () => detectGrossMarginDeviation(katmrFromGolden()) as SignalObject;
+const V = CONFIG.version;
+const s1 = () => detectGrossMarginDeviation(katmrFromGolden(), CONFIG) as SignalObject;
 
 function signal(type: SignalObject["signal_type"], disclosure: number, summary: SignalObject["summary_metrics"]) {
   return {
@@ -50,6 +51,9 @@ beforeEach(async () => {
 });
 afterEach(() => close(db));
 
+/** writeFindings under the repository's config version unless the test names another. */
+const write = (ids: number[], signals: SignalObject[], options: { configVersion?: string; now?: Date } = {}) =>
+  writeFindings(db, ids, signals, { configVersion: V, ...options });
 const all = () => rows(db, "SELECT * FROM findings ORDER BY rule, disclosure_id, config_version");
 
 describe("findingRow", () => {
@@ -87,23 +91,23 @@ describe("findingRow", () => {
 
 describe("writeFindings", () => {
   test("stores each finding with the config version and when it was found", async () => {
-    const w = await writeFindings(db, [KATMR, 9_000_001], [s1(), s2(), s3()], {
+    const w = await write([KATMR, 9_000_001], [s1(), s2(), s3()], {
       now: new Date("2026-11-16T08:00:00Z"),
     });
     expect(w).toEqual({ added: 3, kept: 0, removed: 0 });
     const stored = await all();
     expect(stored.map((f) => [f.id, f.size_value, f.size_unit, f.config_version])).toEqual([
-      ["2026-2-KATMR-gross_margin_change", "-2596", "bps", SIGNALS_CONFIG_VERSION],
-      ["2026-2-TSTGN-profit_cash_divergence", "400000000", "TRY", SIGNALS_CONFIG_VERSION],
-      ["2026-2-TSTGN-restated_comparatives", "12", "count", SIGNALS_CONFIG_VERSION],
+      ["2026-2-KATMR-gross_margin_change", "-2596", "bps", V],
+      ["2026-2-TSTGN-profit_cash_divergence", "400000000", "TRY", V],
+      ["2026-2-TSTGN-restated_comparatives", "12", "count", V],
     ]);
     expect(stored[0]?.created_at).toEqual(new Date("2026-11-16T08:00:00Z"));
     expect(stored[0]?.title).toBe(s1().neutral_title);
   });
 
   test("a rerun creates no duplicates and keeps when each finding was first found", async () => {
-    await writeFindings(db, [KATMR, 9_000_001], [s1(), s2()], { now: new Date("2026-11-16T08:00:00Z") });
-    const w = await writeFindings(db, [KATMR, 9_000_001], [s1(), s2()], { now: new Date("2026-11-17T08:00:00Z") });
+    await write([KATMR, 9_000_001], [s1(), s2()], { now: new Date("2026-11-16T08:00:00Z") });
+    const w = await write([KATMR, 9_000_001], [s1(), s2()], { now: new Date("2026-11-17T08:00:00Z") });
     expect(w).toEqual({ added: 0, kept: 2, removed: 0 });
     const stored = await all();
     expect(stored).toHaveLength(2);
@@ -114,8 +118,8 @@ describe("writeFindings", () => {
   });
 
   test("a finding no longer found in a report of the run is removed; reports outside the run are left alone", async () => {
-    await writeFindings(db, [KATMR, 9_000_001, 9_000_002], [s1(), s2(), s2(9_000_002)]);
-    const w = await writeFindings(db, [KATMR, 9_000_001], [s1()]);
+    await write([KATMR, 9_000_001, 9_000_002], [s1(), s2(), s2(9_000_002)]);
+    const w = await write([KATMR, 9_000_001], [s1()]);
     expect(w).toEqual({ added: 0, kept: 1, removed: 1 });
     expect((await all()).map((f) => [f.rule, Number(f.disclosure_id)])).toEqual([
       ["gross_margin_change", KATMR],
@@ -124,35 +128,35 @@ describe("writeFindings", () => {
   });
 
   test("under another config version a finding is stored next to the earlier one", async () => {
-    await writeFindings(db, [KATMR], [s1()]);
-    await writeFindings(db, [KATMR], [s1()], { configVersion: "2027-01-01" });
-    expect((await all()).map((f) => f.config_version)).toEqual([SIGNALS_CONFIG_VERSION, "2027-01-01"]);
+    await write([KATMR], [s1()]);
+    await write([KATMR], [s1()], { configVersion: "2027-01-01" });
+    expect((await all()).map((f) => f.config_version)).toEqual([V, "2027-01-01"]);
     // Removing under the new config leaves the old one.
-    await writeFindings(db, [KATMR], [], { configVersion: "2027-01-01" });
-    expect((await all()).map((f) => f.config_version)).toEqual([SIGNALS_CONFIG_VERSION]);
+    await write([KATMR], [], { configVersion: "2027-01-01" });
+    expect((await all()).map((f) => f.config_version)).toEqual([V]);
   });
 
   test("a finding outside the run or listed twice writes nothing", async () => {
-    await writeFindings(db, [KATMR], [s1()]);
+    await write([KATMR], [s1()]);
     const before = await all();
-    await expect(writeFindings(db, [9_000_001], [s1()])).rejects.toThrow("not in this run");
-    await expect(writeFindings(db, [KATMR], [s1(), s1()])).rejects.toThrow("listed twice");
+    await expect(write([9_000_001], [s1()])).rejects.toThrow("not in this run");
+    await expect(write([KATMR], [s1(), s1()])).rejects.toThrow("listed twice");
     expect(await all()).toEqual(before);
   });
 
   test("loading the report again, or removing it, removes its findings", async () => {
     const katmr = katmrFromGolden();
     await loadFiling(db, katmr);
-    await writeFindings(db, [KATMR], [s1()]);
+    await write([KATMR], [s1()]);
     await loadFiling(db, katmr);
     expect(await all()).toEqual([]);
-    await writeFindings(db, [KATMR], [s1()]);
+    await write([KATMR], [s1()]);
     await removeReport(db, KATMR);
     expect(await all()).toEqual([]);
   });
 
   test("the key is (rule, report, config version)", async () => {
-    await writeFindings(db, [KATMR], [s1()]);
+    await write([KATMR], [s1()]);
     await expect(db.con.run(`INSERT INTO findings SELECT * REPLACE ('other' AS id) FROM findings`)).rejects.toThrow();
   });
 });
