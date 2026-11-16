@@ -55,6 +55,11 @@ Measured on 2026-11-16 (#164):
 - The list gives the company's statement files for the period: `mkkMemberOid`, `stockCode`, `pdOid` (the disclosure's `disclosureId`), `disclosureIndex`, `year`, `period`, `title`.
 - The download is a zip, about 1 MB for KATMR 2026/2 (`2026-6 Aylik.zip`): the statement file `KATMR_1651411_2026_2.xls` and the footnote PDFs under `Dönem2Ekler/`. Names are UTF-8 (flag bit 11).
 - **The statement's bytes differ from the bulk file's, its values do not.** KATMR's file is 1,384,985 bytes against 1,355,347 in the bulk zip; the difference is whitespace in the HTML, and all 386 parsed values, dates and labels are the same. So a company download after a bulk import of the same disclosure is stored as a second version with the same values.
+
+**From a disclosure to a download** ([`resolve.ts`](../apps/server/src/resolve.ts), #202). The disclosure list gives everything the download needs: `mkkMemberOid`, `year` and `donem`.
+- A company with several codes is one company. `stockCode` is `ATA, ATAYM`, and KAP names its file `ATA-ATAYM_1651692_2026_2.xls`: the codes joined by `-` in the list's order. The company code is the first, as the parser takes it from the file name.
+- On 17.08.2026 all 72 `Finansal Rapor` disclosures resolved. 35 of them are in the local 2026/2 bulk files, and all 35 have exactly the file name's ticker group.
+- Unresolved, with the reason: not a financial report, no year or period, a member id that is not 32 hex digits, no stock code, or a period that does not end before publication.
 - **After a correction, only the correction is there.** RUBNS 2026/2 was corrected (1651540, `DUZENLENEN`): the list gives only 1651540, and the zip holds `RUBNS_1651540_2026_2.xls`. The corrected original can no longer be downloaded this way; keep it when it is first seen.
 
 Code: [`company-download.ts`](../apps/server/src/company-download.ts). It retries a cut-off zip and keeps the complete members of the longest answer, as the bulk download does, and stores the statements as raw files with `report_stored` and the PDFs in `raw_attachments`.
