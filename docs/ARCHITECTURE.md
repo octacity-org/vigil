@@ -58,6 +58,11 @@ Finds and downloads new financial reports.
 
 Step 1 is [`poller.ts`](../apps/server/src/poller.ts) (#201): every five minutes after the previous poll ended, it asks for class `FR` from the day before the last covered day to today (Istanbul), records each new `Finansal Rapor` once in Zova's `seen_disclosures`, and moves the covered day forward in the same transaction. A failed poll is reported and the next one runs as usual.
 
+Steps 2 and 3 are [`report-downloads.ts`](../apps/server/src/report-downloads.ts) (#203). After each poll, each pending disclosure is resolved to its company and period (#202) and its company's zip downloaded. The statement file goes into Zova with one `report_stored` event, the PDFs as attachments.
+- A disclosure is closed only when its own file is in Zova. Other pending disclosures in the same zip are closed with it.
+- When KAP offers only a later correction, the disclosure is closed as superseded.
+- A failed download keeps its error and is tried again after 10 minutes, doubling up to a day. It is never dropped.
+
 Rules built into the code and not configurable:
 - one request at a time, with a wait between requests;
 - retries with backoff (#38);

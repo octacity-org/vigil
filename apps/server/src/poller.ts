@@ -15,6 +15,7 @@
 import { type IsoDate, previousDay } from "@vigil/core";
 import { type Disclosure, type DisclosureCache, istanbulToday, listDisclosures } from "./disclosures.ts";
 import type { KapClient } from "./kap.ts";
+import { downloadPending, type PendingDownloads } from "./report-downloads.ts";
 import type { Store } from "./zova.ts";
 
 /** Time between the end of one poll and the start of the next. */
@@ -48,13 +49,17 @@ export function coveredThrough(store: Store): IsoDate | null {
   return row === undefined ? null : String(row.value);
 }
 
-/** Recorded disclosures whose file has not been downloaded yet, oldest first. */
-export function pendingDisclosures(store: Store, limit = 100): Disclosure[] {
+/**
+ * Recorded disclosures whose file has not been downloaded yet, oldest first; with `now`, only those whose wait after
+ * a failed download (#203) is over.
+ */
+export function pendingDisclosures(store: Store, limit = 100, now: Date | null = null): Disclosure[] {
   return store
     .query(
-      `SELECT * FROM seen_disclosures WHERE handled_at IS NULL
+      `SELECT * FROM seen_disclosures
+       WHERE handled_at IS NULL AND (?2 IS NULL OR retry_after IS NULL OR retry_after <= ?2)
        ORDER BY published_at, disclosure_id LIMIT ?1`,
-      [limit],
+      [limit, now === null ? null : now.toISOString()],
     )
     .map((r) => ({
       disclosure_id: Number(r.disclosure_id),
@@ -121,8 +126,11 @@ export async function pollOnce(store: Store, options: PollOptions = {}): Promise
 }
 
 export interface PollerOptions extends PollOptions {
+  /** After each poll, download the pending reports (#203); the server process turns this on (#168). */
+  download?: boolean;
   /** Hears every poll's result, and every error (the poller keeps running after one). */
   onPoll?: (result: PollResult) => void;
+  onDownload?: (result: PendingDownloads) => void;
   onError?: (error: unknown) => void;
   /** Replaceable in tests: schedules `fn` after `ms`, returns a cancel function. */
   schedule?: (fn: () => void, ms: number) => () => void;
@@ -146,6 +154,11 @@ export function startPolling(store: Store, options: PollerOptions = {}): { stop:
     if (stopped) return;
     running = pollOnce(store, options)
       .then((r) => options.onPoll?.(r), options.onError ?? (() => {}))
+      // A failed poll still leaves earlier disclosures to download.
+      .then(async () => {
+        if (options.download && !stopped) options.onDownload?.(await downloadPending(store, options));
+      })
+      .catch(options.onError ?? (() => {}))
       .finally(() => {
         if (!stopped) cancel = schedule(tick, POLL_INTERVAL_MS);
       });

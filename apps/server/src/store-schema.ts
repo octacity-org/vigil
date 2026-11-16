@@ -149,6 +149,18 @@ CREATE TABLE quarter_downloads (
 );
 `,
   },
+  {
+    version: 8,
+    name: "download state of recorded disclosures (#203)",
+    sql: `
+ALTER TABLE seen_disclosures ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0;  -- failed downloads so far
+ALTER TABLE seen_disclosures ADD COLUMN last_error TEXT;                      -- the last failure, or a closing note
+ALTER TABLE seen_disclosures ADD COLUMN retry_after TEXT;                     -- ISO 8601, UTC; NULL: now
+ALTER TABLE seen_disclosures ADD COLUMN outcome TEXT
+    CHECK (outcome IN ('stored', 'duplicate', 'superseded', 'unresolved'));  -- set with handled_at
+ALTER TABLE seen_disclosures ADD COLUMN object_id TEXT;                       -- raw_files.object_id of its file
+`,
+  },
 ];
 
 export class StoreSchemaError extends Error {
