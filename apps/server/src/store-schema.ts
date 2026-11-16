@@ -111,6 +111,24 @@ CREATE TABLE collector_state (
 );
 `,
   },
+  {
+    version: 6,
+    name: "report attachments: footnote PDFs (#164)",
+    sql: `
+CREATE TABLE raw_attachments (
+    object_id       TEXT NOT NULL,     -- Zova object id = SHA-256 of the content, hex
+    mkk_member_oid  TEXT NOT NULL,     -- the company whose zip held it
+    year            INTEGER NOT NULL,
+    quarter         INTEGER NOT NULL CHECK (quarter BETWEEN 1 AND 4),
+    path            TEXT NOT NULL,     -- path inside the zip, e.g. Dönem2Ekler/(0)…_TR.pdf
+    size_bytes      INTEGER NOT NULL,
+    downloaded_at   TEXT NOT NULL,     -- ISO 8601, UTC
+    source_url      TEXT NOT NULL,
+    stored_at       TEXT NOT NULL      -- ISO 8601, UTC
+);
+CREATE UNIQUE INDEX raw_attachments_content ON raw_attachments (mkk_member_oid, year, quarter, object_id);
+`,
+  },
 ];
 
 export class StoreSchemaError extends Error {

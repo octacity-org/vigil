@@ -67,7 +67,12 @@ function inflate(data: Buffer, start: number): [Buffer, number] | null {
   }
 }
 
-function scanLocalHeaders(data: Buffer, extractDir: string, only: ReadonlySet<string> | null): SalvageResult {
+/** Picks the members to keep: returns where a member's content goes (its path), or null to skip it. */
+type Keep = (member: string, content: Buffer) => string | null;
+/** Whether a member is wanted at all, before it is inflated. */
+type Wanted = (member: string) => boolean;
+
+function scanLocalHeaders(data: Buffer, wanted: Wanted, keep: Keep): SalvageResult {
   const result: SalvageResult = { complete: false, recovered: [], lost: [] };
   let pos = data.indexOf("PK\x03\x04", 0, "latin1");
   while (pos !== -1 && pos + 30 <= data.length) {
@@ -108,9 +113,13 @@ function scanLocalHeaders(data: Buffer, extractDir: string, only: ReadonlySet<st
       end += 12; // crc, compressed size, uncompressed size (KAP does not use zip64)
     }
 
-    const name = safeName(member);
-    if (crc32(content) >>> 0 !== crc) result.lost.push(member);
-    else if (name && (only === null || only.has(name))) result.recovered.push(write(extractDir, name, content));
+    if (!wanted(member)) {
+      // not ours: skip it
+    } else if (crc32(content) >>> 0 !== crc) result.lost.push(member);
+    else {
+      const kept = keep(member, content);
+      if (kept !== null) result.recovered.push(kept);
+    }
     pos = data.indexOf("PK\x03\x04", end, "latin1");
   }
   return result;
@@ -133,12 +142,7 @@ export function isZipFile(path: string): boolean {
 }
 
 /** Read a complete zip through its central directory. Returns null if the directory is unreadable. */
-function readCentralDirectory(
-  data: Buffer,
-  eocd: number,
-  extractDir: string,
-  only: ReadonlySet<string> | null,
-): SalvageResult | null {
+function readCentralDirectory(data: Buffer, eocd: number, wanted: Wanted, keep: Keep): SalvageResult | null {
   const result: SalvageResult = { complete: true, recovered: [], lost: [] };
   const count = data.readUInt16LE(eocd + 10);
   let pos = data.readUInt32LE(eocd + 16);
@@ -154,8 +158,7 @@ function readCentralDirectory(
     const member = decoder.decode(data.subarray(pos + 46, pos + 46 + nameLen));
     pos += 46 + nameLen + extraLen + commentLen;
 
-    const name = safeName(member);
-    if (!name || (only !== null && !only.has(name))) continue;
+    if (!wanted(member)) continue;
     if (local + 30 > data.length || data.readUInt32LE(local) !== LOCAL_HEADER) {
       result.lost.push(member);
       continue;
@@ -169,7 +172,10 @@ function readCentralDirectory(
       content = null;
     }
     if (content === null || crc32(content) >>> 0 !== crc) result.lost.push(member);
-    else result.recovered.push(write(extractDir, name, content));
+    else {
+      const kept = keep(member, content);
+      if (kept !== null) result.recovered.push(kept);
+    }
   }
   result.complete = result.lost.length === 0;
   return result;
@@ -181,14 +187,47 @@ function readCentralDirectory(
  */
 export function salvageZip(zipPath: string, extractDir: string, only: Iterable<string> | null = null): SalvageResult {
   mkdirSync(extractDir, { recursive: true });
-  const wanted = only === null ? null : new Set(only);
-  const data = readFileSync(zipPath);
+  const set = only === null ? null : new Set(only);
+  const wanted = (member: string) => {
+    const name = safeName(member);
+    return name !== null && (set === null || set.has(name));
+  };
+  return readMembers(readFileSync(zipPath), wanted, (member, content) =>
+    write(extractDir, safeName(member) as string, content),
+  );
+}
+
+function readMembers(data: Buffer, wanted: Wanted, keep: Keep): SalvageResult {
   const eocd = data.length >= 22 ? endOfCentralDirectory(data) : -1;
   if (eocd !== -1) {
-    const complete = readCentralDirectory(data, eocd, extractDir, wanted);
+    const complete = readCentralDirectory(data, eocd, wanted, keep);
     if (complete !== null) return complete;
   }
-  return scanLocalHeaders(data, extractDir, wanted);
+  return scanLocalHeaders(data, wanted, keep);
+}
+
+/** A member read into memory: its path inside the zip and its content. */
+export interface ZipMember {
+  path: string;
+  content: Uint8Array;
+}
+
+/**
+ * Read every complete member of a zip in memory (a complete zip through its central directory, a cut-off one by
+ * scanning its local headers, as `salvageZip`). Directories are skipped. `complete` is false when the zip was cut off
+ * or a member's checksum failed; `lost` names those members.
+ */
+export function readZip(data: Uint8Array): { complete: boolean; members: ZipMember[]; lost: string[] } {
+  const members: ZipMember[] = [];
+  const r = readMembers(
+    Buffer.from(data.buffer, data.byteOffset, data.byteLength),
+    (member) => !member.endsWith("/"),
+    (member, content) => {
+      members.push({ path: member, content: new Uint8Array(content) });
+      return member;
+    },
+  );
+  return { complete: r.complete, members, lost: r.lost };
 }
 
 export interface DownloadOptions {
