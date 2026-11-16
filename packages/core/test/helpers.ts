@@ -1,7 +1,15 @@
 /** Shared test helpers: hand-built facts and filings, golden files, raw file paths. */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type ParsedFiling, type ParsedFinancialFact, parseConfig, type VigilConfig } from "../src/index.ts";
+import {
+  daysBetween,
+  MAX_QUARTER_DAYS,
+  type ParsedFiling,
+  type ParsedFinancialFact,
+  parseConfig,
+  periodDates,
+  type VigilConfig,
+} from "../src/index.ts";
 
 export const REPO = join(import.meta.dir, "..", "..", "..");
 export const GOLDEN_DIR = join(REPO, "tests", "golden");
@@ -123,6 +131,17 @@ export function rawFile(quarter: string, name: string): string | null {
   return existsSync(path) ? path : null;
 }
 
+/** Period type and dates from a column header, as the parser takes them (#36): one date is a point in time. */
+export function periodFromLabel(
+  label: string,
+): Pick<ParsedFinancialFact, "period_type" | "period_start" | "period_end"> {
+  const [period_start, period_end] = periodDates(label);
+  if (period_end === null) return { period_type: "UNKNOWN", period_start, period_end };
+  if (period_start === null) return { period_type: "POINT_IN_TIME", period_start, period_end };
+  const quarter = daysBetween(period_start, period_end) + 1 <= MAX_QUARTER_DAYS;
+  return { period_type: quarter ? "Q_STANDALONE" : "YTD_CUMULATIVE", period_start, period_end };
+}
+
 /** The KATMR 2026/2 filing built from its golden file, not from the parser, so tests run without KAP data. */
 export function katmrFromGolden(): ParsedFiling {
   const facts = readCsv(join(GOLDEN_DIR, "2026_2", "KATMR_1651411.csv"))
@@ -141,7 +160,7 @@ export function katmrFromGolden(): ParsedFiling {
         row_id: line.row_id,
         label_tr: line.row_label,
         column_class: line.column,
-        period_type: "UNKNOWN",
+        ...periodFromLabel(line.period_label as string),
         period_label: line.period_label,
         raw_value: BigInt(line.raw_value as string),
         scale_unit: line.scale_unit,
@@ -154,6 +173,7 @@ export function katmrFromGolden(): ParsedFiling {
     disclosure_id: 1651411,
     role_codes: ["210015", "310003", "520003"],
     has_tms29_monetary_item: true,
+    published_at: "2026-08-17T19:05:18",
     facts,
   });
 }

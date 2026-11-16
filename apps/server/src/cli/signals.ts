@@ -56,7 +56,7 @@ for (const path of files) {
   if (a) s1.push(a);
   const b = detectCashProfitQualityDivergence(pf, config);
   if (b) s2.push(b);
-  const c = detectRestatementTripwire(pf);
+  const c = detectRestatementTripwire(pf, config);
   if (c) s3.push(c);
 }
 for (const list of [s1, s2, s3]) list.sort((x, y) => y.severity_rank_score - x.severity_rank_score);

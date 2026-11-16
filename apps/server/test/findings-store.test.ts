@@ -29,6 +29,7 @@ function signal(type: SignalObject["signal_type"], disclosure: number, summary: 
     summary_metrics: summary,
     evidence_chain: [],
     formula: `formula ${type}`,
+    calculation: { formula: `formula ${type}`, definition: { id: type, version: V, url: "" }, steps: [] },
     llm_constraints: { allow_price_commentary: false, allow_external_causal_claims: false },
   } satisfies SignalObject;
 }

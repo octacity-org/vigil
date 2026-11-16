@@ -7,6 +7,7 @@ export * from "./formulas.ts";
 export * from "./known-errors.ts";
 export * from "./metrics.ts";
 export * from "./parser.ts";
+export * from "./provenance.ts";
 export * from "./quality.ts";
 export * from "./result.ts";
 export * from "./signals.ts";

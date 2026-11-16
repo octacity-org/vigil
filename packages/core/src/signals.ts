@@ -4,6 +4,7 @@
  */
 import type { VigilConfig } from "./config.ts";
 import type { ParsedFiling, ParsedFinancialFact } from "./parser.ts";
+import { type Calculation, readValue } from "./provenance.ts";
 import { pyRound } from "./text.ts";
 
 /** Brokerages, investment holdings and similar issuers that file the general template (#37 tracks replacing this). */
@@ -68,7 +69,14 @@ export interface SignalObject {
   summary_metrics: Record<string, number | bigint | boolean | string>;
   evidence_chain: EvidenceItem[];
   formula: string;
+  /** Every value the finding uses with its source, and the steps from them to the result (#72, `docs/API.md`). */
+  calculation: Calculation;
   llm_constraints: { allow_price_commentary: boolean; allow_external_causal_claims: boolean };
+}
+
+/** A rule's definition: its methodology page and the configuration version it ran under (#69). */
+function definition(id: string, config: VigilConfig): Calculation["definition"] {
+  return { id, version: config.version, url: `/methodology/${id}` };
 }
 
 const LLM_CONSTRAINTS = { allow_price_commentary: false, allow_external_causal_claims: false } as const;
@@ -180,6 +188,42 @@ export function detectGrossMarginDeviation(filing: ParsedFiling, config: VigilCo
         evidence("revenue_prior_year_q_restated", revP),
       ],
       formula: "commercial_gross_profit (row-5) / revenue (row-3) [col-6 vs col-7]",
+      calculation: {
+        formula: "(gross_profit_q / revenue_q - gross_profit_q_prior / revenue_q_prior) * 10000",
+        definition: definition("gross_margin_change", config),
+        steps: [
+          { id: "gross_profit_q", label: `Brüt kâr, 3 aylık, ${filing.year}`, value: readValue(filing, gpC) },
+          { id: "revenue_q", label: `Hasılat, 3 aylık, ${filing.year}`, value: readValue(filing, revC) },
+          {
+            id: "gross_profit_q_prior",
+            label: `Brüt kâr, 3 aylık, ${filing.year - 1} (yeniden düzenlenmiş)`,
+            value: readValue(filing, gpP),
+          },
+          {
+            id: "revenue_q_prior",
+            label: `Hasılat, 3 aylık, ${filing.year - 1} (yeniden düzenlenmiş)`,
+            value: readValue(filing, revP),
+          },
+          {
+            id: "margin_q",
+            label: `Brüt marj, ${filing.year} Ç${filing.quarter}`,
+            formula: "gross_profit_q / revenue_q",
+            result: pyRound(marginC, 6).toFixed(6),
+          },
+          {
+            id: "margin_q_prior",
+            label: `Brüt marj, ${filing.year - 1} Ç${filing.quarter}`,
+            formula: "gross_profit_q_prior / revenue_q_prior",
+            result: pyRound(marginP, 6).toFixed(6),
+          },
+          {
+            id: "change_bps",
+            label: "Değişim (baz puan)",
+            formula: "(margin_q - margin_q_prior) * 10000",
+            result: String(deltaBps),
+          },
+        ],
+      },
       llm_constraints: { ...LLM_CONSTRAINTS },
     };
   }
@@ -214,6 +258,36 @@ export function detectCashProfitQualityDivergence(filing: ParsedFiling, config: 
   const preMonetary = np - mon;
   const chain = [evidence("net_profit_ytd", netProfit), evidence("operating_cash_flow_ytd", opCf)];
   if (monetaryPos) chain.push(evidence("tms29_net_monetary_position_ytd", monetaryPos));
+  const steps: Calculation["steps"] = [
+    { id: "net_profit_ytd", label: "Dönem kârı, yılbaşından itibaren", value: readValue(filing, netProfit) },
+    {
+      id: "operating_cash_flow_ytd",
+      label: "İşletme faaliyetlerinden nakit akışı, yılbaşından itibaren",
+      value: readValue(filing, opCf),
+    },
+    {
+      id: "profit_minus_ocf",
+      label: "Kâr ile işletme nakit akışı farkı",
+      formula: "net_profit_ytd - operating_cash_flow_ytd",
+      result: gap.toString(),
+    },
+  ];
+  // The IAS 29 net monetary gain is not cash; a filing without the row shows no step for it.
+  if (monetaryPos) {
+    steps.push(
+      {
+        id: "net_monetary_position_ytd",
+        label: "Net parasal pozisyon kazancı (TMS 29), yılbaşından itibaren",
+        value: readValue(filing, monetaryPos),
+      },
+      {
+        id: "profit_excluding_monetary_gain",
+        label: "Parasal kazanç hariç dönem kârı",
+        formula: "net_profit_ytd - net_monetary_position_ytd",
+        result: preMonetary.toString(),
+      },
+    );
+  }
 
   return {
     signal_id: `sig_${filing.year}_${filing.quarter}_${filing.company_code}_cash_profit_divergence`,
@@ -234,12 +308,17 @@ export function detectCashProfitQualityDivergence(filing: ParsedFiling, config: 
     },
     evidence_chain: chain,
     formula: "net_profit_ytd (row-59) - operating_cash_flow_ytd (row-2); isolated tms29_monetary_gain (row-52)",
+    calculation: {
+      formula: "net_profit_ytd - operating_cash_flow_ytd",
+      definition: definition("profit_cash_divergence", config),
+      steps,
+    },
     llm_constraints: { ...LLM_CONSTRAINTS },
   };
 }
 
 /** S3: a balance sheet with a filled third column (col-order-class-6, "Bir Önceki Dönem": restated comparatives). */
-export function detectRestatementTripwire(filing: ParsedFiling): SignalObject | null {
+export function detectRestatementTripwire(filing: ParsedFiling, config: VigilConfig): SignalObject | null {
   // Banks, participation banks and finance companies have six-column TP / YP / Toplam balance sheets.
   if (["banks", "par-banks", "finance"].includes(filing.template_family)) return null;
   const col6 = filing.facts.filter(
@@ -268,6 +347,33 @@ export function detectRestatementTripwire(filing: ParsedFiling): SignalObject | 
     },
     evidence_chain: chain,
     formula: "count(BALANCE_SHEET.col-order-class-6 != 0) > 0 [TMS 1.40A]",
+    calculation: {
+      formula: "count(restated balance sheet lines)",
+      definition: definition("restated_comparatives", config),
+      steps: [
+        // Every line with a value in the third column is an input; the count is the size of the finding.
+        ...col6.map((f) => ({
+          id: `restated_${f.row_id.split("-").pop()}`,
+          label: `${f.label_tr} (yeniden düzenlenmiş açılış)`,
+          value: readValue(filing, f),
+        })),
+        ...(assetsC5
+          ? [
+              {
+                id: "total_assets_prior_period",
+                label: `${assetsC5.label_tr} (önceki dönem)`,
+                value: readValue(filing, assetsC5),
+              },
+            ]
+          : []),
+        {
+          id: "restated_line_count",
+          label: "Yeniden düzenlenmiş bilanço kalemi sayısı",
+          formula: "count(restated_*)",
+          result: String(col6.length),
+        },
+      ],
+    },
     llm_constraints: { ...LLM_CONSTRAINTS },
   };
 }

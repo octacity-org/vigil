@@ -108,7 +108,7 @@ describe.skipIf(!have)("real filings (raw files)", () => {
   });
 
   test("BIOEN: S3 restated third balance sheet column, evidence from the golden file (#25, #130)", () => {
-    const sig = detectRestatementTripwire(load("BIOEN_1652232_2026_2.xls"));
+    const sig = detectRestatementTripwire(load("BIOEN_1652232_2026_2.xls"), CONFIG);
     expect(sig).not.toBeNull();
     expect(String(sig?.summary_metrics.third_column_period_label)).toContain("31.12.2024");
     const evidence = new Map(sig?.evidence_chain.map((e) => [`${e.row_id}|${e.column_class}`, e.normalized_value_tl]));

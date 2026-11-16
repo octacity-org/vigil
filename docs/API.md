@@ -357,4 +357,4 @@ The three shorter sources omit fields that repeat the first one (`company_code`,
 
 Check by hand: 189,492,068 / 879,599,263 = 0.215430; 330,145,727 / 694,991,758 = 0.475035; (0.215430 − 0.475035) × 10,000 = −2,596 bps. The prior-year figures are the 2025 quarter as restated in the 2026/2 report (IAS 29); the 2025/2 report filed 1,085,459,841 TL cumulative revenue for the half year, which the version endpoint (#222) returns as version 1.
 
-The thresholds shown are the prototype's (`minRevenueTl`, `minAbsDeltaBps` in `packages/core/src/signals.ts`); the agreed values come from decision #56.
+The thresholds come from the configuration file (`config/vigil.json`, #69): `s1_gross_margin.min_three_month_revenue_tl` and `x_min_abs_delta_bps`. `calculation` is built by the rule itself (`packages/core/src/provenance.ts`, #72); a test reads this example and compares it with what `detectGrossMarginDeviation` returns for KATMR's golden filing.

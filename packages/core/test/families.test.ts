@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { detectRestatementTripwire, parseKapXls } from "../src/index.ts";
-import { PUBLISHED, RAW_DIR } from "./helpers.ts";
+import { CONFIG, PUBLISHED, RAW_DIR } from "./helpers.ts";
 
 const shown = (v: number) => v.toLocaleString("en-US").replaceAll(",", ".");
 const valueCell = (c: number, v: number) =>
@@ -47,7 +47,9 @@ describe("par-banks", () => {
 
   test("its total column is not a restatement", () => {
     // Column 6 is the current total in a TP / YP / Toplam balance sheet, not a third period.
-    expect(detectRestatementTripwire(parseKapXls(bankFiling("par-banks"), "ALBRK-ALK_1644748_2026_2.xls"))).toBeNull();
+    expect(
+      detectRestatementTripwire(parseKapXls(bankFiling("par-banks"), "ALBRK-ALK_1644748_2026_2.xls"), CONFIG),
+    ).toBeNull();
   });
 });
 

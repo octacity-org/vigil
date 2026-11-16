@@ -12,8 +12,13 @@ import {
   isRealSectorFiling,
   parseConfig,
 } from "../src/index.ts";
-import { CONFIG, fact, filing, katmrFromGolden, REPO } from "./helpers.ts";
+import { CONFIG, fact, filing, katmrFromGolden, periodFromLabel, REPO } from "./helpers.ts";
 
+/** A year-to-date column of a 2026/2 report. */
+const YTD = {
+  period_label: "Cari Dönem 01.01.2026 - 30.06.2026",
+  ...periodFromLabel("Cari Dönem 01.01.2026 - 30.06.2026"),
+};
 const TEXT = readFileSync(join(REPO, "config", "vigil.json"), "utf8");
 const raw = () => JSON.parse(TEXT);
 const parse = (o: unknown) => parseConfig(JSON.stringify(o), "test.json");
@@ -115,6 +120,7 @@ describe("the detectors use the configured values", () => {
           row_id: `general_role_${role}-row-59`,
           normalized_value_tl: 250_000_000n,
           raw_value: 250_000_000n,
+          ...YTD,
         }),
         fact({
           role_code: cf,
@@ -122,6 +128,7 @@ describe("the detectors use the configured values", () => {
           row_id: `general_role_${cf}-row-2`,
           normalized_value_tl: -150_000_000n,
           raw_value: -150_000_000n,
+          ...YTD,
         }),
       ],
     });
