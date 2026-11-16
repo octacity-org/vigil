@@ -22,6 +22,7 @@
     "import": "bun apps/server/src/cli/import.ts",
     "process": "bun apps/server/src/cli/process.ts",
     "rebuild": "bun apps/server/src/cli/rebuild.ts",
+    "reconcile": "bun apps/server/src/cli/reconcile.ts",
     "signals": "bun apps/server/src/cli/signals.ts",
     "cpi": "bun apps/server/src/cli/cpi.ts",
     "cpi:import": "bun apps/server/src/cli/cpi-import.ts",

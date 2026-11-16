@@ -24,6 +24,12 @@ Compared with the disclosure list (`disclosure/list/main`, #40) on 2026-10-29:
 - **Not every financial report is in it.** 2026/2 has 996 `Finansal Rapor` disclosures for 2026 Q2; 778 are in the zip, 17 are corrected originals, and 201 come from companies with no file in the zip at all. Of those, 162 have three-letter codes (brokers and portfolio managers) and 36 are banks and finance companies such as `TEB, TEBNK`. Why they are left out is not known.
 - **A quarter's zip keeps growing** while filings arrive: the 2026/2 zip includes MILKS, published on 16.10.2026, and the 2026/3 zip already had 127 files on 29.10.2026. Download a quarter again after the filing deadline and compare it with the disclosure list before treating it as complete.
 
+### Reconciling with the archive
+
+`bun run reconcile <year> <quarter> [raw_dir] [data_dir]` (#205, [`reconcile.ts`](../apps/server/src/reconcile.ts)) downloads the quarter's zip and compares it with Zova by disclosure. It stores the files Vigil is missing, with their events, and leaves stored disclosures alone: the zip's bytes differ from the company download's only in whitespace, so they would only add a version with the same values. The differences are kept in Zova. Disclosures Vigil has that the zip does not are listed, with corrected originals marked (the zip has the correction). While the app runs, each quarter with financial reports recorded in the last 120 days is reconciled once a day.
+
+Measured on 2026-11-16 against a store with the 2026/2 files of 29.10 (246 files), KATMR's file deliberately left out. The zip had 780 files. 536 were missing and stored, KATMR's among them, and 244 were already stored. One stored file was no longer in the zip, `BRGAN-BUR_1643015_2026_2.xls`, and no other file of that company was. **A file can leave the zip without a correction**, and the reconciliation is what shows it.
+
 ### `checkFileExist`
 
 ```

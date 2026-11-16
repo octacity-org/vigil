@@ -183,6 +183,27 @@ CREATE TABLE corrections (
 CREATE INDEX corrections_original ON corrections (original_disclosure_id);
 `,
   },
+  {
+    version: 11,
+    name: "reconciliations with the quarter's bulk archive (#205)",
+    sql: `
+CREATE TABLE reconciliations (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    year            INTEGER NOT NULL,
+    quarter         INTEGER NOT NULL CHECK (quarter BETWEEN 1 AND 4),
+    ran_at          TEXT NOT NULL,        -- ISO 8601, UTC
+    complete        INTEGER NOT NULL,     -- 1: the zip was read completely
+    in_archive      INTEGER NOT NULL,     -- statement files read from the zip
+    stored          TEXT NOT NULL,        -- JSON: disclosures missing from Zova, now stored
+    already_stored  INTEGER NOT NULL,
+    not_in_archive  TEXT NOT NULL,        -- JSON: disclosures Vigil has that the zip does not
+    lost            TEXT NOT NULL,        -- JSON: zip members cut off or corrupt
+    failed          TEXT NOT NULL,        -- JSON: files that could not be stored
+    error           TEXT                  -- why the run did nothing
+);
+CREATE INDEX reconciliations_quarter ON reconciliations (year, quarter, ran_at);
+`,
+  },
 ];
 
 export class StoreSchemaError extends Error {
