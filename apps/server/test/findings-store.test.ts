@@ -15,6 +15,14 @@ import { MIGRATIONS } from "../src/schema.ts";
 const KATMR = 1651411;
 const V = CONFIG.version;
 const s1 = () => detectGrossMarginDeviation(katmrFromGolden(), CONFIG) as SignalObject;
+/** S1 under a config with another version. */
+const s1At = (version: string) => detectGrossMarginDeviation(katmrFromGolden(), { ...CONFIG, version }) as SignalObject;
+
+const RULE_OF = {
+  GROSS_MARGIN_DEVIATION: "gross_margin_change",
+  CASH_PROFIT_QUALITY_DIVERGENCE: "profit_cash_divergence",
+  RETROSPECTIVE_RESTATEMENT_TRIPWIRE: "restated_comparatives",
+} as const;
 
 function signal(type: SignalObject["signal_type"], disclosure: number, summary: SignalObject["summary_metrics"]) {
   return {
@@ -29,7 +37,11 @@ function signal(type: SignalObject["signal_type"], disclosure: number, summary: 
     summary_metrics: summary,
     evidence_chain: [],
     formula: `formula ${type}`,
-    calculation: { formula: `formula ${type}`, definition: { id: type, version: V, url: "" }, steps: [] },
+    calculation: {
+      formula: `formula ${type}`,
+      definition: { id: RULE_OF[type], version: V, url: `/methodology/${RULE_OF[type]}` },
+      steps: [],
+    },
     llm_constraints: { allow_price_commentary: false, allow_external_causal_claims: false },
   } satisfies SignalObject;
 }
@@ -130,7 +142,7 @@ describe("writeFindings", () => {
 
   test("under another config version a finding is stored next to the earlier one", async () => {
     await write([KATMR], [s1()]);
-    await write([KATMR], [s1()], { configVersion: "2027-01-01" });
+    await write([KATMR], [s1At("2027-01-01")], { configVersion: "2027-01-01" });
     expect((await all()).map((f) => f.config_version)).toEqual([V, "2027-01-01"]);
     // Removing under the new config leaves the old one.
     await write([KATMR], [], { configVersion: "2027-01-01" });

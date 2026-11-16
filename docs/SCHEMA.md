@@ -136,12 +136,45 @@ The output of the rules (S1–S3, `packages/core/src/signals.ts`), named as in `
 | `formula` | VARCHAR | How the rule computed it |
 | `config_version` | VARCHAR | `version` of the configuration file the rules ran with (`config/vigil.json`, #69) |
 | `created_at` | TIMESTAMP | UTC, when the finding was first found under this config |
+| `calculation_formula` | VARCHAR | The calculation's formula over step ids, as in the API; NULL for a finding stored before version 8 |
+| `definition_id` | VARCHAR | The rule's methodology id (`/methodology/{id}`) |
 
 Primary key: `(rule, disclosure_id, config_version)`.
 
 - A run over a set of reports replaces their findings under its config version in one transaction: a finding found again keeps its `created_at`, one no longer found is removed, and findings of other reports or other config versions stay. A rerun never adds duplicates.
-- Loading a report again, or removing it, removes its findings. The numbers behind each finding and their sources are #186.
+- Loading a report again, or removing it, removes its findings and their steps.
 - On 2026/2 (246 files): 46 S1, 9 S2 and 2 S3 findings; KATMR's S1 is -2596 bps.
+
+### `finding_steps` and `finding_inputs` — the calculation of each finding (#186)
+
+Every step of a finding's calculation (`docs/API.md` "Calculation", #72), stored with the finding in the same transaction. A finding can be recomputed from these rows alone; the card reads them and never recomputes. `readCalculation` rebuilds the API shape from them.
+
+`finding_steps`, one row per step:
+
+| Column | Type | Meaning |
+|---|---|---|
+| `rule`, `disclosure_id`, `config_version` | | The finding |
+| `position` | INTEGER | Order of the step, from 0 |
+| `step_id` | VARCHAR | E.g. `revenue_q`, `margin_q`; unique within a finding |
+| `label` | VARCHAR | Turkish, for the card |
+| `formula` | VARCHAR | Over earlier step ids, e.g. `gross_profit_q / revenue_q`; NULL for a value read from a filing |
+| `result` | VARCHAR | Exact text: the computed result as shown (margins to 6 decimals, bps whole), or the value read |
+
+`finding_inputs`, one row per step read from a filing (same key and `position`): the value and its full source.
+
+| Column | Type | Meaning |
+|---|---|---|
+| `value`, `unit` | VARCHAR | Whole TL after scaling, exact text; `TRY` |
+| `period_start`, `period_end`, `period_type`, `period_label`, `currency_part` | | The period, as in the API (`point_in_time`, `cumulative`, `three_month`; `total`, `tp`, `yp`) |
+| `source_system`, `document_id` | VARCHAR | `KAP` and the disclosure the value was read from |
+| `company_code`, `report_year`, `report_quarter`, `consolidation` | | The report |
+| `table_id`, `row_id`, `row_label`, `column_class` | VARCHAR | The cell; joins `facts` on (`document_id`, `row_id`, `column_class`) |
+| `shown_value`, `scale` | VARCHAR | The cell text as filed and the reporting unit (decision 0005) |
+| `published_at` | TIMESTAMP | UTC |
+| `url` | VARCHAR | The disclosure on KAP |
+
+- KATMR's S1 is 7 steps, 4 of them inputs: rows 5 and 3, columns 6 and 7 of `general_role_310003`. (189,492,068 / 879,599,263 − 330,145,727 / 694,991,758) × 10,000 = −2,596 bps.
+- On 2026/2 the 57 findings have 507 steps and 349 inputs, and every one reads back equal to what the rule produced.
 
 
 ## Fact identity
@@ -310,6 +343,7 @@ WHERE c.severity = 'blocking' AND c.status = 'fail';
 | 5 | Company metadata columns on `companies` (#189) |
 | 6 | `metrics`, `metric_inputs` (#184) |
 | 7 | `findings` (#185) |
+| 8 | `finding_steps`, `finding_inputs`, `findings.calculation_formula` and `definition_id` (#186); findings stored before it have no steps until the rules run again |
 
 ## CPI series
 

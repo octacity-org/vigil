@@ -146,6 +146,58 @@ CREATE TABLE findings (
 );
 `;
 
+/**
+ * Migration 8 (#186): the calculation of each finding, as rows (#72, `docs/API.md` "Calculation"). One row per step in
+ * `finding_steps`; a step read from a filing also has one row in `finding_inputs` with its period and full source.
+ * A finding can be recomputed from these rows alone. Written with the finding by `writeFindings`.
+ */
+const FINDING_STEPS_SQL = `
+ALTER TABLE findings ADD COLUMN IF NOT EXISTS calculation_formula VARCHAR;  -- NULL for findings stored before version 8
+ALTER TABLE findings ADD COLUMN IF NOT EXISTS definition_id VARCHAR;        -- e.g. gross_margin_change
+
+CREATE TABLE finding_steps (
+    rule            VARCHAR NOT NULL,         -- findings (rule, disclosure_id, config_version)
+    disclosure_id   BIGINT NOT NULL,
+    config_version  VARCHAR NOT NULL,
+    position        INTEGER NOT NULL,         -- order of the step, from 0
+    step_id         VARCHAR NOT NULL,         -- e.g. revenue_q, margin_q
+    label           VARCHAR NOT NULL,         -- Turkish, for the card
+    formula         VARCHAR,                  -- over earlier step ids; NULL for a value read from a filing
+    result          VARCHAR NOT NULL,         -- exact text: the computed result, or the value read
+    PRIMARY KEY (rule, disclosure_id, config_version, position),
+    UNIQUE (rule, disclosure_id, config_version, step_id)
+);
+
+CREATE TABLE finding_inputs (
+    rule               VARCHAR NOT NULL,      -- finding_steps (rule, disclosure_id, config_version, position)
+    disclosure_id      BIGINT NOT NULL,
+    config_version     VARCHAR NOT NULL,
+    position           INTEGER NOT NULL,
+    value              VARCHAR NOT NULL,      -- whole TL after scaling, exact text
+    unit               VARCHAR NOT NULL CHECK (unit IN ('TRY')),
+    period_start       DATE,                  -- NULL for a point in time
+    period_end         DATE NOT NULL,
+    period_type        VARCHAR NOT NULL CHECK (period_type IN ('point_in_time', 'cumulative', 'three_month')),
+    period_label       VARCHAR NOT NULL,      -- the column header as filed
+    currency_part      VARCHAR NOT NULL CHECK (currency_part IN ('total', 'tp', 'yp')),
+    source_system      VARCHAR NOT NULL,      -- KAP
+    document_id        VARCHAR NOT NULL,      -- the disclosure the value was read from
+    company_code       VARCHAR NOT NULL,
+    report_year        INTEGER NOT NULL,
+    report_quarter     INTEGER NOT NULL,
+    consolidation      VARCHAR CHECK (consolidation IN ('consolidated', 'standalone')),
+    table_id           VARCHAR NOT NULL,      -- e.g. general_role_310003
+    row_id             VARCHAR NOT NULL,
+    row_label          VARCHAR NOT NULL,
+    column_class       VARCHAR NOT NULL,
+    shown_value        VARCHAR NOT NULL,      -- the cell text as filed, before scaling
+    scale              VARCHAR NOT NULL,      -- reporting unit as filed
+    published_at       TIMESTAMP,             -- UTC
+    url                VARCHAR NOT NULL,
+    PRIMARY KEY (rule, disclosure_id, config_version, position)
+);
+`;
+
 const CHECK_RESULTS_SQL = `
 CREATE TABLE check_results (
     disclosure_id           BIGINT NOT NULL,          -- reports.disclosure_id
@@ -271,6 +323,7 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS search_key VARCHAR;
   },
   { version: 6, name: "metrics and metric_inputs (#184)", sql: METRICS_SQL },
   { version: 7, name: "findings (#185)", sql: FINDINGS_SQL },
+  { version: 8, name: "finding_steps and finding_inputs (#186)", sql: FINDING_STEPS_SQL },
 ];
 
 export const SCHEMA_VERSION_SQL = `

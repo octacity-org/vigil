@@ -282,6 +282,8 @@ export async function loadFiling(
   await db.con.run("BEGIN TRANSACTION");
   try {
     // Metrics and findings were computed from the old facts; they are computed again for the new ones (#209).
+    await db.con.run("DELETE FROM finding_inputs WHERE disclosure_id = $1", [id]);
+    await db.con.run("DELETE FROM finding_steps WHERE disclosure_id = $1", [id]);
     await db.con.run("DELETE FROM findings WHERE disclosure_id = $1", [id]);
     await db.con.run("DELETE FROM metric_inputs WHERE disclosure_id = $1", [id]);
     await db.con.run("DELETE FROM metrics WHERE disclosure_id = $1", [id]);
@@ -327,6 +329,8 @@ export async function removeReport(db: Database, disclosureId: number): Promise<
   await db.con.run("BEGIN TRANSACTION");
   try {
     const [r] = await rows(db, "SELECT count(*) AS n FROM reports WHERE disclosure_id = $1", [id]);
+    await db.con.run("DELETE FROM finding_inputs WHERE disclosure_id = $1", [id]);
+    await db.con.run("DELETE FROM finding_steps WHERE disclosure_id = $1", [id]);
     await db.con.run("DELETE FROM findings WHERE disclosure_id = $1", [id]);
     await db.con.run("DELETE FROM metric_inputs WHERE disclosure_id = $1", [id]);
     await db.con.run("DELETE FROM metrics WHERE disclosure_id = $1", [id]);
