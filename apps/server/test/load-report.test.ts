@@ -69,7 +69,7 @@ const blockedIds = async () =>
 describe("a stored report is loaded", () => {
   test("its report, facts and check results, the same as bun run load gives for the file", async () => {
     for (const f of FIXTURES) putFixture(f);
-    expect(await run()).toEqual({ processed: FIXTURES.length, failed: 0, already_handled: 0, errors: [] });
+    expect(await run()).toEqual({ processed: FIXTURES.length, failed: 0, already_handled: 0, errors: [], gave_up: [] });
 
     const ref = await connect(":memory:");
     try {
@@ -113,7 +113,7 @@ describe("a stored report is loaded", () => {
       event: event?.id as number,
       outcome: "already_handled",
     });
-    expect(await run()).toEqual({ processed: 0, failed: 0, already_handled: 0, errors: [] });
+    expect(await run()).toEqual({ processed: 0, failed: 0, already_handled: 0, errors: [], gave_up: [] });
     expect(await snapshot(db, GENERAL.disclosureId)).toEqual(before);
   });
 

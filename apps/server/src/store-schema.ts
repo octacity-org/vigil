@@ -161,6 +161,14 @@ ALTER TABLE seen_disclosures ADD COLUMN outcome TEXT
 ALTER TABLE seen_disclosures ADD COLUMN object_id TEXT;                       -- raw_files.object_id of its file
 `,
   },
+  {
+    version: 9,
+    name: "processing attempts of events (#211)",
+    sql: `
+ALTER TABLE events ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0;  -- processing jobs that threw so far
+ALTER TABLE events ADD COLUMN last_error TEXT;                      -- the last such error
+`,
+  },
 ];
 
 export class StoreSchemaError extends Error {

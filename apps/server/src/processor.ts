@@ -9,12 +9,13 @@
  * Delivery is at least once. Parsing and checking have no side effects, `finish` refuses an event that is already
  * handled, and a job skips an event that was handled after it was queued, so a repeated run changes nothing.
  * A file that cannot be parsed gives `report_failed` with the reason; the same bytes would fail the same way, so it is
- * not retried here (retries are #211). An error of the store itself is thrown: the job fails and the event stays
- * pending.
+ * not retried. A job that throws (an error of the store or of the load, which may pass) leaves the event pending: the
+ * next run tries it again, up to `MAX_ATTEMPTS` jobs in all; then it is closed as `report_failed` with the last error
+ * and `gave_up`, for the user to see (#211). Either way the other events go on.
  */
 import { blockingFailures, checkFiling, type FilingCheck, type ParsedFiling, parseKapXls } from "@vigil/core";
 import { type Database, duplicateKeys, loadFiling, removeReport } from "./db.ts";
-import { type AppEvent, EventStateError, finish, getEvent, pending } from "./events.ts";
+import { type AppEvent, EventStateError, finish, getEvent, pending, recordAttempt } from "./events.ts";
 import { QueueClosedError, type WriteQueue } from "./queue.ts";
 import { filesByDisclosure, type RawFile, readRawFile } from "./raw-files.ts";
 import type { Store } from "./zova.ts";
@@ -178,12 +179,38 @@ export async function processEvent(store: Store, event: AppEvent, handle?: Repor
   }
 }
 
+/** Jobs that may throw for one event, over all runs, before it is closed as failed (#211). */
+export const MAX_ATTEMPTS = 3;
+
 export interface ProcessSummary {
   processed: number;
+  /** Events closed as `report_failed`, those given up on included. */
   failed: number;
   already_handled: number;
-  /** Jobs that threw (a store error, or `handle`); their events stay pending. */
-  errors: { event: number; error: string }[];
+  /** Jobs that threw (a store error, or `handle`), with the event's attempts so far. */
+  errors: { event: number; error: string; attempts: number }[];
+  /** Events closed as `report_failed` after `MAX_ATTEMPTS` jobs threw. */
+  gave_up: number[];
+}
+
+/** Close an event whose jobs kept throwing, as `report_failed` with the last error. */
+function giveUp(store: Store, event: AppEvent, attempts: number, error: string): boolean {
+  const current = getEvent(store, event.id);
+  if (current === null || current.handled_at !== null) return false;
+  const payload = {
+    disclosure_id: typeof current.payload.disclosure_id === "number" ? current.payload.disclosure_id : null,
+    object_id: current.subject,
+    file_name: typeof current.payload.file_name === "string" ? current.payload.file_name : null,
+    attempts,
+    gave_up: true,
+  };
+  try {
+    finish(store, current, { type: "report_failed", reason: `gave up after ${attempts} attempts: ${error}`, payload });
+    return true;
+  } catch (e) {
+    if (e instanceof EventStateError) return false;
+    throw e;
+  }
 }
 
 /**
@@ -197,7 +224,7 @@ export async function processPending(
 ): Promise<ProcessSummary> {
   const batch = options.batch ?? 100;
   if (!Number.isInteger(batch) || batch < 1) throw new RangeError(`batch must be a whole number above 0, got ${batch}`);
-  const done: ProcessSummary = { processed: 0, failed: 0, already_handled: 0, errors: [] };
+  const done: ProcessSummary = { processed: 0, failed: 0, already_handled: 0, errors: [], gave_up: [] };
   const attempted = new Set<number>();
   for (;;) {
     const events = pending(store, "report_stored", batch + attempted.size)
@@ -212,11 +239,70 @@ export async function processPending(
     // The queue was closed (shutdown, #198): stop instead of failing every remaining event.
     const closed = settled.some((s) => s.status === "rejected" && s.reason instanceof QueueClosedError);
     settled.forEach((s, i) => {
-      if (s.status === "rejected") done.errors.push({ event: (events[i] as AppEvent).id, error: describe(s.reason) });
-      else if (s.value.outcome === "report_processed") done.processed += 1;
+      const event = events[i] as AppEvent;
+      if (s.status === "rejected") {
+        if (s.reason instanceof QueueClosedError) {
+          done.errors.push({ event: event.id, error: describe(s.reason), attempts: 0 });
+          return;
+        }
+        const error = describe(s.reason);
+        // Counting may fail too if the store is down; the event then stays pending without a count.
+        let attempts = 0;
+        try {
+          attempts = recordAttempt(store, event.id, error);
+          if (attempts >= MAX_ATTEMPTS && giveUp(store, event, attempts, error)) {
+            done.gave_up.push(event.id);
+            done.failed += 1;
+          }
+        } catch {
+          // reported below with attempts 0
+        }
+        done.errors.push({ event: event.id, error, attempts });
+      } else if (s.value.outcome === "report_processed") done.processed += 1;
       else if (s.value.outcome === "report_failed") done.failed += 1;
       else done.already_handled += 1;
     });
     if (closed) return done;
   }
+}
+
+/** A report that could not be processed, for the quality page (#225). */
+export interface FailedReport {
+  /** The `report_failed` event. */
+  event: number;
+  disclosure_id: number | null;
+  object_id: string;
+  file_name: string | null;
+  reason: string;
+  /** True when it was closed after `MAX_ATTEMPTS` jobs threw; false for a file that cannot be parsed or checked. */
+  gave_up: boolean;
+  failed_at: string;
+}
+
+/**
+ * Reports whose latest outcome is `report_failed`, newest first. A file processed successfully after a failure (a new
+ * version, or a rebuild after a parser fix, #162) is no longer listed.
+ */
+export function failedReports(store: Store, limit = 100): FailedReport[] {
+  return store
+    .query(
+      `SELECT * FROM events e
+       WHERE e.type = 'report_failed'
+         AND e.id = (SELECT max(o.id) FROM events o
+                     WHERE o.subject = e.subject AND o.type IN ('report_processed', 'report_failed'))
+       ORDER BY e.id DESC LIMIT ?1`,
+      [limit],
+    )
+    .map((r) => {
+      const p = JSON.parse(String(r.payload)) as Record<string, unknown>;
+      return {
+        event: Number(r.id),
+        disclosure_id: typeof p.disclosure_id === "number" ? p.disclosure_id : null,
+        object_id: String(r.subject),
+        file_name: typeof p.file_name === "string" ? p.file_name : null,
+        reason: String(p.reason),
+        gave_up: p.gave_up === true,
+        failed_at: String(r.created_at),
+      };
+    });
 }

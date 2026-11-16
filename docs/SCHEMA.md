@@ -438,7 +438,10 @@ A new file and its `report_stored` event are written in one Zova transaction: `s
 The processor (#207) records the outcome of a `report_stored` event with the same subject (the object id of the event's file). The payload names the file it processed: `disclosure_id`, `object_id`, `file_name`, `superseded` (true when the event's file was an older version and the latest one was processed instead), and `event`, the id of the `report_stored` event.
 
 - `report_processed` adds `facts`, the check counts of `bun run quality` (`passed`, `failed`, `not_checked`, `informational_differences`, `known_errors`) and `blocked`: any blocking failure, known errors included. `blocked: false` does not mean verified: a report whose template the checks do not support yet has only `not_checked` results, and one without values has `facts: 0` and no checks.
-- `report_failed` adds `reason`: the file cannot be parsed, has two values for one cell, cannot be checked, or is not stored under the event's disclosure (or the event has no valid disclosure id). When the failing file is the latest version and not the event's own file, the reason names it. A failed file is not retried (#211): with the same bytes and the same code it fails again; after a fix to the parser or the checks, the rebuild from Zova (#162) processes it again.
+- `report_failed` adds `reason`: the file cannot be parsed, has two values for one cell, cannot be checked, or is not stored under the event's disclosure (or the event has no valid disclosure id). When the failing file is the latest version and not the event's own file, the reason names it. A file that cannot be parsed or checked is not retried: with the same bytes and the same code it fails again. After a fix to the parser or the checks, the rebuild from Zova (#162) processes it again.
+- A processing job that throws, such as a store or DuckDB error that may pass, leaves the event pending. Its `attempts` and `last_error` are counted on the event (store version 9, #211), and the next run tries it again.
+- After `MAX_ATTEMPTS` (3) jobs the event is closed as `report_failed`, with `reason` "gave up after 3 attempts: …", `attempts` and `gave_up: true`, so it never blocks or loops.
+- `failedReports(store)` lists the reports whose latest outcome is `report_failed`, newest first, for the quality page (#225). [`processor.ts`](../apps/server/src/processor.ts)
 
 | Version | Change |
 |---|---|
@@ -450,3 +453,4 @@ The processor (#207) records the outcome of a `report_stored` event with the sam
 | 6 | `raw_attachments` (#164) |
 | 7 | `quarter_downloads` (#206) |
 | 8 | Download state on `seen_disclosures`: `attempts`, `last_error`, `retry_after`, `outcome`, `object_id` (#203) |
+| 9 | `events.attempts`, `events.last_error`: processing jobs that threw (#211) |

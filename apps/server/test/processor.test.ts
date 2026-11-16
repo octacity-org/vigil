@@ -55,7 +55,7 @@ describe("a stored report", () => {
     const [event] = stored();
     const seen: [CheckedReport, EventContext][] = [];
     const s = await processPending(store, queue, { handle: (r, c) => void seen.push([r, c]) });
-    expect(s).toEqual({ processed: 1, failed: 0, already_handled: 0, errors: [] });
+    expect(s).toEqual({ processed: 1, failed: 0, already_handled: 0, errors: [], gave_up: [] });
 
     const q = filingQuality(parseKapXls(kapHtml(GENERAL), fileName(GENERAL)));
     expect(outcomes()).toEqual([
@@ -90,7 +90,7 @@ describe("a stored report", () => {
     await processPending(store, queue);
     let calls = 0;
     const s = await processPending(store, queue, { handle: () => void calls++ });
-    expect(s).toEqual({ processed: 0, failed: 0, already_handled: 0, errors: [] });
+    expect(s).toEqual({ processed: 0, failed: 0, already_handled: 0, errors: [], gave_up: [] });
     expect(calls).toBe(0);
     expect(outcomes()).toHaveLength(1);
   });

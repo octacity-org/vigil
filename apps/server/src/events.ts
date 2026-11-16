@@ -96,3 +96,18 @@ export function finish(store: Store, event: AppEvent, outcome: Outcome): number 
     return emit(s, outcome.type, event.subject, payload, { handled: true });
   });
 }
+
+/**
+ * Count a failed attempt at handling a pending event (a job that threw, #211) and keep its error. Returns the number
+ * of attempts so far; 0 if the event is not pending (handled meanwhile, or unknown).
+ */
+export function recordAttempt(store: Store, eventId: number, error: string): number {
+  return store.transaction((s) => {
+    const changed = s.run(
+      "UPDATE events SET attempts = attempts + 1, last_error = ?2 WHERE id = ?1 AND handled_at IS NULL",
+      [eventId, error],
+    );
+    if (changed !== 1) return 0;
+    return Number(s.query("SELECT attempts FROM events WHERE id = ?1", [eventId])[0]?.attempts);
+  });
+}
