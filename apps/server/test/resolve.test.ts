@@ -101,19 +101,22 @@ describe("reasons", () => {
 
 // With the 2026/2 bulk files present: the ticker group is the file name's.
 const RAW = join(import.meta.dir, "..", "..", "..", "data", "raw", "2026_2");
-test.skipIf(!existsSync(join(RAW, "KATMR_1651411_2026_2.xls")))("on 2026/2, every resolved report present in the bulk files has its ticker group", () => {
-  const files = new Map(
-    readdirSync(RAW)
-      .map((n) => /^([A-Z0-9-]+)_(\d+)_2026_2\.xls$/i.exec(n))
-      .filter((m) => m !== null)
-      .map((m) => [Number(m[2]), m[1] as string]),
-  );
-  let checked = 0;
-  for (const r of resolveDisclosures(DAY).resolved) {
-    const name = files.get(r.disclosure_id);
-    if (name === undefined) continue;
-    expect(r.ticker_group).toBe(name);
-    checked += 1;
-  }
-  expect(checked).toBeGreaterThan(0);
-});
+test.skipIf(!existsSync(join(RAW, "KATMR_1651411_2026_2.xls")))(
+  "on 2026/2, every resolved report present in the bulk files has its ticker group",
+  () => {
+    const files = new Map(
+      readdirSync(RAW)
+        .map((n) => /^([A-Z0-9-]+)_(\d+)_2026_2\.xls$/i.exec(n))
+        .filter((m) => m !== null)
+        .map((m) => [Number(m[2]), m[1] as string]),
+    );
+    let checked = 0;
+    for (const r of resolveDisclosures(DAY).resolved) {
+      const name = files.get(r.disclosure_id);
+      if (name === undefined) continue;
+      expect(r.ticker_group).toBe(name);
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThan(0);
+  },
+);
