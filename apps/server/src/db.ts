@@ -284,7 +284,7 @@ export async function loadFiling(
     await db.con.run("DELETE FROM check_results WHERE disclosure_id = $1", [id]);
     await db.con.run("DELETE FROM facts WHERE disclosure_id = $1", [id]);
     await db.con.run("DELETE FROM reports WHERE disclosure_id = $1", [id]);
-    await db.con.run("INSERT INTO companies VALUES ($1) ON CONFLICT DO NOTHING", [filing.company_code]);
+    await db.con.run("INSERT INTO companies (company_code) VALUES ($1) ON CONFLICT DO NOTHING", [filing.company_code]);
     await db.con.run(
       `INSERT INTO reports (${REPORT_COLUMNS.join(", ")}) VALUES ${placeholders(REPORT_COLUMNS.length, 1)}`,
       [

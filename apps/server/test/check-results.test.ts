@@ -169,7 +169,7 @@ describe("migration 4", () => {
        VALUES (1651411, 'KATMR', 'KATMR', 2026, 2, 'consolidated', 'general', 'TL', 1, true, 'x.xls', 10, now()::TIMESTAMP)`,
     );
     expect(await schemaVersion(con)).toBe(3);
-    expect(await migrate(con)).toEqual([4]);
+    expect(await migrate(con)).toEqual([4, 5]);
     expect(await schemaVersion(con)).toBe(CURRENT_VERSION);
     const read = async (sql: string) => (await con.runAndReadAll(sql)).getRowObjectsJS();
     expect(await read("SELECT count(*) AS n FROM check_results")).toEqual([{ n: 0n }]);

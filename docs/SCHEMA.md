@@ -20,6 +20,15 @@ Valid time is read from the dates in the column header, never derived from the q
 | Column | Type | Meaning |
 |---|---|---|
 | `company_code` | VARCHAR, PK | Primary ticker from the raw file name |
+| `mkk_member_oid` | VARCHAR | KAP member id, from the disclosure list entry of the company's latest report (#189) |
+| `stock_codes` | VARCHAR[] | All codes, from the same entry, e.g. `[A1CAP, ACP]` |
+| `title` | VARCHAR | Company title, from the same entry |
+| `template_family` | VARCHAR | Template family of the latest report |
+| `main_sector_no`, `main_sector_name`, `sector_no`, `sector_name` | VARCHAR | KAP sector classification (#295), matched by `mkk_member_oid`, never by ticker; NULL for companies KAP does not classify |
+| `sectors_read_at` | TIMESTAMP | UTC time of the sector reading used |
+| `search_key` | VARCHAR | Codes and title lower-cased the Turkish way, without Turkish letters or accents (`ışık`, `IŞIK` and `isik` all give `isik`); search with `turkishSearchKey(query)` as a substring |
+
+`bun run companies [data_dir] [db_path]` fills these from KAP's disclosure list for the days the latest reports were published and the archive's sector classification (`companies.ts`). A company whose latest report is not in the list keeps what it had, and the command exits 1. On 2026/2 (246 companies) every company got its member id; 24 are not on KAP's sector page (companies without listed shares, such as debt issuers and some brokers and banks).
 
 ### `reports` — one row per KAP disclosure (one raw file)
 
@@ -249,6 +258,7 @@ WHERE c.severity = 'blocking' AND c.status = 'fail';
 | 2 | `reports.published_at` (#157) |
 | 3 | `cpi_monthly` (#188) |
 | 4 | `check_results` (#183); a database upgraded to it has no check rows until its reports are loaded again |
+| 5 | Company metadata columns on `companies` (#189) |
 
 ## CPI series
 

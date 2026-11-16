@@ -185,6 +185,23 @@ export const MIGRATIONS: readonly Migration[] = [
   },
   { version: 3, name: "cpi_monthly (#188)", sql: CPI_TABLE_SQL },
   { version: 4, name: "check_results (#183)", sql: CHECK_RESULTS_SQL },
+  {
+    version: 5,
+    name: "company metadata (#189)",
+    // Filled by `updateCompanies` (companies.ts) from KAP's disclosure list and sector classification.
+    sql: `
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS mkk_member_oid VARCHAR;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS stock_codes VARCHAR[];
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS title VARCHAR;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS template_family VARCHAR;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS main_sector_no VARCHAR;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS main_sector_name VARCHAR;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS sector_no VARCHAR;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS sector_name VARCHAR;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS sectors_read_at TIMESTAMP;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS search_key VARCHAR;
+`,
+  },
 ];
 
 export const SCHEMA_VERSION_SQL = `
