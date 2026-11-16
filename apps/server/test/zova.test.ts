@@ -5,7 +5,7 @@ import { copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSyn
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { formatVersion, probeFormat } from "zova-js";
-import { STORE_MIGRATIONS, storeSchemaVersion } from "../src/store-schema.ts";
+import { migrateStore, STORE_MIGRATIONS, storeSchemaVersion } from "../src/store-schema.ts";
 import {
   backupPath,
   type FormatUpgrade,
@@ -183,7 +183,9 @@ describe("format upgrade (#181)", () => {
       }
       expect(files.some((f) => (f.size_bytes as bigint) > 64n * 1024n)).toBe(true); // the one in several chunks
       expect(store.query("SELECT count(*) AS n FROM events WHERE type = 'report_stored'")).toEqual([{ n: 5n }]);
-      expect(storeSchemaVersion(store)).toBe(STORE_MIGRATIONS.length);
+      // The upgrade keeps the store schema as it was (3); the store migrations then run as on any open.
+      expect(storeSchemaVersion(store)).toBe(3);
+      expect(migrateStore(store)).toEqual(STORE_MIGRATIONS.slice(3).map((m) => m.version));
     } finally {
       store.close();
     }

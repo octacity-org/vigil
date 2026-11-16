@@ -145,7 +145,7 @@ describe("duplicates (#177)", () => {
     const insert = "INSERT INTO raw_files VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)";
     s.run(insert, row);
     s.run(insert, row);
-    expect(migrateStore(s)).toEqual([3]);
+    expect(migrateStore(s, STORE_MIGRATIONS.slice(0, 3))).toEqual([3]);
     expect(count(s)).toBe(1);
     expect(() => s.run(insert, row)).toThrow();
     s.close();
