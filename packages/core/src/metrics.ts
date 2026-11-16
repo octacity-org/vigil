@@ -6,7 +6,10 @@
  * Input names in reasons are glossary codes (`docs/glossary.md`): `financial_debt` for borrowings, `cash` for cash
  * and cash equivalents.
  */
-import { collect, type Input, ok, type Result, zeroDenominator } from "./result.ts";
+import { rowValues } from "./cashflow.ts";
+import { INCOME_STATEMENT_ROLES } from "./formulas.ts";
+import type { ParsedFiling } from "./parser.ts";
+import { collect, type Input, notComputable, notReported, ok, type Result, zeroDenominator } from "./result.ts";
 
 export type Amount = number | bigint;
 
@@ -232,4 +235,84 @@ export function calculateBalanceSheetRatios(inputs: BalanceSheetInputs = {}): Ba
     liabilities_to_assets: liabilitiesToAssets(liabilities, inputs.total_assets),
     liabilities_derived: derived,
   };
+}
+
+/** Brüt marj: brüt kâr (row 31) / hasılat (row 3), both for the same period (#61). */
+export function grossMargin(grossProfit: Input<Amount>, revenue: Input<Amount>): Result<number> {
+  return ratio("gross_profit", grossProfit, "revenue", revenue);
+}
+
+/**
+ * Change of a margin in percentage points: (current − same period a year earlier) × 100 (#61). Unrounded; 21.54% vs
+ * 47.50% is −25.96 points, shown as −26.0.
+ */
+export function marginChangePoints(
+  current: Input<number>,
+  priorYear: Input<number>,
+  code = "gross_margin",
+): Result<number> {
+  const c = collect({ [code]: current, [`${code}:prior_year`]: priorYear } as Record<string, Input<number>>);
+  if (!("values" in c)) return c;
+  return ok(((c.values[code] as number) - (c.values[`${code}:prior_year`] as number)) * 100);
+}
+
+export interface ThreeMonthGrossMargin {
+  /** The quarter of the report: 3-month gross profit / 3-month revenue. */
+  current: Result<number>;
+  /** The same quarter a year earlier, as restated in this report. */
+  prior_year: Result<number>;
+  /** current − prior_year, in percentage points. */
+  change_points: Result<number>;
+  /** The 3-month columns used; null when the report has none for that period. */
+  columns: { current: string | null; prior_year: string | null };
+}
+
+const GROSS_PROFIT_ROW = 31;
+const REVENUE_ROW = 3;
+
+/**
+ * Three-month gross margin of a report and of the same quarter a year earlier, from the report's own 3-month columns
+ * (#61): columns 6 and 7 in the 2nd and 3rd quarter, 4 and 5 in the 1st, whose cumulative columns are three months.
+ * A report without them (a year-end report) gives "not computable"; deriving the quarter from the previous report is
+ * #48. Templates other than `general` have no gross profit: "not applicable".
+ */
+export function threeMonthGrossMargin(filing: ParsedFiling): ThreeMonthGrossMargin {
+  if (filing.template_family !== "general") {
+    const na = notComputable("not_applicable", `Brüt marj ${filing.template_family} şablonunda tanımlı değil.`);
+    return { current: na, prior_year: na, change_points: na, columns: { current: null, prior_year: null } };
+  }
+  const role = INCOME_STATEMENT_ROLES.find((r) => filing.role_codes.includes(r));
+  const end = filing.period_end;
+  const priorEnd = end === null ? null : `${Number(end.slice(0, 4)) - 1}${end.slice(4)}`;
+  // The 3-month column ending at a date: its revenue cell says which column it is and what period it covers.
+  const column = (periodEnd: string | null): string | null => {
+    const cells = filing.facts.filter(
+      (f) =>
+        f.role_code === role &&
+        f.row_id.endsWith(`-row-${REVENUE_ROW}`) &&
+        f.period_type === "Q_STANDALONE" &&
+        f.period_end === periodEnd,
+    );
+    // In the 1st quarter columns 4 and 6 can both cover the quarter; they hold the same numbers.
+    return cells.map((f) => f.column_class).sort()[0] ?? null;
+  };
+  const margin = (col: string | null): Result<number> => {
+    if (col === null) {
+      return notComputable(
+        "period_mismatch",
+        "Raporda bu dönemin 3 aylık kolonu yok; önceki rapordan türetilmesi gerekir.",
+        ["gross_profit:three_month", "revenue:three_month"],
+      );
+    }
+    const rows = rowValues(filing, role as string, col);
+    const value = (row: number): Result<bigint> => {
+      const v = rows.get(row);
+      return v === undefined ? notReported() : ok(v);
+    };
+    return grossMargin(value(GROSS_PROFIT_ROW), value(REVENUE_ROW));
+  };
+  const columns = { current: role ? column(end) : null, prior_year: role ? column(priorEnd) : null };
+  const current = margin(columns.current);
+  const prior_year = margin(columns.prior_year);
+  return { current, prior_year, change_points: marginChangePoints(current, prior_year), columns };
 }

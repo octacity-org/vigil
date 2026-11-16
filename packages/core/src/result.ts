@@ -68,6 +68,11 @@ export const INPUT_NAMES_TR: Readonly<Record<string, string>> = {
   profit_in_cash_flow: "Nakit akış tablosundaki dönem kârı",
   working_capital_change: "İşletme sermayesindeki değişim",
   "total_assets:prior_year_end": "Önceki yıl sonu toplam varlıklar",
+  revenue: "Hasılat",
+  gross_margin: "Brüt marj",
+  "gross_margin:prior_year": "Geçen yılın aynı dönemi brüt marj",
+  "gross_profit:three_month": "3 aylık brüt kâr",
+  "revenue:three_month": "3 aylık hasılat",
 };
 
 const nameTr = (code: string) => INPUT_NAMES_TR[code] ?? code;

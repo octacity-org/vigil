@@ -63,6 +63,7 @@ KAP labels are Turkish; code, issues and variable names are English. Use these n
 | Amortisman ve itfa payları | Depreciation and amortisation (D&A) | `d_and_a` | Taken from the cash flow statement (cumulative) |
 | FAVÖK | EBITDA | `ebitda_a`, `ebitda_b` | Two definitions; see decisions |
 | Son 12 ay FAVÖK | Trailing-twelve-month EBITDA | `ebitda_a_ttm` | EBITDA A over the last twelve months, CPI-adjusted (decision 0014) |
+| Brüt marj | Gross margin | `gross_margin` | Gross profit / revenue (row 31 / row 3); shown for the 3 months of the quarter and against the same quarter a year earlier, in percentage points (#61). `:prior_year` is that earlier quarter; `gross_profit:three_month`, `revenue:three_month` are the 3-month values |
 
 ## Cash flow
 

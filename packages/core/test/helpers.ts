@@ -162,6 +162,8 @@ export function katmrFromGolden(): ParsedFiling {
         column_class: line.column,
         ...periodFromLabel(line.period_label as string),
         period_label: line.period_label,
+        // "Önceki Dönem …" and "Bir Önceki Dönem …" are comparative columns, as the parser marks them.
+        is_restated_comparative: (line.period_label as string).includes("Önceki Dönem"),
         raw_value: BigInt(line.raw_value as string),
         scale_unit: line.scale_unit,
         normalized_value_tl: BigInt(line.value_tl as string),
@@ -174,6 +176,8 @@ export function katmrFromGolden(): ParsedFiling {
     role_codes: ["210015", "310003", "520003"],
     has_tms29_monetary_item: true,
     published_at: "2026-08-17T19:05:18",
+    period_start: "2026-01-01",
+    period_end: "2026-06-30",
     facts,
   });
 }
