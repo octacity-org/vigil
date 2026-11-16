@@ -13,6 +13,7 @@
  * The interval and the request rules are constants, not settings (decision 0008).
  */
 import { type IsoDate, previousDay } from "@vigil/core";
+import { type LinkResult, linkCorrections } from "./corrections.ts";
 import { type Disclosure, type DisclosureCache, istanbulToday, listDisclosures } from "./disclosures.ts";
 import type { KapClient } from "./kap.ts";
 import { downloadPending, type PendingDownloads } from "./report-downloads.ts";
@@ -130,6 +131,8 @@ export interface PollerOptions extends PollOptions {
   download?: boolean;
   /** Hears every poll's result, and every error (the poller keeps running after one). */
   onPoll?: (result: PollResult) => void;
+  /** Hears the corrections linked after each poll (#204). */
+  onLink?: (result: LinkResult) => void;
   onDownload?: (result: PendingDownloads) => void;
   onError?: (error: unknown) => void;
   /** Replaceable in tests: schedules `fn` after `ms`, returns a cancel function. */
@@ -142,7 +145,9 @@ const realSchedule = (fn: () => void, ms: number) => {
 };
 
 /**
- * Poll now and then every `POLL_INTERVAL_MS` after the previous poll ended, until `stop`. Polls never overlap. An
+ * Poll now and then every `POLL_INTERVAL_MS` after the previous poll ended, until `stop`. After each poll, new
+ * corrections are linked to what they correct (#204), then, with `download`, pending reports are downloaded. Polls
+ * never overlap. An
  * error is reported and the next poll runs as usual (KAP may be down for a while). `stop` waits for a poll in progress.
  */
 export function startPolling(store: Store, options: PollerOptions = {}): { stop: () => Promise<void> } {
@@ -154,7 +159,11 @@ export function startPolling(store: Store, options: PollerOptions = {}): { stop:
     if (stopped) return;
     running = pollOnce(store, options)
       .then((r) => options.onPoll?.(r), options.onError ?? (() => {}))
-      // A failed poll still leaves earlier disclosures to download.
+      // A failed poll still leaves earlier corrections to link and disclosures to download.
+      .then(async () => {
+        if (!stopped) options.onLink?.(await linkCorrections(store, options));
+      })
+      .catch(options.onError ?? (() => {}))
       .then(async () => {
         if (options.download && !stopped) options.onDownload?.(await downloadPending(store, options));
       })

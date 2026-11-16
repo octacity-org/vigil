@@ -64,6 +64,17 @@ Measured on 2026-11-16 (#164):
 
 Code: [`company-download.ts`](../apps/server/src/company-download.ts). It retries a cut-off zip and keeps the complete members of the longest answer, as the bulk download does, and stores the statements as raw files with `report_stored` and the PDFs in `raw_attachments`.
 
+## Corrections
+
+A correction is a new disclosure: its own `disclosureIndex` and file name, `isChanged: "DUZENLENEN"`, and `relatedDisclosureOid` set to the `disclosureId` of the disclosure it corrects, which KAP then marks `DUZELTILEN`. Measured on RUBNS 2026/2 (#204):
+
+- The original 1646921 was published on 10.08.2026 18:18:59, the correction 1651540 on 17.08.2026 20:12:56. The original stays in the disclosure list, marked `DUZELTILEN`, and its `relatedDisclosureOid` is null: only the correction points to the other.
+- **Which version a download returns:** after a correction, both the single-company download and the quarter's zip give only the correction's file (see "Single-company download"). The original's file can only be kept if it was stored before.
+- The original can be found with one request: the company's financial disclosures (`mkkMemberOid`, class `FR`) from the day after the period ended to the day of the correction. RUBNS's answer for 01.07–17.08.2026 has five disclosures, the original among them.
+- On 17.08.2026, 2 of the day's 72 `Finansal Rapor` disclosures were corrections.
+
+**In Vigil** ([`corrections.ts`](../apps/server/src/corrections.ts)): both files are kept in Zova under their own disclosure ids. After each poll, every new correction is linked to its original in the store's `corrections` table: by the original's oid when the collector recorded it too, otherwise with the request above. `reportVersions` gives a report's versions in order, the original first. An original that KAP's list does not have is recorded as not found and not asked for again.
+
 ## Disclosure list
 
 ```

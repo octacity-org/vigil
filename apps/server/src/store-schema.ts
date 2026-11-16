@@ -169,6 +169,20 @@ ALTER TABLE events ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0;  -- processin
 ALTER TABLE events ADD COLUMN last_error TEXT;                      -- the last such error
 `,
   },
+  {
+    version: 10,
+    name: "corrections linked to the disclosures they correct (#204)",
+    sql: `
+CREATE TABLE corrections (
+    disclosure_id           INTEGER PRIMARY KEY,  -- the correction (DUZENLENEN): the id in its file name
+    original_disclosure_id  INTEGER,              -- the disclosure it corrects; NULL when KAP's list does not have it
+    original_oid            TEXT NOT NULL,        -- KAP relatedDisclosureOid
+    linked_at               TEXT NOT NULL,        -- ISO 8601, UTC
+    note                    TEXT                  -- where the original was found, or where it was looked for
+);
+CREATE INDEX corrections_original ON corrections (original_disclosure_id);
+`,
+  },
 ];
 
 export class StoreSchemaError extends Error {
