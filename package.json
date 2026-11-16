@@ -14,6 +14,7 @@
     "typecheck": "tsc -p . && tsc -p apps/web",
     "test": "bun test",
     "download": "bun apps/server/src/cli/download.ts",
+    "disclosures": "bun apps/server/src/cli/disclosures.ts",
     "quality": "bun apps/server/src/cli/quality.ts",
     "load": "bun apps/server/src/cli/load.ts",
     "import": "bun apps/server/src/cli/import.ts",

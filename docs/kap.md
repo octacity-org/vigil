@@ -81,6 +81,8 @@ This is the list behind KAP's home page and disclosure search. Measured on 2026-
 - query one day or one month rather than repeating large ranges;
 - cache the results: a past day's list does not change except through new corrections, which appear as new disclosures.
 
+**Client** (#163): [`disclosures.ts`](../apps/server/src/disclosures.ts) asks for a range in windows of at most 90 days, reads the fields above (and `disclosureId`, the id a correction's `relatedDisclosureOid` points to), and caches windows that ended before today (Istanbul). `bun run disclosures 2026 2` prints a period's `Finansal Rapor` count with its corrections: 999 for 2026/2 on 2026-11-16, 17 of them corrected later.
+
 The server enforces these rules in `apps/server/src/kap.ts` (#199): every request to KAP goes through one queue, at least `MIN_INTERVAL_MS` apart, with at most `MAX_ATTEMPTS` tries on network errors, 429 and 5xx. They are constants, not settings (decision 0008).
 
 ## Sectors
