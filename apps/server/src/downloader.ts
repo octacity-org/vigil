@@ -325,7 +325,7 @@ export async function downloadToStore(
   year: number,
   quarter: number,
   rawDir: string,
-  options: DownloadOptions & { now?: () => Date } = {},
+  options: DownloadOptions & { now?: () => Date; onFile?: (done: number, total: number) => void } = {},
 ): Promise<{ download: DownloadResult; stored: QuarterImport }> {
   const download = await downloadQuarter(year, quarter, rawDir, options);
   const dir = join(rawDir, `${year}_${quarter}`);
@@ -336,6 +336,7 @@ export async function downloadToStore(
     files: download.recovered.map((p) => basename(p)),
     source: "download",
     sourceUrl: `${KAP_ORIGIN}${path}`,
+    onFile: options.onFile,
   });
   return { download, stored };
 }

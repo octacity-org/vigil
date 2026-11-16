@@ -135,6 +135,8 @@ export interface ImportOptions {
   source?: "import" | "download";
   /** The URL the bytes came from; defaults to each file's `file://` path. */
   sourceUrl?: string;
+  /** Called after each file with the files handled so far and the total (#206). */
+  onFile?: (done: number, total: number) => void;
 }
 
 export function importQuarter(
@@ -169,7 +171,9 @@ export function importQuarter(
   result.downloaded_at = time?.at.toISOString() ?? null;
   result.downloaded_at_source = time?.source ?? null;
 
+  let handled = 0;
   for (const path of files) {
+    handled += 1;
     const file = basename(path);
     let bytes: Uint8Array;
     let disclosureId: number;
@@ -183,6 +187,7 @@ export function importQuarter(
       bytes = readFileSync(path);
     } catch (e) {
       result.failed.push({ file, reason: `${(e as Error).name}: ${(e as Error).message}` });
+      options.onFile?.(handled, files.length);
       continue;
     }
     const earlier = filesByDisclosure(store, disclosureId).length;
@@ -205,6 +210,7 @@ export function importQuarter(
       result.imported += 1;
       if (earlier > 0) result.new_versions += 1;
     }
+    options.onFile?.(handled, files.length);
   }
   return result;
 }

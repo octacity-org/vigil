@@ -129,6 +129,26 @@ CREATE TABLE raw_attachments (
 CREATE UNIQUE INDEX raw_attachments_content ON raw_attachments (mkk_member_oid, year, quarter, object_id);
 `,
   },
+  {
+    version: 7,
+    name: "quarter downloads chosen by the user (#206)",
+    sql: `
+CREATE TABLE quarter_downloads (
+    year           INTEGER NOT NULL,
+    quarter        INTEGER NOT NULL CHECK (quarter BETWEEN 1 AND 4),
+    status         TEXT NOT NULL CHECK (status IN ('pending', 'running', 'done', 'incomplete', 'failed')),
+    requested_at   TEXT NOT NULL,        -- ISO 8601, UTC
+    finished_at    TEXT,                 -- the last attempt's end
+    attempts       INTEGER NOT NULL DEFAULT 0,
+    files_stored   INTEGER NOT NULL DEFAULT 0,
+    files_skipped  INTEGER NOT NULL DEFAULT 0,
+    files_failed   INTEGER NOT NULL DEFAULT 0,
+    files_lost     INTEGER NOT NULL DEFAULT 0,
+    error          TEXT,
+    PRIMARY KEY (year, quarter)
+);
+`,
+  },
 ];
 
 export class StoreSchemaError extends Error {

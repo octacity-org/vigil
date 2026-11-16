@@ -342,6 +342,8 @@ A new file and its `report_stored` event are written in one Zova transaction: `s
 
 **`raw_attachments`** (#164): the footnote PDFs of a company's zip, one row per company, period and content: `object_id` (SHA-256), `mkk_member_oid`, `year`, `quarter`, `path` inside the zip (`Dönem2Ekler/…pdf`), `size_bytes`, `downloaded_at`, `source_url`, `stored_at`. A zip can hold several statements (consolidated and solo), so the PDFs belong to the company's period, not to one disclosure.
 
+**`quarter_downloads`** (#206): the quarters chosen for the first download (#165), one row per quarter: `status` (`pending`, `running`, `done`, `incomplete`: files lost or failed, `failed`: nothing came back), `requested_at`, `finished_at`, `attempts`, `files_stored` (new files over all attempts), `files_skipped`, `files_failed` and `files_lost` (of the last attempt) and `error`. `runQuarterDownloads` downloads every quarter that is not done, oldest first, with progress after each file; a restart continues with the quarter that was running, and files stored before the stop are skipped. Code: [`quarter-downloads.ts`](../apps/server/src/quarter-downloads.ts).
+
 **Seen disclosures** (#201): `seen_disclosures` has one row per new `Finansal Rapor` disclosure the collector found in the disclosure list: its ids (`disclosure_id` = `disclosureIndex`, `disclosure_oid`), company (`mkk_member_oid`, `stock_codes` as JSON), period, publication time (Istanbul), correction fields, `seen_at`, and `handled_at` (NULL until its file is downloaded, #164/#203). `collector_state` keeps `disclosures_covered_through`, the last day (Istanbul) a poll covered, so a restart continues from it. Code: [`poller.ts`](../apps/server/src/poller.ts).
 
 **Sector classification** (#295): `sector_classifications` (one row per distinct classification: its SHA-256, the Zova object of the page it was first read from, the number of companies), `company_sectors` (per classification and `mkk_member_oid`: tickers and title as on the page, main sector and sub-sector number, name and oid; the sub-sector is NULL when the page gives none) and `sector_readings` (every reading: `read_at`, UTC, and its classification). The classification in use at a time is the latest reading at or before it. Code: [`sectors.ts`](../apps/server/src/sectors.ts).
@@ -361,3 +363,4 @@ The processor (#207) records the outcome of a `report_stored` event with the sam
 | 4 | `sector_classifications`, `company_sectors`, `sector_readings` (#295) |
 | 5 | `seen_disclosures`, `collector_state` (#201) |
 | 6 | `raw_attachments` (#164) |
+| 7 | `quarter_downloads` (#206) |

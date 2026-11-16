@@ -5,61 +5,18 @@
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { crc32, deflateRawSync } from "node:zlib";
+import { deflateRawSync } from "node:zlib";
 import { companyMembers, downloadCompanyReport } from "../src/company-download.ts";
 import { readZip } from "../src/downloader.ts";
 import { KapClient } from "../src/kap.ts";
 import { filesByDisclosure, readRawFile } from "../src/raw-files.ts";
 import { migrateStore } from "../src/store-schema.ts";
 import { memoryStore, type Store } from "../src/zova.ts";
+import { makeZip } from "./fixtures/zip.ts";
 
 const OID = "4028e4a14184e9cf01419c001e945a74";
 const PERIOD = { mkkMemberOid: OID, year: 2026, quarter: 2 };
 const URL = `https://www.kap.org.tr/tr/api/home-financial/download-file/${OID}/2026/2`;
-
-/** A zip with deflated members, a central directory and UTF-8 names. */
-function makeZip(members: Record<string, string | Uint8Array>): Buffer {
-  const locals: Buffer[] = [];
-  const centrals: Buffer[] = [];
-  let offset = 0;
-  for (const [name, value] of Object.entries(members)) {
-    const content = typeof value === "string" ? Buffer.from(value) : Buffer.from(value);
-    const nameBytes = Buffer.from(name, "utf8");
-    const data = deflateRawSync(content);
-    const crc = crc32(content) >>> 0;
-    const local = Buffer.alloc(30);
-    local.writeUInt32LE(0x04034b50, 0);
-    local.writeUInt16LE(20, 4);
-    local.writeUInt16LE(0x0800, 6); // UTF-8 names
-    local.writeUInt16LE(8, 8);
-    local.writeUInt32LE(crc, 14);
-    local.writeUInt32LE(data.length, 18);
-    local.writeUInt32LE(content.length, 22);
-    local.writeUInt16LE(nameBytes.length, 26);
-    const central = Buffer.alloc(46);
-    central.writeUInt32LE(0x02014b50, 0);
-    central.writeUInt16LE(20, 4);
-    central.writeUInt16LE(20, 6);
-    central.writeUInt16LE(0x0800, 8);
-    central.writeUInt16LE(8, 10);
-    central.writeUInt32LE(crc, 16);
-    central.writeUInt32LE(data.length, 20);
-    central.writeUInt32LE(content.length, 24);
-    central.writeUInt16LE(nameBytes.length, 28);
-    central.writeUInt32LE(offset, 42);
-    locals.push(local, nameBytes, data);
-    centrals.push(central, nameBytes);
-    offset += 30 + nameBytes.length + data.length;
-  }
-  const directory = Buffer.concat(centrals);
-  const end = Buffer.alloc(22);
-  end.writeUInt32LE(0x06054b50, 0);
-  end.writeUInt16LE(Object.keys(members).length, 8);
-  end.writeUInt16LE(Object.keys(members).length, 10);
-  end.writeUInt32LE(directory.length, 12);
-  end.writeUInt32LE(offset, 16);
-  return Buffer.concat([...locals, directory, end]);
-}
 
 const STATEMENT = "<html>KATMR 2026/2 statement</html>";
 // Pseudo-random, so it does not compress to a few bytes and a cut can fall inside it.
