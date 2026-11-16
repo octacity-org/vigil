@@ -110,7 +110,7 @@ export type ProcessResult =
   | { event: number; outcome: "already_handled" };
 
 /** Counts of a checked report, as `bun run quality` gives them. */
-function summary(checks: readonly FilingCheck[]) {
+export function checkSummary(checks: readonly FilingCheck[]) {
   const count = (f: (c: FilingCheck) => boolean) => checks.filter(f).length;
   return {
     passed: count((c) => c.severity === "blocking" && c.status === "pass"),
@@ -165,7 +165,7 @@ export async function processEvent(store: Store, event: AppEvent, handle?: Repor
       const payload = {
         ...where,
         facts: report.filing.facts.length,
-        ...summary(report.checks),
+        ...checkSummary(report.checks),
         blocked: report.blocking.length > 0,
       };
       const id = finish(store, current, { type: "report_processed", payload });

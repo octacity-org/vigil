@@ -242,6 +242,20 @@ bun run load data/raw/2026_2 data/vigil.duckdb
 
 Each report, its facts and its check results are deleted and rewritten in one transaction, so re-running never duplicates rows. The command exits with an error when a file fails to load, when a report's row count differs from the parse report, or when a file that failed this time still has rows from an earlier load (stale report), or when a report of the same year and quarter is in the database but its file is no longer in the directory (missing file). Stale and missing reports are listed, not deleted.
 
+### Rebuild from the archive (#162)
+
+```bash
+bun run rebuild data data/vigil.duckdb
+```
+
+DuckDB is derived (decision 0009). `bun run rebuild` builds it again from the raw files in Zova, for example after a parser change, without asking KAP.
+- **What it loads:** the latest stored version of every disclosure is parsed, checked and loaded with its check results, as the processor does, together with the CPI series that ships with Vigil.
+- **The swap:** the new database is written to `<db>.rebuild` and moved over the old one only when it is complete. A rebuild that stops leaves the old database unchanged, and its partial file is removed.
+- **What is kept:** company metadata (#189) does not come from the raw files, so it is copied from the old database (`bun run companies` refreshes it).
+- **What is not kept:** metrics and findings came from the old facts and are computed again.
+- **Output:** the command prints the parse and quality summary. It exits 1 when a stored report cannot be parsed or checked, or when the rebuild stops.
+- **Checked on 2026/2** (246 files imported into Zova): the rebuilt database has the same 246 reports, 118,915 facts, 35,700 check results and 246 companies as `bun run process` on the same archive, row for row (`loaded_at` aside).
+
 ## Example queries
 
 Each fact as in the latest report, for one company and statement:
