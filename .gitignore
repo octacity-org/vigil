@@ -7,6 +7,7 @@ reports/
 *.zova
 !apps/server/test/fixtures/zova/*.zova
 *.zova.lock
+*.zova.format-*.bak
 *.sqlite
 
 # Bun / TypeScript
