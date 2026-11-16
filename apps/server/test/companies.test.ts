@@ -220,7 +220,7 @@ test("migration 5 adds the columns to a version 4 database and keeps its compani
     MIGRATIONS.filter((m) => m.version <= 4),
   );
   await con.run("INSERT INTO companies VALUES ('KATMR')");
-  expect(await migrate(con)).toEqual([5]);
+  expect(await migrate(con)).toEqual(MIGRATIONS.filter((m) => m.version > 4).map((m) => m.version));
   const read = async (sql: string) => (await con.runAndReadAll(sql)).getRowObjectsJS();
   expect(await read("SELECT company_code, mkk_member_oid, stock_codes, search_key FROM companies")).toEqual([
     { company_code: "KATMR", mkk_member_oid: null, stock_codes: null, search_key: null },

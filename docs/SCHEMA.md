@@ -94,6 +94,32 @@ Primary key: `(disclosure_id, position)`. A check name is not unique within a re
 - A report with values but no check rows has not been checked (for example after the upgrade to version 4): treat it as blocked until it is loaded again.
 - The rows are what the code produced when the report was loaded. After a change to the checks (`checks.ts`, `formulas.ts`), to `known-errors.ts` or to the parser, reload the reports.
 
+### `metrics` — one row per metric of a report and period (#184)
+
+A metric is a value or the reason it cannot be computed (#65), so the UI can show "not computable" and what would be needed. Written by `writeMetrics` ([`metrics-store.ts`](../apps/server/src/metrics-store.ts)); computing them for a report is #209.
+
+| Column | Type | Meaning |
+|---|---|---|
+| `disclosure_id` | BIGINT → `reports` | Report the metric belongs to |
+| `company_code` | VARCHAR → `companies` | |
+| `metric_code` | VARCHAR | Glossary code, e.g. `gross_margin` |
+| `period_type` | VARCHAR | `point_in_time`, `cumulative`, `three_month`, `ttm` |
+| `period_start`, `period_end` | DATE | What the value describes; `period_start` is NULL for a point in time |
+| `status` | VARCHAR | `ok`, `not_reported` (the company left the cell empty), `not_computable` |
+| `value` | VARCHAR | Exact decimal text, as in the API: whole TL as digits, a ratio as the shortest text that reads back the same; NULL unless `ok` |
+| `unit` | VARCHAR | `TRY`, `ratio`, `bps`, `days`, `count` |
+| `reason_code`, `reason_message`, `needs` | VARCHAR, VARCHAR, VARCHAR[] | Only when `not_computable`: the code (`missing_input`, `zero_denominator`, …), the Turkish message and the inputs that would make it computable (glossary codes) |
+| `formula` | VARCHAR | e.g. `gross_profit / revenue` |
+| `definition_version` | VARCHAR | Version of the metric definitions it was computed under (`2026-11-01` in this release) |
+| `computed_at` | TIMESTAMP | UTC |
+
+Primary key: `(disclosure_id, metric_code, period_type, period_end)`. Checks: a value exactly when `ok`, a reason exactly when `not_computable`.
+
+**`metric_inputs`**: the inputs of each metric in formula order (`position` from 0): `input_code` (glossary), `status`, `value`, `unit`, and the cell it was read from: `source_disclosure_id`, `source_row_id`, `source_column_class`, which join `facts` for the label, period label and the value as filed (the source reference of #72). The source is NULL for an input that is another metric or a row the report does not have.
+
+- A report's metrics and inputs are replaced as a whole, in one transaction.
+- Loading the report again, or removing it, removes its metrics: they were computed from the old facts.
+
 
 ## Fact identity
 
@@ -259,6 +285,7 @@ WHERE c.severity = 'blocking' AND c.status = 'fail';
 | 3 | `cpi_monthly` (#188) |
 | 4 | `check_results` (#183); a database upgraded to it has no check rows until its reports are loaded again |
 | 5 | Company metadata columns on `companies` (#189) |
+| 6 | `metrics`, `metric_inputs` (#184) |
 
 ## CPI series
 

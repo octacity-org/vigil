@@ -79,6 +79,49 @@ CREATE TABLE cpi_monthly (
  * the key is the position. Values are raw, in the report's reporting unit, like `facts.raw_value`. Written and
  * replaced together with the report.
  */
+/**
+ * Migration 6 (#184): every metric of a report, as a value or the reason it cannot be computed, with the inputs it
+ * used and where each input was read. Written by `writeMetrics` (metrics-store.ts) and replaced with the report.
+ */
+const METRICS_SQL = `
+CREATE TABLE metrics (
+    disclosure_id       BIGINT NOT NULL,          -- reports.disclosure_id
+    company_code        VARCHAR NOT NULL,
+    metric_code         VARCHAR NOT NULL,         -- e.g. gross_margin (docs/glossary.md)
+    period_type         VARCHAR NOT NULL CHECK (period_type IN ('point_in_time', 'cumulative', 'three_month', 'ttm')),
+    period_start        DATE,                     -- NULL for a point in time
+    period_end          DATE NOT NULL,
+    status              VARCHAR NOT NULL CHECK (status IN ('ok', 'not_reported', 'not_computable')),
+    value               VARCHAR,                  -- exact decimal text, as in the API; NULL unless status is ok
+    unit                VARCHAR NOT NULL CHECK (unit IN ('TRY', 'ratio', 'bps', 'days', 'count')),
+    reason_code         VARCHAR,                  -- only when not_computable
+    reason_message      VARCHAR,                  -- Turkish, for the UI
+    needs               VARCHAR[],                -- inputs that would make it computable (glossary codes)
+    formula             VARCHAR,                  -- e.g. gross_profit / revenue
+    definition_version  VARCHAR NOT NULL,         -- version of the metric definitions it was computed under
+    computed_at         TIMESTAMP NOT NULL,       -- UTC
+    PRIMARY KEY (disclosure_id, metric_code, period_type, period_end),
+    CHECK ((status = 'ok') = (value IS NOT NULL)),
+    CHECK ((status = 'not_computable') = (reason_code IS NOT NULL))
+);
+
+CREATE TABLE metric_inputs (
+    disclosure_id        BIGINT NOT NULL,
+    metric_code          VARCHAR NOT NULL,
+    period_type          VARCHAR NOT NULL,
+    period_end           DATE NOT NULL,
+    position             INTEGER NOT NULL,        -- order of the inputs in the formula, from 0
+    input_code           VARCHAR NOT NULL,        -- glossary code, e.g. revenue
+    status               VARCHAR NOT NULL CHECK (status IN ('ok', 'not_reported', 'not_computable')),
+    value                VARCHAR,
+    unit                 VARCHAR NOT NULL,
+    source_disclosure_id BIGINT,                  -- the fact it was read from: facts (disclosure_id, row_id, column_class)
+    source_row_id        VARCHAR,
+    source_column_class  VARCHAR,
+    PRIMARY KEY (disclosure_id, metric_code, period_type, period_end, position)
+);
+`;
+
 const CHECK_RESULTS_SQL = `
 CREATE TABLE check_results (
     disclosure_id           BIGINT NOT NULL,          -- reports.disclosure_id
@@ -202,6 +245,7 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS sectors_read_at TIMESTAMP;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS search_key VARCHAR;
 `,
   },
+  { version: 6, name: "metrics and metric_inputs (#184)", sql: METRICS_SQL },
 ];
 
 export const SCHEMA_VERSION_SQL = `
