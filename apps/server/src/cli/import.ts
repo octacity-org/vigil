@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { emptyQuarterImport, importQuarter, type QuarterImport, quarterDirs } from "../import.ts";
 import { migrateStore } from "../store-schema.ts";
-import { openStore, STORE_FILE, type Store } from "../zova.ts";
+import { openStore, STORE_FILE, type Store, upgradeMessage } from "../zova.ts";
 
 const usage = "Usage: bun run import [raw_dir=data/raw] [data_dir=data] [--downloaded-at=<UTC time>]";
 const config = { options: { "downloaded-at": { type: "string" } }, allowPositionals: true, strict: true } as const;
@@ -58,7 +58,7 @@ if (given !== undefined && dirs.length > 1) {
 
 let store: Store;
 try {
-  store = openStore(dataDir);
+  store = openStore(dataDir, { onUpgrade: (u) => console.log(upgradeMessage(u)) });
 } catch (e) {
   console.error((e as Error).message);
   process.exit(1);

@@ -14,7 +14,7 @@ import { close, connect, type Database, rows } from "../db.ts";
 import { loadInto, type ProcessSummary, processPending } from "../processor.ts";
 import { WriteQueue } from "../queue.ts";
 import { migrateStore } from "../store-schema.ts";
-import { openStore, type Store } from "../zova.ts";
+import { openStore, type Store, upgradeMessage } from "../zova.ts";
 
 const args = process.argv.slice(2);
 if (args.length > 2 || args.some((a) => a.startsWith("-"))) {
@@ -26,7 +26,7 @@ const dbPath = args[1] ?? join(dataDir, "vigil.duckdb");
 
 let store: Store;
 try {
-  store = openStore(dataDir);
+  store = openStore(dataDir, { onUpgrade: (u) => console.log(upgradeMessage(u)) });
 } catch (e) {
   console.error((e as Error).message);
   process.exit(1);

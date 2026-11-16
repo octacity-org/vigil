@@ -5,13 +5,37 @@
  * Zova allows the same file to be opened twice, so `openStore` takes a lock file next to it: a second Vigil
  * process on the same data folder is refused instead of writing next to the first.
  */
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeSync } from "node:fs";
+import { createHash } from "node:crypto";
+import {
+  closeSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeSync,
+} from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { Database, objectIdFromHex, objectIdToHex, probeFormat, Step, ZovaError } from "zova-js";
+import {
+  Database,
+  formatVersion,
+  migrateDatabase,
+  objectIdFromHex,
+  objectIdToHex,
+  probeFormat,
+  Step,
+  ZovaError,
+} from "zova-js";
 
 export const STORE_FILE = "vigil.zova";
 
-export type StoreErrorKind = "not_zova" | "locked" | "outdated_format" | "io";
+/**
+ * `outdated_format`: too old for this Vigil to migrate; `newer_format`: made by a newer Vigil; `migration_failed`: the
+ * upgrade to the current format failed and the file was left as it was (#181).
+ */
+export type StoreErrorKind = "not_zova" | "locked" | "outdated_format" | "newer_format" | "migration_failed" | "io";
 
 /** A store problem the user can act on; `kind` says which. */
 export class StoreError extends Error {
@@ -155,30 +179,124 @@ function wrap(db: Database, path: string, release: () => void): Store {
   return store;
 }
 
+/** A store file that was upgraded to the current Zova format on open (#181). */
+export interface FormatUpgrade {
+  from: number;
+  to: number;
+  /** The file as it was before the upgrade; kept until the user removes it. */
+  backup: string;
+  /** Raw files whose object was read back and matched its SHA-256 and size. */
+  objects_checked: number;
+}
+
+/** One line for the user about an upgrade. */
+export const upgradeMessage = (u: FormatUpgrade) =>
+  `Upgraded the archive from Zova format ${u.from} to ${u.to} (${u.objects_checked} raw files checked); the old file is kept at ${u.backup}`;
+
+/** Where an upgrade writes the new file before it replaces the old one; Zova wants the `.zova` extension. */
+export const migratingPath = (path: string) => path.replace(/(\.zova)?$/, ".migrating.zova");
+
+/** Where the old file is kept after an upgrade from `from`. */
+export const backupPath = (path: string, from: number) => `${path}.format-${from}.bak`;
+
 /**
- * Open `{dataDir}/vigil.zova`, creating the folder and the file on first start.
- * Throws `StoreError` for a file that is not Zova, a file in use, or a format this Vigil cannot open.
+ * Every object a `raw_files` row names must be in the migrated file, with the SHA-256 of its bytes equal to its id and
+ * the size recorded. Zova's own check (`migrateDatabase` with verify) covers its pages; this covers what Vigil relies
+ * on. Returns the number of objects checked.
  */
-export function openStore(dataDir: string): Store {
+function verifyObjects(path: string): number {
+  const db = Database.open(path, { readOnly: true });
+  try {
+    const hasTable = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'raw_files'");
+    const exists = hasTable.step() === Step.Row;
+    hasTable.close();
+    if (!exists) return 0;
+    const stmt = db.prepare("SELECT DISTINCT object_id, size_bytes FROM raw_files");
+    let n = 0;
+    try {
+      while (stmt.step() === Step.Row) {
+        const id = String(stmt.columnText(0));
+        const size = stmt.columnInteger(1);
+        const oid = objectIdFromHex(id);
+        if (!db.hasObject(oid)) throw new Error(`object ${id} is missing`);
+        const bytes = db.getObject(oid);
+        if (BigInt(bytes.length) !== size) throw new Error(`object ${id} has ${bytes.length} bytes, expected ${size}`);
+        const hash = createHash("sha256").update(bytes).digest("hex");
+        if (hash !== id) throw new Error(`object ${id} reads back with SHA-256 ${hash}`);
+        n += 1;
+      }
+    } finally {
+      stmt.close();
+    }
+    return n;
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Bring an existing store file to the current Zova format (#181). A current file is left alone (null). A migratable
+ * one is copied forward into `migratingPath`, checked, the old file copied to `backupPath`, and only then replaced
+ * by the new one, so a failure or a crash at any step leaves the old file in place. Call with the lock held.
+ */
+export function upgradeStore(path: string): FormatUpgrade | null {
+  let format: ReturnType<typeof probeFormat>;
+  try {
+    format = probeFormat(path);
+  } catch (e) {
+    throw asStoreError(e, path);
+  }
+  const from = format.formatVersion;
+  switch (format.compatibility) {
+    case "current":
+      return null;
+    case "unsupported_legacy":
+      throw new StoreError(
+        "outdated_format",
+        `${path} uses Zova format ${from}, too old for this Vigil (format ${formatVersion}) to migrate; open it with an earlier Vigil release first`,
+        path,
+      );
+    case "unsupported_future":
+      throw new StoreError(
+        "newer_format",
+        `${path} uses Zova format ${from}, made by a newer Vigil (this one reads format ${formatVersion}); update Vigil`,
+        path,
+      );
+  }
+  const next = migratingPath(path);
+  rmSync(next, { force: true }); // left by an attempt that stopped part way
+  let checked: number;
+  try {
+    migrateDatabase(path, next, true);
+    checked = verifyObjects(next);
+  } catch (e) {
+    rmSync(next, { force: true });
+    throw new StoreError(
+      "migration_failed",
+      `upgrading ${path} from Zova format ${from} to ${formatVersion} failed, the file is unchanged: ${(e as Error).message}`,
+      path,
+    );
+  }
+  const backup = backupPath(path, from);
+  copyFileSync(path, backup);
+  renameSync(next, path);
+  return { from, to: Number(formatVersion), backup, objects_checked: checked };
+}
+
+/**
+ * Open `{dataDir}/vigil.zova`, creating the folder and the file on first start. A file in an older Zova format is
+ * upgraded first (`upgradeStore`); `onUpgrade` hears about it. Throws `StoreError` for a file that is not Zova, a file
+ * in use, a format this Vigil cannot open, or an upgrade that failed.
+ */
+export function openStore(dataDir: string, options: { onUpgrade?: (upgrade: FormatUpgrade) => void } = {}): Store {
   const path = join(resolve(dataDir), STORE_FILE);
   mkdirSync(dirname(path), { recursive: true });
   const lock = takeLock(path);
   const release = () => rmSync(lock, { force: true });
   try {
     if (existsSync(path)) {
-      let format: ReturnType<typeof probeFormat>;
-      try {
-        format = probeFormat(path);
-      } catch (e) {
-        throw asStoreError(e, path);
-      }
-      if (format.compatibility !== "current") {
-        throw new StoreError(
-          "outdated_format",
-          `${path} uses Zova format ${format.formatVersion} (${format.compatibility}); it must be migrated first (#181)`,
-          path,
-        );
-      }
+      const upgrade = upgradeStore(path);
+      if (upgrade !== null) options.onUpgrade?.(upgrade);
     }
     let db: Database;
     try {
