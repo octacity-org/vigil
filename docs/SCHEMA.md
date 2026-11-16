@@ -330,6 +330,8 @@ A new file and its `report_stored` event are written in one Zova transaction: `s
 
 **`events`** (#179): `report_stored`, `report_processed`, `report_failed`; see `docs/ARCHITECTURE.md`.
 
+**Sector classification** (#295): `sector_classifications` (one row per distinct classification: its SHA-256, the Zova object of the page it was first read from, the number of companies), `company_sectors` (per classification and `mkk_member_oid`: tickers and title as on the page, main sector and sub-sector number, name and oid; the sub-sector is NULL when the page gives none) and `sector_readings` (every reading: `read_at`, UTC, and its classification). The classification in use at a time is the latest reading at or before it. Code: [`sectors.ts`](../apps/server/src/sectors.ts).
+
 **Processing into DuckDB** (#208): `bun run process [data_dir] [db_path]` handles every pending `report_stored` event: the latest version of the disclosure is parsed, checked and loaded with its check results in one DuckDB transaction (the same rows `bun run load` writes for that file; `reports.filepath` is the file name), then the event is finished. A report failing a blocking check is loaded too; its rows in `check_results` mark it as blocked. If the latest version fails, the disclosure's rows are removed. A load that throws leaves the event pending for the next run. The command exits 1 if a report failed or a job threw.
 
 The processor (#207) records the outcome of a `report_stored` event with the same subject (the object id of the event's file). The payload names the file it processed: `disclosure_id`, `object_id`, `file_name`, `superseded` (true when the event's file was an older version and the latest one was processed instead), and `event`, the id of the `report_stored` event.
@@ -342,3 +344,4 @@ The processor (#207) records the outcome of a `report_stored` event with the sam
 | 1 | `events` (#179) |
 | 2 | `raw_files` (#176) |
 | 3 | One row per disclosure and content: duplicates removed, unique index (#177) |
+| 4 | `sector_classifications`, `company_sectors`, `sector_readings` (#295) |

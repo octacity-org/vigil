@@ -97,9 +97,12 @@ The server enforces these rules in `apps/server/src/kap.ts` (#199): every reques
 ```
 
 - 626 companies, 15 main sectors, 48 sub-sectors. All are listed companies (`kapTypes` contains `IGS`).
-- Match by `mkkMemberOid`: the ticker on the page can differ from the file name (Kardemir is `KRDMD` here, `KRDMA-KRDMB-KRDMD` in file names).
+- Match by `mkkMemberOid`: the ticker on the page can differ from the file name (Kardemir was `KRDMD` here on 01.11.2026 and `KRDMA, KRDMB, KRDMD` on 16.11.2026, `KRDMA-KRDMB-KRDMD` in file names).
+- Sector numbers are not always well formed: on 16.11.2026, 10 sub-sectors of `MALİ KURULUŞLAR` had numbers such as `008000 081300.` instead of `008000.081300.`. Vigil keeps them as given and groups by the sector's name and oid.
 - Companies that file statements only because they issue debt are not on the page: in 2026/2, 49 general-template filings, 22 of them lease certificate issuers (`Varlık Kiralama`). Their company summary page (`/tr/sirket-bilgileri/ozet/{mkkMemberOid}`) has no sector either.
 - Holdings are all under `MALİ KURULUŞLAR` → `HOLDİNGLER VE YATIRIM ŞİRKETLERİ`, industrial and investment holdings alike.
+
+**Client** (#295): [`sectors.ts`](../apps/server/src/sectors.ts) reads the page through the KAP client at most once a day (`bun run sectors`) and keeps every reading in Zova with its time; the same classification is stored once, with the page it was first read from. It fails, and keeps the last good reading, if it finds no records, fewer than 500 companies, a sub-sector without a main sector, or two different records for one company.
 
 How Vigil uses it: decisions [0016](decisions/0016-sector-comparison-groups.md) and [0017](decisions/0017-company-type-from-kap-sectors.md).
 

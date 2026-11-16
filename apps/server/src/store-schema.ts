@@ -57,6 +57,35 @@ WHERE rowid NOT IN (SELECT min(rowid) FROM raw_files GROUP BY disclosure_id, obj
 CREATE UNIQUE INDEX raw_files_disclosure_content ON raw_files (disclosure_id, object_id);
 `,
   },
+  {
+    version: 4,
+    name: "KAP sector classification (#295)",
+    sql: `
+CREATE TABLE sector_classifications (
+    id               TEXT PRIMARY KEY,   -- SHA-256 of the classification (hex): the same content is stored once
+    page_object_id   TEXT NOT NULL,      -- Zova object: the Sektorler page it was first read from
+    companies        INTEGER NOT NULL
+);
+CREATE TABLE company_sectors (
+    classification_id  TEXT NOT NULL REFERENCES sector_classifications (id),
+    mkk_member_oid     TEXT NOT NULL,    -- KAP member id; match companies by this, never by ticker
+    stock_codes        TEXT NOT NULL,    -- as on the page, e.g. "KRDMA, KRDMB, KRDMD"
+    title              TEXT NOT NULL,
+    main_sector_no     TEXT NOT NULL,    -- e.g. "003000."
+    main_sector_name   TEXT NOT NULL,
+    main_sector_oid    TEXT NOT NULL,
+    sector_no          TEXT,             -- sub-sector; NULL when the page gives only the main sector
+    sector_name        TEXT,
+    sector_oid         TEXT,
+    PRIMARY KEY (classification_id, mkk_member_oid)
+);
+CREATE TABLE sector_readings (
+    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+    read_at            TEXT NOT NULL,    -- ISO 8601, UTC
+    classification_id  TEXT NOT NULL REFERENCES sector_classifications (id)
+);
+`,
+  },
 ];
 
 export class StoreSchemaError extends Error {

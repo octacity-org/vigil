@@ -15,6 +15,7 @@
     "test": "bun test",
     "download": "bun apps/server/src/cli/download.ts",
     "disclosures": "bun apps/server/src/cli/disclosures.ts",
+    "sectors": "bun apps/server/src/cli/sectors.ts",
     "quality": "bun apps/server/src/cli/quality.ts",
     "load": "bun apps/server/src/cli/load.ts",
     "import": "bun apps/server/src/cli/import.ts",
