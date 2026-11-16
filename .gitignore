@@ -5,6 +5,7 @@ reports/
 *.duckdb
 *.duckdb.wal
 *.zova
+!apps/server/test/fixtures/zova/*.zova
 *.zova.lock
 *.sqlite
 
