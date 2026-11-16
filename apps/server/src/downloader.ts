@@ -11,7 +11,9 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { crc32, inflateRawSync } from "node:zlib";
-import { type KapClient, kap as sharedKap } from "./kap.ts";
+import { emptyQuarterImport, importQuarter, type QuarterImport } from "./import.ts";
+import { KAP_ORIGIN, type KapClient, kap as sharedKap } from "./kap.ts";
+import type { Store } from "./zova.ts";
 
 export const KAP_BULK_PATH = "/tr/api/financialTable/download/{year}/{quarter}";
 
@@ -271,6 +273,32 @@ export async function downloadQuarter(
     complete = only.every((n) => got.has(n));
   }
   return { zip_path: zipPath, attempts: attempt, complete, recovered: salvage.recovered, lost: salvage.lost, errors };
+}
+
+/**
+ * Download one quarter (`downloadQuarter`) and store the files it extracted in the Zova archive (#44), each with its
+ * `report_stored` event (`source: "download"`, the KAP URL, the time of this download). Files recovered from a
+ * cut-off download are stored too; lost ones are not. Files already in the folder from an earlier run are left
+ * alone, and the same bytes stored before are skipped. An error of the store is thrown.
+ */
+export async function downloadToStore(
+  store: Store,
+  year: number,
+  quarter: number,
+  rawDir: string,
+  options: DownloadOptions & { now?: () => Date } = {},
+): Promise<{ download: DownloadResult; stored: QuarterImport }> {
+  const download = await downloadQuarter(year, quarter, rawDir, options);
+  const dir = join(rawDir, `${year}_${quarter}`);
+  if (download.recovered.length === 0) return { download, stored: emptyQuarterImport(dir) };
+  const path = KAP_BULK_PATH.replace("{year}", String(year)).replace("{quarter}", String(quarter));
+  const stored = importQuarter(store, dir, {
+    downloadedAt: (options.now ?? (() => new Date()))(),
+    files: download.recovered.map((p) => basename(p)),
+    source: "download",
+    sourceUrl: `${KAP_ORIGIN}${path}`,
+  });
+  return { download, stored };
 }
 
 /** Read a list of raw files, one `{year}_{quarter}/{file name}` per line; `#` starts a comment. Grouped by quarter. */

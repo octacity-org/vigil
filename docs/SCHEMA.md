@@ -318,6 +318,8 @@ The same bytes for the same disclosure are stored once (#177): `storeRawFile` re
 
 A new file and its `report_stored` event are written in one Zova transaction: `storeRawFile` takes an `onStored` callback that runs inside its transaction, because Zova has no nested transactions.
 
+**Downloading** (#44): `bun run download <year> <quarter> [raw_dir] [data_dir]` stores every file it extracted, recovered ones from a cut-off download included, with `source: "download"` in the event's payload, the KAP bulk URL as `source_url` and the time of the download as `downloaded_at`. Files already in the folder from an earlier run are not part of it, and bytes stored before are skipped. `--files` (the test files) does not store anything.
+
 **Importing `data/raw/`** (#180): `bun run import [raw_dir] [data_dir]` stores the `.xls` files of every `{year}_{quarter}` folder (or of one such folder) and emits `report_stored` for each new one, with `source: "import"` in the payload. Code: [`import.ts`](../apps/server/src/import.ts).
 
 - `source_url` is the file's `file://` path.

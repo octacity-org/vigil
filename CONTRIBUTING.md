@@ -64,7 +64,7 @@ Vigil uses one application version, stored in the root `package.json`. Workspace
 
 ### KAP data
 
-KAP files are not committed. Download a quarter into `data/raw/{year}_{quarter}/` with `bun run download 2026 2 data/raw`. The bulk endpoint is:
+KAP files are not committed. Download a quarter into `data/raw/{year}_{quarter}/` with `bun run download 2026 2 data/raw`; it also stores them in the Zova archive (`data/vigil.zova`, or the folder given after `data/raw`). The bulk endpoint is:
 
 ```
 GET https://www.kap.org.tr/tr/api/financialTable/download/{year}/{quarter}

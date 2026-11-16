@@ -1,11 +1,14 @@
 /** Download retries and partial-zip salvage (#38), with synthetic KAP-style zips and a fake server. */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { crc32, deflateRawSync } from "node:zlib";
-import { downloadQuarter, fetchFiles, salvageZip } from "../src/downloader.ts";
+import { downloadQuarter, downloadToStore, fetchFiles, salvageZip } from "../src/downloader.ts";
 import { KapClient } from "../src/kap.ts";
+import { filesByQuarter, readRawFile } from "../src/raw-files.ts";
+import { migrateStore } from "../src/store-schema.ts";
+import { memoryStore, type Store } from "../src/zova.ts";
 
 type OpenUrl = (url: string) => Promise<Response>;
 
@@ -285,5 +288,101 @@ describe("download", () => {
     writeFileSync(listing, "2026_2/CO0_1000_2026_2.xls\n");
     expect((await fetchFiles(listing, raw, { kap: client(open), sleep: async () => {} })).size).toBe(0);
     expect(calls).toHaveLength(1); // already present: not downloaded again
+  });
+});
+
+describe("downloadToStore (#44)", () => {
+  let store: Store;
+  beforeEach(() => {
+    store = memoryStore();
+    migrateStore(store);
+  });
+  afterEach(() => store.close());
+
+  const URL = "https://www.kap.org.tr/tr/api/financialTable/download/2026/2";
+  const AT = new Date("2026-10-24T20:55:00Z");
+  const now = () => AT;
+  const events = () =>
+    store
+      .query("SELECT subject, payload FROM events WHERE type = 'report_stored' ORDER BY id")
+      .map((r) => ({ subject: String(r.subject), ...JSON.parse(String(r.payload)) }));
+  const stored = () =>
+    filesByQuarter(store, 2026, 2).map((f) => [f.file_name, new TextDecoder().decode(readRawFile(store, f))]);
+
+  test("every extracted file is stored with its event, the KAP URL and the time of the download", async () => {
+    const [open] = fakeServer(() => response(kapZip().data));
+    const { download, stored: s } = await downloadToStore(store, 2026, 2, tmp, { kap: client(open), now });
+    expect(download.complete).toBe(true);
+    expect([s.imported, s.skipped, s.failed, s.error]).toEqual([5, 0, [], null]);
+    expect(Object.fromEntries(stored())).toEqual(
+      Object.fromEntries(Object.entries(MEMBERS).map(([n, b]) => [n, b.toString()])),
+    );
+    for (const f of filesByQuarter(store, 2026, 2)) {
+      expect([f.source_url, f.downloaded_at]).toEqual([URL, AT.toISOString()]);
+    }
+    expect(events()).toHaveLength(5);
+    for (const e of events()) expect(e).toMatchObject({ source: "download", downloaded_at_source: "given" });
+  });
+
+  test("downloading the same quarter again stores nothing and emits no event", async () => {
+    const z = kapZip();
+    const [open] = fakeServer(
+      () => response(z.data),
+      () => response(z.data),
+    );
+    await downloadToStore(store, 2026, 2, tmp, { kap: client(open), now });
+    const { stored: s } = await downloadToStore(store, 2026, 2, tmp, { kap: client(open), now });
+    expect([s.imported, s.skipped]).toEqual([0, 5]);
+    expect(events()).toHaveLength(5);
+  });
+
+  test("a changed file in a later download is a new version", async () => {
+    const changed = { ...MEMBERS, "CO1_1001_2026_2.xls": Buffer.from("corrected") };
+    const [open] = fakeServer(
+      () => response(kapZip().data),
+      () => response(kapZip(changed).data),
+    );
+    await downloadToStore(store, 2026, 2, tmp, { kap: client(open), now });
+    const later = new Date("2026-11-01T00:00:00Z");
+    const { stored: s } = await downloadToStore(store, 2026, 2, tmp, { kap: client(open), now: () => later });
+    expect([s.imported, s.new_versions, s.skipped]).toEqual([1, 1, 4]);
+    expect(events()).toHaveLength(6);
+  });
+
+  test("a cut-off download stores what was recovered, not what was lost", async () => {
+    const z = kapZip();
+    const cut = inside(z, "CO3_1003_2026_2.xls");
+    const [open] = fakeServer(() => response(z.data, cut));
+    const { download, stored: s } = await downloadToStore(store, 2026, 2, tmp, {
+      retries: 1,
+      kap: client(open),
+      now,
+    });
+    expect(download.complete).toBe(false);
+    expect(s.imported).toBe(3);
+    expect(stored().map(([n]) => n)).toEqual([0, 1, 2].map((i) => `CO${i}_100${i}_2026_2.xls`));
+  });
+
+  test("a file left in the folder by an earlier run is not stored as part of this download", async () => {
+    mkdirSync(join(tmp, "2026_2"), { recursive: true });
+    writeFileSync(join(tmp, "2026_2", "OLD_9999_2026_2.xls"), "from an earlier run");
+    const [open] = fakeServer(() => response(kapZip().data));
+    const { stored: s } = await downloadToStore(store, 2026, 2, tmp, { kap: client(open), now });
+    expect(s.imported).toBe(5);
+    expect(stored().map(([n]) => n)).not.toContain("OLD_9999_2026_2.xls");
+  });
+
+  test("nothing downloaded: nothing stored", async () => {
+    const open: OpenUrl = async () => {
+      throw Object.assign(new Error("timed out"), { name: "TimeoutError" });
+    };
+    const { stored: s } = await downloadToStore(store, 2026, 2, tmp, {
+      retries: 1,
+      kap: client(open),
+      sleep: async () => {},
+      now,
+    });
+    expect([s.imported, s.skipped, s.error]).toEqual([0, 0, null]);
+    expect(events()).toEqual([]);
   });
 });

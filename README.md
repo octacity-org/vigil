@@ -36,7 +36,7 @@ bun install
 bun test
 ```
 
-KAP files are **not** part of this repository. Download a quarter locally into `data/raw/{year}_{quarter}/` (retries, recovers what it can from a cut-off download and lists lost files; exits 1 if the quarter is incomplete):
+KAP files are **not** part of this repository. Download a quarter locally into `data/raw/{year}_{quarter}/` (retries, recovers what it can from a cut-off download and lists lost files; exits 1 if the quarter is incomplete). The files are also stored in the Zova archive `data/vigil.zova`, and `bun run process` then loads them into `data/vigil.duckdb`:
 
 ```bash
 bun run download 2026 2 data/raw

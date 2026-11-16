@@ -127,17 +127,28 @@ function quarterEnd(year: number, quarter: number): Date {
  * not readable or whose download time is impossible (before the quarter ends, or in the future) in `error`; the
  * others continue. An error of the store itself (Zova) is thrown: it would fail every file the same way.
  */
+export interface ImportOptions {
+  downloadedAt?: Date;
+  /** Only these file names of the folder; the others are left alone (a download stores what it just extracted). */
+  files?: readonly string[];
+  /** `source` in the `report_stored` payload: `import` (default) or `download` (#44). */
+  source?: "import" | "download";
+  /** The URL the bytes came from; defaults to each file's `file://` path. */
+  sourceUrl?: string;
+}
+
 export function importQuarter(
   store: Store,
   dir: string,
-  options: { downloadedAt?: Date } = {},
+  options: ImportOptions = {},
   result: QuarterImport = emptyQuarterImport(dir),
 ): QuarterImport {
   let files: string[];
   let time: { at: Date; source: string } | null;
   try {
     const listed = xlsFiles(dir);
-    files = listed.files;
+    const only = options.files === undefined ? null : new Set(options.files);
+    files = only === null ? listed.files : listed.files.filter((f) => only.has(basename(f)));
     result.failed.push(...listed.failed);
     if (files.length === 0) return result;
     time = options.downloadedAt ? { at: options.downloadedAt, source: "given" } : quarterDownloadTime(dir, files);
@@ -178,13 +189,13 @@ export function importQuarter(
     const stored = storeRawFile(
       store,
       bytes,
-      { fileName: file, sourceUrl: pathToFileURL(path).href, downloadedAt: time?.at },
+      { fileName: file, sourceUrl: options.sourceUrl ?? pathToFileURL(path).href, downloadedAt: time?.at },
       {
         onStored: (s, f) =>
           emit(s, "report_stored", f.object_id, {
             disclosure_id: f.disclosure_id,
             file_name: f.file_name,
-            source: "import",
+            source: options.source ?? "import",
             downloaded_at_source: time?.source ?? null,
           }),
       },
