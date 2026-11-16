@@ -120,6 +120,29 @@ Primary key: `(disclosure_id, metric_code, period_type, period_end)`. Checks: a 
 - A report's metrics and inputs are replaced as a whole, in one transaction.
 - Loading the report again, or removing it, removes its metrics: they were computed from the old facts.
 
+### `findings` — one row per rule, report and config version (#185)
+
+The output of the rules (S1–S3, `packages/core/src/signals.ts`), named as in `docs/API.md`. Written by `writeFindings` ([`findings-store.ts`](../apps/server/src/findings-store.ts)); `bun run signals <raw_dir> --db <path>` stores a quarter's findings.
+
+| Column | Type | Meaning |
+|---|---|---|
+| `id` | VARCHAR | API id, e.g. `2026-2-KATMR-gross_margin_change` |
+| `rule` | VARCHAR | `gross_margin_change` (S1), `profit_cash_divergence` (S2), `restated_comparatives` (S3) |
+| `company_code`, `disclosure_id`, `year`, `quarter` | | The report it was found in |
+| `title` | VARCHAR | Neutral Turkish title |
+| `size_value`, `size_unit` | VARCHAR | Size of the change, exact text: S1 in `bps`, S2 in `TRY` (profit minus operating cash flow), S3 as a `count` of restated balance sheet lines |
+| `rank_score` | DOUBLE | What a list sorts by within a rule |
+| `summary` | VARCHAR | JSON of the rule's summary numbers; amounts as text, exact |
+| `formula` | VARCHAR | How the rule computed it |
+| `config_version` | VARCHAR | Version of the thresholds in force (`SIGNALS_CONFIG_VERSION`, `2026-11-01`) |
+| `created_at` | TIMESTAMP | UTC, when the finding was first found under this config |
+
+Primary key: `(rule, disclosure_id, config_version)`.
+
+- A run over a set of reports replaces their findings under its config version in one transaction: a finding found again keeps its `created_at`, one no longer found is removed, and findings of other reports or other config versions stay. A rerun never adds duplicates.
+- Loading a report again, or removing it, removes its findings. The numbers behind each finding and their sources are #186.
+- On 2026/2 (246 files): 46 S1, 9 S2 and 2 S3 findings; KATMR's S1 is -2596 bps.
+
 
 ## Fact identity
 
@@ -286,6 +309,7 @@ WHERE c.severity = 'blocking' AND c.status = 'fail';
 | 4 | `check_results` (#183); a database upgraded to it has no check rows until its reports are loaded again |
 | 5 | Company metadata columns on `companies` (#189) |
 | 6 | `metrics`, `metric_inputs` (#184) |
+| 7 | `findings` (#185) |
 
 ## CPI series
 

@@ -122,6 +122,30 @@ CREATE TABLE metric_inputs (
 );
 `;
 
+/**
+ * Migration 7 (#185): findings (S1–S3 and later), one per rule, report and config version, so a rerun under the same
+ * thresholds replaces instead of adding. Written by `writeFindings` (findings-store.ts).
+ */
+const FINDINGS_SQL = `
+CREATE TABLE findings (
+    id              VARCHAR NOT NULL,         -- API id, e.g. 2026-2-KATMR-gross_margin_change
+    rule            VARCHAR NOT NULL CHECK (rule IN ('gross_margin_change', 'profit_cash_divergence', 'restated_comparatives')),
+    company_code    VARCHAR NOT NULL,
+    disclosure_id   BIGINT NOT NULL,          -- reports.disclosure_id
+    year            INTEGER NOT NULL,
+    quarter         INTEGER NOT NULL,
+    title           VARCHAR NOT NULL,         -- neutral Turkish title
+    size_value      VARCHAR NOT NULL,         -- size of the change, exact text: bps, TL or a count
+    size_unit       VARCHAR NOT NULL CHECK (size_unit IN ('bps', 'TRY', 'count')),
+    rank_score      DOUBLE NOT NULL,          -- what lists sort by within a rule
+    summary         VARCHAR NOT NULL,         -- JSON: the rule's summary numbers, bigints as text
+    formula         VARCHAR NOT NULL,
+    config_version  VARCHAR NOT NULL,         -- thresholds in force
+    created_at      TIMESTAMP NOT NULL,       -- UTC, first time this finding was found under this config
+    PRIMARY KEY (rule, disclosure_id, config_version)
+);
+`;
+
 const CHECK_RESULTS_SQL = `
 CREATE TABLE check_results (
     disclosure_id           BIGINT NOT NULL,          -- reports.disclosure_id
@@ -246,6 +270,7 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS search_key VARCHAR;
 `,
   },
   { version: 6, name: "metrics and metric_inputs (#184)", sql: METRICS_SQL },
+  { version: 7, name: "findings (#185)", sql: FINDINGS_SQL },
 ];
 
 export const SCHEMA_VERSION_SQL = `

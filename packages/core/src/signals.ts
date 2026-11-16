@@ -70,6 +70,13 @@ export interface SignalObject {
   llm_constraints: { allow_price_commentary: boolean; allow_external_causal_claims: boolean };
 }
 
+/**
+ * Version of the thresholds the detectors use by default (S1: 100 million TL revenue, 1,000 bps; S2: 100 million TL
+ * profit, -100 million TL operating cash flow). A finding is stored with it (#185); a change of thresholds gets a new
+ * version, so findings under the old ones stay traceable.
+ */
+export const SIGNALS_CONFIG_VERSION = "2026-11-01";
+
 const LLM_CONSTRAINTS = { allow_price_commentary: false, allow_external_causal_claims: false } as const;
 const INCOME_ROLES = ["310003", "310000", "310002"] as const;
 
