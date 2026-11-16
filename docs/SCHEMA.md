@@ -96,7 +96,7 @@ Primary key: `(disclosure_id, position)`. A check name is not unique within a re
 
 ### `metrics` — one row per metric of a report and period (#184)
 
-A metric is a value or the reason it cannot be computed (#65), so the UI can show "not computable" and what would be needed. Written by `writeMetrics` ([`metrics-store.ts`](../apps/server/src/metrics-store.ts)); computing them for a report is #209.
+A metric is a value or the reason it cannot be computed (#65), so the UI can show "not computable" and what would be needed. Written by `writeMetrics` ([`metrics-store.ts`](../apps/server/src/metrics-store.ts)) and computed by [`report-metrics.ts`](../apps/server/src/report-metrics.ts) (#209), whose header lists every metric with its rows.
 
 | Column | Type | Meaning |
 |---|---|---|
@@ -119,6 +119,13 @@ Primary key: `(disclosure_id, metric_code, period_type, period_end)`. Checks: a 
 
 - A report's metrics and inputs are replaced as a whole, in one transaction.
 - Loading the report again, or removing it, removes its metrics: they were computed from the old facts.
+- **Computing (#209).** The processor computes a report's metrics right after loading it, from its own facts in DuckDB:
+  - point in time: current, quick and cash ratios; net debt (decision 0012); net debt / equity; liabilities / assets;
+  - cumulative: gross margin, EBITDA A and B and their difference, FCF, CFO / EBITDA, capex / D&A and the accrual ratio;
+  - 3 months: gross margin for the quarter and a year earlier, and the change in basis points;
+  - TTM: EBITDA A, and net debt / TTM EBITDA.
+  Templates without these rows (banks, insurance, finance) get each metric as `not_applicable`.
+- **Affected periods.** TTM uses the company's previous year-end report with the same consolidation; the latest disclosure is used, so it is a correction once that is loaded (#204). Loading or removing a year-end report therefore also recomputes the next year's quarters 1–3. On 2026/2 plus KATMR 2025/4, KATMR 2026/2 has TTM EBITDA A 538,486,608 TL (277,048,821 + 606,401,770 × CPI factor − 452,651,667).
 
 ### `findings` — one row per rule, report and config version (#185)
 
@@ -252,7 +259,7 @@ DuckDB is derived (decision 0009). `bun run rebuild` builds it again from the ra
 - **What it loads:** the latest stored version of every disclosure is parsed, checked and loaded with its check results, as the processor does, together with the CPI series that ships with Vigil.
 - **The swap:** the new database is written to `<db>.rebuild` and moved over the old one only when it is complete. A rebuild that stops leaves the old database unchanged, and its partial file is removed.
 - **What is kept:** company metadata (#189) does not come from the raw files, so it is copied from the old database (`bun run companies` refreshes it).
-- **What is not kept:** metrics and findings came from the old facts and are computed again.
+- **What is not kept:** metrics and findings came from the old facts. Metrics are computed again for every report once all are loaded, so each TTM finds its year-end report; findings are #210.
 - **Output:** the command prints the parse and quality summary. It exits 1 when a stored report cannot be parsed or checked, or when the rebuild stops.
 - **Checked on 2026/2** (246 files imported into Zova): the rebuilt database has the same 246 reports, 118,915 facts, 35,700 check results and 246 companies as `bun run process` on the same archive, row for row (`loaded_at` aside).
 

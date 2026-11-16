@@ -18,6 +18,7 @@ import { type Database, duplicateKeys, loadFiling, removeReport } from "./db.ts"
 import { type AppEvent, EventStateError, finish, getEvent, pending, recordAttempt } from "./events.ts";
 import { QueueClosedError, type WriteQueue } from "./queue.ts";
 import { filesByDisclosure, type RawFile, readRawFile } from "./raw-files.ts";
+import { periodOf, type RefreshOptions, refreshMetrics } from "./report-metrics.ts";
 import type { Store } from "./zova.ts";
 
 /** A stored file after parsing and checking. */
@@ -97,11 +98,21 @@ export type ReportHandler = (report: CheckedReport, context: EventContext) => Pr
  * `check_results` mark it as blocked (`docs/SCHEMA.md`). When the latest version of a disclosure fails, the rows of an
  * older version are removed: they are no longer the disclosure's numbers, and `report_failed` says why. An event whose
  * file is not stored changes nothing.
+ *
+ * After either, the metrics the report affects are computed again (#209): its own and, for a year-end report, the
+ * TTM metrics of the next year's quarters (`report-metrics.ts`).
  */
-export function loadInto(db: Database): ReportHandler {
+export function loadInto(db: Database, options: RefreshOptions = {}): ReportHandler {
   return async (report) => {
-    if (report.status === "checked") await loadFiling(db, report.filing, { checks: report.checks });
-    else if (report.file !== null) await removeReport(db, report.file.disclosure_id);
+    if (report.status === "checked") {
+      await loadFiling(db, report.filing, { checks: report.checks });
+      await refreshMetrics(db, report.filing.disclosure_id, options);
+    } else if (report.file !== null) {
+      const removed = await periodOf(db, report.file.disclosure_id);
+      if (await removeReport(db, report.file.disclosure_id)) {
+        await refreshMetrics(db, report.file.disclosure_id, { ...options, removed });
+      }
+    }
   };
 }
 

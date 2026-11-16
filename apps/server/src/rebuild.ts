@@ -8,13 +8,15 @@
  * until then the old database is untouched, and a failed rebuild leaves it as it was.
  *
  * Company metadata (#189) comes from KAP's disclosure list and sector pages, not from the raw files, so it is copied
- * from the old database when there is one; `bun run companies` refreshes it. Metrics and findings are not copied:
- * they were computed from the old facts and are computed again (#209, #210).
+ * from the old database when there is one; `bun run companies` refreshes it. Metrics are computed again for every
+ * loaded report once all are loaded, so the TTM metrics find their previous year-end report (#209). Findings are not
+ * copied: they were computed from the old facts and are computed again (#210).
  */
 import { existsSync, renameSync, rmSync } from "node:fs";
 import { CPI_FILE, loadCpiSeries, readCpiFile } from "./cpi.ts";
 import { close, connect, type Database, loadFiling, rows } from "./db.ts";
 import { checkStoredFile, checkSummary, latestFile } from "./processor.ts";
+import { computeAndStore } from "./report-metrics.ts";
 import type { Store } from "./zova.ts";
 
 /** The new database is written here, then moved over `dbPath`. */
@@ -32,6 +34,8 @@ export interface RebuildSummary {
   /** Totals of the checks, as `bun run quality` counts them. */
   checks: ReturnType<typeof checkSummary>;
   cpi_months: number;
+  /** Reports whose metrics were computed. */
+  metric_reports: number;
   /** Companies whose metadata came from the old database. */
   companies_copied: number;
 }
@@ -91,11 +95,13 @@ export async function rebuildDatabase(
     blocked: 0,
     checks: { passed: 0, failed: 0, not_checked: 0, informational_differences: 0, known_errors: 0 },
     cpi_months: 0,
+    metric_reports: 0,
     companies_copied: 0,
   };
   const db = await connect(tmp);
   try {
-    out.cpi_months = await loadCpiSeries(db, readCpiFile(options.cpiFile ?? CPI_FILE));
+    const cpi = readCpiFile(options.cpiFile ?? CPI_FILE);
+    out.cpi_months = await loadCpiSeries(db, cpi);
     for (const [i, id] of ids.entries()) {
       const file = latestFile(store, id);
       if (file === null) continue;
@@ -111,6 +117,9 @@ export async function rebuildDatabase(
         out.failed.push({ disclosure_id: id, file_name: file.file_name, reason: report.reason });
       }
       options.onProgress?.(i + 1, ids.length);
+    }
+    for (const r of await rows(db, "SELECT disclosure_id FROM reports ORDER BY disclosure_id")) {
+      if (await computeAndStore(db, Number(r.disclosure_id), { cpi })) out.metric_reports += 1;
     }
     if (existsSync(dbPath)) out.companies_copied = await copyCompanies(db, dbPath);
     await db.con.run("CHECKPOINT");
