@@ -86,6 +86,31 @@ CREATE TABLE sector_readings (
 );
 `,
   },
+  {
+    version: 5,
+    name: "seen financial-report disclosures and collector state (#201)",
+    sql: `
+CREATE TABLE seen_disclosures (
+    disclosure_id          INTEGER PRIMARY KEY,  -- KAP disclosureIndex: the id in file names
+    disclosure_oid         TEXT NOT NULL,        -- KAP disclosureId, which a correction's related oid points to
+    mkk_member_oid         TEXT NOT NULL,
+    stock_codes            TEXT NOT NULL,        -- JSON array
+    year                   INTEGER,
+    quarter                INTEGER,
+    published_at           TEXT NOT NULL,        -- Istanbul time, e.g. 2026-08-17T19:05:18
+    is_changed             TEXT,                 -- DUZELTILEN, DUZENLENEN or NULL
+    related_disclosure_oid TEXT,
+    seen_at                TEXT NOT NULL,        -- ISO 8601, UTC
+    handled_at             TEXT                  -- NULL until its file is downloaded (#164, #203)
+);
+CREATE INDEX seen_disclosures_pending ON seen_disclosures (disclosure_id) WHERE handled_at IS NULL;
+CREATE TABLE collector_state (
+    name        TEXT PRIMARY KEY,
+    value       TEXT NOT NULL,
+    updated_at  TEXT NOT NULL                    -- ISO 8601, UTC
+);
+`,
+  },
 ];
 
 export class StoreSchemaError extends Error {

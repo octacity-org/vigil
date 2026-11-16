@@ -56,6 +56,8 @@ Finds and downloads new financial reports.
 3. It stores the raw files in Zova as objects, records the download, and emits a "report downloaded" event.
 4. After a reporting period, it compares the quarter's bulk zip (`financialTable/download/{year}/{quarter}`) with what it has, to catch anything missed.
 
+Step 1 is [`poller.ts`](../apps/server/src/poller.ts) (#201): every five minutes after the previous poll ended, it asks for class `FR` from the day before the last covered day to today (Istanbul), records each new `Finansal Rapor` once in Zova's `seen_disclosures`, and moves the covered day forward in the same transaction. A failed poll is reported and the next one runs as usual.
+
 Rules built into the code and not configurable:
 - one request at a time, with a wait between requests;
 - retries with backoff (#38);
