@@ -328,6 +328,8 @@ A new file and its `report_stored` event are written in one Zova transaction: `s
 
 **`events`** (#179): `report_stored`, `report_processed`, `report_failed`; see `docs/ARCHITECTURE.md`.
 
+**Processing into DuckDB** (#208): `bun run process [data_dir] [db_path]` handles every pending `report_stored` event: the latest version of the disclosure is parsed, checked and loaded with its check results in one DuckDB transaction (the same rows `bun run load` writes for that file; `reports.filepath` is the file name), then the event is finished. A report failing a blocking check is loaded too; its rows in `check_results` mark it as blocked. If the latest version fails, the disclosure's rows are removed. A load that throws leaves the event pending for the next run. The command exits 1 if a report failed or a job threw.
+
 The processor (#207) records the outcome of a `report_stored` event with the same subject (the object id of the event's file). The payload names the file it processed: `disclosure_id`, `object_id`, `file_name`, `superseded` (true when the event's file was an older version and the latest one was processed instead), and `event`, the id of the `report_stored` event.
 
 - `report_processed` adds `facts`, the check counts of `bun run quality` (`passed`, `failed`, `not_checked`, `informational_differences`, `known_errors`) and `blocked`: any blocking failure, known errors included. `blocked: false` does not mean verified: a report whose template the checks do not support yet has only `not_checked` results, and one without values has `facts: 0` and no checks.

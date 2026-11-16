@@ -268,9 +268,16 @@ async function appendChecks(db: Database, disclosureId: bigint, checks: readonly
   }
 }
 
-/** Replace one filing and its check results (#183) in the database inside a transaction. Returns the facts written. */
-export async function loadFiling(db: Database, filing: ParsedFiling): Promise<number> {
-  const checks = checkFiling(filing);
+/**
+ * Replace one filing and its check results (#183) in the database inside a transaction. Returns the facts written.
+ * `checks` are the filing's results when they were already computed (the processor, #208); otherwise they are run here.
+ */
+export async function loadFiling(
+  db: Database,
+  filing: ParsedFiling,
+  options: { checks?: readonly FilingCheck[] } = {},
+): Promise<number> {
+  const checks = options.checks ?? checkFiling(filing);
   const id = BigInt(filing.disclosure_id);
   await db.con.run("BEGIN TRANSACTION");
   try {
@@ -305,6 +312,26 @@ export async function loadFiling(db: Database, filing: ParsedFiling): Promise<nu
     throw e;
   }
   return filing.facts.length;
+}
+
+/**
+ * Remove a disclosure's report, facts and check results in one transaction (#208): its latest version failed, so the
+ * rows of an older version must not stay as if they were current. Returns whether a report was there.
+ */
+export async function removeReport(db: Database, disclosureId: number): Promise<boolean> {
+  const id = BigInt(disclosureId);
+  await db.con.run("BEGIN TRANSACTION");
+  try {
+    const [r] = await rows(db, "SELECT count(*) AS n FROM reports WHERE disclosure_id = $1", [id]);
+    await db.con.run("DELETE FROM check_results WHERE disclosure_id = $1", [id]);
+    await db.con.run("DELETE FROM facts WHERE disclosure_id = $1", [id]);
+    await db.con.run("DELETE FROM reports WHERE disclosure_id = $1", [id]);
+    await db.con.run("COMMIT");
+    return Number(r?.n) > 0;
+  } catch (e) {
+    await db.con.run("ROLLBACK");
+    throw e;
+  }
 }
 
 /** Load every filing; a filing that fails to load is marked `load_error` in the report and the rest continue. */

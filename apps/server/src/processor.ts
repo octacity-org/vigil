@@ -1,13 +1,10 @@
 /**
- * Processor, first step (#207, part of #166): parse and check a report stored in Zova.
+ * Processor (#207, #208, part of #166): parse and check a report stored in Zova, then load it into DuckDB.
  *
  * For each pending `report_stored` event (#179), a job on the write queue (#197) reads the stored bytes, parses them
- * with `packages/core`, runs the checks and records the outcome with `finish`. Nothing is written to DuckDB here:
- * loading the report and its check results is #208, which plugs in through the `handle` callback so that the load
- * and `finish` happen in the same job, in that order.
- *
- * Until #208 provides `handle`, nothing in the app calls `processPending`: an event finished without a load would
- * never be offered again, and its report would be missing from DuckDB until a rebuild (#162).
+ * with `packages/core`, runs the checks, calls `handle` and records the outcome with `finish`. `loadInto(db)` is the
+ * `handle` that loads the report with its check results (#208), so the load and `finish` happen in the same job, in
+ * that order: a load that throws leaves the event pending.
  *
  * Delivery is at least once. Parsing and checking have no side effects, `finish` refuses an event that is already
  * handled, and a job skips an event that was handled after it was queued, so a repeated run changes nothing.
@@ -16,7 +13,7 @@
  * pending.
  */
 import { blockingFailures, checkFiling, type FilingCheck, type ParsedFiling, parseKapXls } from "@vigil/core";
-import { duplicateKeys } from "./db.ts";
+import { type Database, duplicateKeys, loadFiling, removeReport } from "./db.ts";
 import { type AppEvent, EventStateError, finish, getEvent, pending } from "./events.ts";
 import { QueueClosedError, type WriteQueue } from "./queue.ts";
 import { filesByDisclosure, type RawFile, readRawFile } from "./raw-files.ts";
@@ -91,6 +88,22 @@ export interface EventContext {
   superseded: boolean;
 }
 
+export type ReportHandler = (report: CheckedReport, context: EventContext) => Promise<void> | void;
+
+/**
+ * The `handle` that loads a report into DuckDB (#208). A checked report replaces its disclosure's rows with its facts
+ * and check results in one transaction; a report that fails a blocking check is loaded too, and its failing rows in
+ * `check_results` mark it as blocked (`docs/SCHEMA.md`). When the latest version of a disclosure fails, the rows of an
+ * older version are removed: they are no longer the disclosure's numbers, and `report_failed` says why. An event whose
+ * file is not stored changes nothing.
+ */
+export function loadInto(db: Database): ReportHandler {
+  return async (report) => {
+    if (report.status === "checked") await loadFiling(db, report.filing, { checks: report.checks });
+    else if (report.file !== null) await removeReport(db, report.file.disclosure_id);
+  };
+}
+
 export type ProcessResult =
   | { event: number; outcome: "report_processed" | "report_failed"; report: CheckedReport; outcome_event: number }
   | { event: number; outcome: "already_handled" };
@@ -112,11 +125,7 @@ function summary(checks: readonly FilingCheck[]) {
  * #208), then record `report_processed` or `report_failed` with `finish`. If `handle` throws, nothing is recorded and
  * the event stays pending.
  */
-export async function processEvent(
-  store: Store,
-  event: AppEvent,
-  handle?: (report: CheckedReport, context: EventContext) => Promise<void> | void,
-): Promise<ProcessResult> {
+export async function processEvent(store: Store, event: AppEvent, handle?: ReportHandler): Promise<ProcessResult> {
   const current = getEvent(store, event.id);
   if (current === null || current.handled_at !== null) return { event: event.id, outcome: "already_handled" };
 
@@ -132,8 +141,8 @@ export async function processEvent(
   } else {
     report = checkStoredFile(store, files.latest);
     if (report.status === "failed" && files.latest.object_id !== current.subject) {
-      // Every version has the same file name: say which bytes failed. The older version is not used instead;
-      // what to do with a version already loaded is #208's to decide.
+      // Every version has the same file name: say which bytes failed. The older version is not used instead, and
+      // `loadInto` removes it from DuckDB.
       report = {
         ...report,
         reason: `latest version ${files.latest.object_id} of disclosure ${files.latest.disclosure_id}: ${report.reason}`,
@@ -184,7 +193,7 @@ export interface ProcessSummary {
 export async function processPending(
   store: Store,
   queue: WriteQueue,
-  options: { batch?: number; handle?: (report: CheckedReport, context: EventContext) => Promise<void> | void } = {},
+  options: { batch?: number; handle?: ReportHandler } = {},
 ): Promise<ProcessSummary> {
   const batch = options.batch ?? 100;
   if (!Number.isInteger(batch) || batch < 1) throw new RangeError(`batch must be a whole number above 0, got ${batch}`);
