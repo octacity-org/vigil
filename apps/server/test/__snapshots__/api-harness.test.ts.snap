@@ -1,0 +1,12 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`example: a route that reads DuckDB answers from the fixtures (snapshot) 1`] = `
+{
+  "company_code": "TSTGN",
+  "disclosure_id": 9000001,
+  "facts": 10,
+  "metrics": 19,
+  "period": "2026/2",
+  "template": "general",
+}
+`;

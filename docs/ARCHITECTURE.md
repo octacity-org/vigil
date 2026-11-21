@@ -142,6 +142,7 @@ Raw and TL values are integers and are held as `bigint`. Ratios are computed wit
 ## Testing
 
 - Unit tests in `packages/core` with synthetic fixtures.
+- API tests with [`apps/server/test/api-harness.ts`](../apps/server/test/api-harness.ts) (#229): the Hono app on the fixture filings and an in-memory DuckDB (check results, CPI, metrics and findings loaded as in a rebuild), requests sent in process without a port. `api-harness.test.ts` has example tests to copy, with a snapshot.
 - Golden tests on the raw files listed in `tests/raw_files.txt`, downloaded in CI (decision 0007).
 - The port was checked against the Python implementation's recorded output (0010): every parsed value, check result, quality row and finding of the 1,577 files of 2026/1–2026/3, and every row of the database views for 2026/1–2, were identical.
 
