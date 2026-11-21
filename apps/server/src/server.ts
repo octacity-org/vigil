@@ -196,7 +196,7 @@ export async function startServer(options: ServerOptions): Promise<VigilServer> 
     stopping = true;
     cancelTimer();
     await Promise.allSettled(collectors.map((c) => c.stop()));
-    await queue.close();
+    await Promise.all([queue.close(), processing ?? Promise.resolve()]);
     close(db);
     store.close();
     throw e;
