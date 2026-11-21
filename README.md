@@ -58,6 +58,12 @@ bun run load data/raw/2026_2 data/vigil.duckdb
 
 It prints the parse report (failed files and why) and checks that the row count of every filing in the database matches it.
 
+Run the server process (collector, processor and API in one process, `docs/ARCHITECTURE.md`, "Running it"); it follows KAP for new reports and serves the API on `http://127.0.0.1:8787`:
+
+```bash
+bun run start data
+```
+
 Check a quarter before using it (parse status, subtotals and cross-statement reconciliation, one row per file):
 
 ```bash

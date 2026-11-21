@@ -132,6 +132,8 @@ Raw and TL values are integers and are held as `bigint`. Ratios are computed wit
 
 ## Running it
 
+- `bun run start [data_dir]` is the server process (#168, [`server.ts`](../apps/server/src/server.ts)): it reads the settings file, opens Zova and DuckDB (running their migrations), then starts the processor, the collector (poller with downloads, reconciler) and the API on `127.0.0.1:8787` (`VIGIL_PORT`). `/v1/ready` answers 200 once start-up has finished. The processor runs at start, after each collector run that stored files, and every minute. Logs are JSON lines.
+- SIGINT or SIGTERM stops it gracefully (#198): the collector finishes its run, the write queue finishes the jobs it has and takes no new ones, then DuckDB and Zova are closed. After 30 seconds it exits anyway; each DuckDB write is one transaction, so a cut-off write leaves the database as it was.
 - `docker compose up` starts `server` and `web`; data lives in one Docker volume (the Zova file and the DuckDB file).
 - Images are published to GitHub Container Registry; users do not build them.
 - A launcher script and an install guide cover Docker Desktop for users who are not developers.

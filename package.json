@@ -13,6 +13,7 @@
     "format": "biome format --write .",
     "typecheck": "tsc -p . && tsc -p apps/web",
     "test": "bun test",
+    "start": "bun apps/server/src/cli/start.ts",
     "download": "bun apps/server/src/cli/download.ts",
     "disclosures": "bun apps/server/src/cli/disclosures.ts",
     "sectors": "bun apps/server/src/cli/sectors.ts",
