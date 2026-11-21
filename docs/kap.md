@@ -30,6 +30,32 @@ Compared with the disclosure list (`disclosure/list/main`, #40) on 2026-10-29:
 
 Measured on 2026-11-16 against a store with the 2026/2 files of 29.10 (246 files), KATMR's file deliberately left out. The zip had 780 files. 536 were missing and stored, KATMR's among them, and 244 were already stored. One stored file was no longer in the zip, `BRGAN-BUR_1643015_2026_2.xls`, and no other file of that company was. **A file can leave the zip without a correction**, and the reconciliation is what shows it.
 
+### The archive from 2023 year-end (#43)
+
+`bun run archive-check <year> <quarter> [raw_dir] [--list]` ([`archive-check.ts`](../apps/server/src/archive-check.ts)) compares a downloaded quarter with the disclosure list. It asks for the period's `Finansal Rapor` disclosures from the day after the quarter to 270 days later and matches them by disclosure id. Every listed report without a file is given a reason: `corrected` when the zip has its correction instead, otherwise `not_in_archive` with the kind of filer read from its title (fund, portfolio manager, broker, bank, finance company or company). Files the list does not have and files that cannot be parsed are listed too.
+
+All 12 quarters from 2023/4 (the first under IAS 29) to 2026/3 were downloaded on 2026-11-22 with `bun run download`: complete zips, nothing lost, 8,287 files stored in Zova. The check on the same day:
+
+| Quarter | Listed | Files | Matched | Corrected | Not in zip: company | finance | bank | broker | portfolio mgr. | fund | Not listed | Broken |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2023/4 | 1025 | 685 | 678 | 45 | 22 | 9 | 41 | 41 | 65 | 124 | 7 | 0 |
+| 2024/1 | 792 | 616 | 615 | 28 | 1 | 0 | 41 | 38 | 68 | 1 | 1 | 0 |
+| 2024/2 | 940 | 705 | 703 | 44 | 14 | 10 | 42 | 38 | 68 | 21 | 2 | 0 |
+| 2024/3 | 813 | 633 | 632 | 29 | 1 | 0 | 43 | 39 | 68 | 1 | 1 | 0 |
+| 2024/4 | 1029 | 728 | 721 | 29 | 17 | 11 | 44 | 43 | 73 | 91 | 7 | 0 |
+| 2025/1 | 840 | 648 | 646 | 29 | 4 | 0 | 46 | 39 | 75 | 1 | 2 | 0 |
+| 2025/2 | 998 | 738 | 738 | 43 | 11 | 12 | 48 | 39 | 79 | 28 | 0 | 0 |
+| 2025/3 | 855 | 655 | 655 | 24 | 2 | 0 | 48 | 42 | 82 | 2 | 0 | 0 |
+| 2025/4 | 1027 | 764 | 763 | 24 | 14 | 12 | 46 | 44 | 87 | 37 | 1 | 0 |
+| 2026/1 | 879 | 672 | 672 | 25 | 1 | 0 | 48 | 43 | 88 | 2 | 0 | 0 |
+| 2026/2 | 1002 | 782 | 782 | 17 | 10 | 9 | 47 | 43 | 91 | 3 | 0 | 0 |
+| 2026/3 | 851 | 661 | 661 | 12 | 1 | 0 | 43 | 43 | 90 | 1 | 0 | 0 |
+
+- **The archive is complete for what the zip carries:** every file in a zip is a listed report of the period except 21 (the "Not listed" column; not looked into further), and no file failed to parse.
+- **What the zip leaves out is almost all outside v1's scope:** banks, brokers, portfolio managers, funds and factoring, leasing and consumer-finance companies. Funds appear in the list only for the half-year and year-end periods.
+- **Companies left out** are 1 to 22 a quarter, more at half-year and year-end. Most issue only debt and have no shares traded (SHTRP, PLGAZ, NRLIN, KCSIS, FSDAT, lease certificate issuers); a few are traded (ARENA, ALTYZ, AKFEN, BALSU, OZGYO, ADGYO), each in one or two quarters. Their statements can be fetched with the single-company download below; `--list` prints them.
+- The numbers change while late filings arrive; the last two quarters were checked before their windows closed.
+
 ### `checkFileExist`
 
 ```
