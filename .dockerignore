@@ -1,0 +1,11 @@
+# Only what the images need is copied (apps/*/Dockerfile); this keeps the build context small and free of local data.
+**/node_modules
+**/.next
+**/*.tsbuildinfo
+.git
+.github
+data
+tests
+docs
+**/test
+*.md

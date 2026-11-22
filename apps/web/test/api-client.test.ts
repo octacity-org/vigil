@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import type { Value } from "@vigil/api-types";
-import { ApiClientError, createClient, type Fetch, toBigInt } from "../src/lib/api.ts";
+import { ApiClientError, createClient, DEFAULT_API_URL, type Fetch, pickApiUrl, toBigInt } from "../src/lib/api.ts";
 
 function fake(respond: (url: string, init?: RequestInit) => Response | Promise<Response>) {
   const calls: { url: string; init?: RequestInit }[] = [];
@@ -104,4 +104,18 @@ test("nothing in src calls fetch except the API client", () => {
     .filter((f) => relative(src, f).replaceAll("\\", "/") !== "lib/api.ts")
     .filter((f) => /\bfetch\s*\(/.test(readFileSync(f, "utf8")));
   expect(offenders).toEqual([]);
+});
+
+describe("the API address (#261)", () => {
+  test("the web server uses VIGIL_API_URL; the browser never does", () => {
+    const urls = { serverUrl: "http://server:8787", publicUrl: "http://127.0.0.1:8787" };
+    expect(pickApiUrl({ onServer: true, ...urls })).toBe("http://server:8787");
+    expect(pickApiUrl({ onServer: false, ...urls })).toBe("http://127.0.0.1:8787");
+  });
+
+  test("without settings both use 127.0.0.1:8787", () => {
+    expect(pickApiUrl({ onServer: true })).toBe(DEFAULT_API_URL);
+    expect(pickApiUrl({ onServer: false, serverUrl: "http://server:8787" })).toBe(DEFAULT_API_URL);
+    expect(pickApiUrl({ onServer: true, serverUrl: "", publicUrl: "" })).toBe(DEFAULT_API_URL);
+  });
 });

@@ -4,11 +4,11 @@
  *   bun run start              # data folder `VIGIL_DATA_DIR` or `data`, API on http://127.0.0.1:8787
  *   bun run start data
  *
- * `VIGIL_PORT` changes the port. Logs are JSON lines on stdout (errors on stderr), one per event, for a bug report.
+ * `VIGIL_PORT` changes the port; `VIGIL_HOST=0.0.0.0` is for the Docker image only (`listenHost`). Logs are JSON lines on stdout (errors on stderr), one per event, for a bug report.
  * Ctrl+C or SIGTERM (`docker compose down`) stops it gracefully (#198); a second signal, or the time limit, exits at
  * once. Exits 1 when start-up fails (for example when another process holds the data folder), 2 for wrong arguments.
  */
-import { DEFAULT_PORT } from "../api/app.ts";
+import { DEFAULT_PORT, listenHost } from "../api/app.ts";
 import { type Log, startServer } from "../server.ts";
 import { DEFAULT_DATA_DIR } from "../settings.ts";
 
@@ -23,6 +23,14 @@ if (!Number.isInteger(port) || port < 0 || port > 65535) {
   process.exit(2);
 }
 
+let host: string;
+try {
+  host = listenHost();
+} catch (e) {
+  console.error((e as Error).message);
+  process.exit(2);
+}
+
 const log: Log = (level, message, fields = {}) => {
   const line = JSON.stringify({ time: new Date().toISOString(), level, message, ...fields });
   if (level === "error") console.error(line);
@@ -31,7 +39,7 @@ const log: Log = (level, message, fields = {}) => {
 
 let server: Awaited<ReturnType<typeof startServer>>;
 try {
-  server = await startServer({ dataDir: args[0] ?? DEFAULT_DATA_DIR, port, log });
+  server = await startServer({ dataDir: args[0] ?? DEFAULT_DATA_DIR, port, host, log });
 } catch (e) {
   log("error", "start-up failed", { error: `${(e as Error).name}: ${(e as Error).message}` });
   process.exit(1);

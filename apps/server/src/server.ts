@@ -45,6 +45,8 @@ export interface ServerOptions {
   settingsPath?: string;
   /** Defaults to 8787; 0 picks a free port. */
   port?: number;
+  /** Defaults to 127.0.0.1; `bun run start` passes `listenHost()` (`VIGIL_HOST=0.0.0.0` in the Docker image). */
+  host?: string;
   /** Run the collector (KAP polling, downloads, reconciliation). On by default; tests turn it off. */
   collect?: boolean;
   /** Shared by the poller, the downloads and the reconciler, so the polite-access spacing (#199) holds across them. */
@@ -191,7 +193,7 @@ export async function startServer(options: ServerOptions): Promise<VigilServer> 
       isReady: () => ready,
       onInternalError: (e) => log("error", "API error", { error: describe(e) }),
     });
-    api = serve(app, options.port ?? DEFAULT_PORT);
+    api = serve(app, options.port ?? DEFAULT_PORT, options.host);
   } catch (e) {
     stopping = true;
     cancelTimer();

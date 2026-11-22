@@ -137,8 +137,27 @@ export function createClient(options: ClientOptions = {}) {
 
 export type ApiClient = ReturnType<typeof createClient>;
 
-/** The client the app uses. `NEXT_PUBLIC_API_URL` overrides the address (Docker, #262). */
-export const api: ApiClient = createClient({ baseUrl: process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL });
+/**
+ * The API's address (#261):
+ * - in the browser, `NEXT_PUBLIC_API_URL` (fixed when the app is built) or 127.0.0.1:8787, which the user's computer
+ *   reaches through the port docker-compose publishes;
+ * - on the web server (server components), `VIGIL_API_URL` if set, read when the server starts: in docker-compose the
+ *   server's address on the compose network (`http://server:8787`), because 127.0.0.1 in the web container is the
+ *   web container itself.
+ */
+export function pickApiUrl(p: { onServer: boolean; serverUrl?: string; publicUrl?: string }): string {
+  if (p.onServer && p.serverUrl) return p.serverUrl;
+  return p.publicUrl || DEFAULT_API_URL;
+}
+
+/** The client the app uses. The env names are written out so Next.js can put `NEXT_PUBLIC_API_URL` in the bundle. */
+export const api: ApiClient = createClient({
+  baseUrl: pickApiUrl({
+    onServer: typeof window === "undefined",
+    serverUrl: process.env.VIGIL_API_URL,
+    publicUrl: process.env.NEXT_PUBLIC_API_URL,
+  }),
+});
 
 /** The one place an amount string becomes a bigint. `null` unless the value is `ok`. */
 export function toBigInt(v: Value): bigint | null {

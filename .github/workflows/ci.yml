@@ -41,3 +41,27 @@ jobs:
         run: bun run download --files tests/raw_files.txt data/raw
       - name: Run all tests with the raw files
         run: bun test
+
+  # The release images (#260, #261): built and started, so a Dockerfile change that breaks them fails the pull
+  # request. They are not pushed here (#266).
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the server image
+        run: docker build -f apps/server/Dockerfile -t vigil-server .
+      - name: Build the web image
+        run: docker build -f apps/web/Dockerfile -t vigil-web .
+      - name: Both images become healthy
+        run: |
+          docker run -d --name server -e VIGIL_DATA_DIR=/data vigil-server
+          docker run -d --name web vigil-web
+          for c in server web; do
+            for i in $(seq 1 30); do
+              s=$(docker inspect -f '{{.State.Health.Status}}' $c)
+              [ "$s" = healthy ] && break
+              sleep 2
+            done
+            echo "$c: $s"
+            [ "$s" = healthy ] || { docker logs $c; exit 1; }
+          done

@@ -2,7 +2,16 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { networkInterfaces } from "node:os";
 import type { ErrorResponse } from "@vigil/api-types";
-import { ApiError, createApp, HOST, type Routes, type RunningServer, serve } from "../src/api/app.ts";
+import {
+  ApiError,
+  CONTAINER_HOST,
+  createApp,
+  HOST,
+  listenHost,
+  type Routes,
+  type RunningServer,
+  serve,
+} from "../src/api/app.ts";
 
 const internal: unknown[] = [];
 const testRoutes: Routes = (v1) => {
@@ -80,6 +89,31 @@ describe("serve", () => {
         () => "refused",
       );
       expect(`${address}: ${result}`).toBe(`${address}: refused`);
+    }
+  });
+});
+
+describe("listenHost (#260)", () => {
+  test("127.0.0.1 unless the Docker image asks for every container interface", () => {
+    expect(listenHost({})).toBe(HOST);
+    expect(listenHost({ VIGIL_HOST: "" })).toBe(HOST);
+    expect(listenHost({ VIGIL_HOST: "127.0.0.1" })).toBe(HOST);
+    expect(listenHost({ VIGIL_HOST: "0.0.0.0" })).toBe(CONTAINER_HOST);
+  });
+
+  test("any other address is refused", () => {
+    for (const h of ["192.168.1.10", "::", "localhost", "0.0.0.0 "]) {
+      expect(() => listenHost({ VIGIL_HOST: h })).toThrow("VIGIL_HOST must be");
+    }
+  });
+
+  test("the URL stays on 127.0.0.1 when listening on every interface", async () => {
+    const s = serve(createApp(), 0, CONTAINER_HOST);
+    try {
+      expect(s.url.startsWith(`http://${HOST}:`)).toBe(true);
+      expect((await fetch(`${s.url}/v1/health`)).status).toBe(200);
+    } finally {
+      await s.stop();
     }
   });
 });

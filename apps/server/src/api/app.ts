@@ -8,9 +8,23 @@ import { ERROR_STATUS } from "@vigil/api-types";
 import { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
-/** The only interface the API listens on. Not configurable: the local release is not reachable from outside. */
+/** The interface the API listens on. The local release is not reachable from outside (decision 0008). */
 export const HOST = "127.0.0.1";
 export const DEFAULT_PORT = 8787;
+/** Every interface of the container; only for the Docker image, whose port compose binds to 127.0.0.1 on the host. */
+export const CONTAINER_HOST = "0.0.0.0";
+
+/**
+ * The interface to listen on: `127.0.0.1` unless `VIGIL_HOST` is `0.0.0.0`. The Docker image (#260) sets that, because
+ * a server on the container's 127.0.0.1 cannot be reached through a published port; `docker-compose.yml` (#262)
+ * publishes it as `127.0.0.1:8787:8787`, so the host still keeps it to itself. No other value is accepted.
+ */
+export function listenHost(env: Record<string, string | undefined> = process.env): string {
+  const host = env.VIGIL_HOST;
+  if (host === undefined || host === "" || host === HOST) return HOST;
+  if (host === CONTAINER_HOST) return CONTAINER_HOST;
+  throw new Error(`VIGIL_HOST must be ${HOST} or ${CONTAINER_HOST} (the Docker image), got ${host}`);
+}
 
 /** An error with an API error code; anything else thrown in a route becomes `internal`. */
 export class ApiError extends Error {
@@ -76,10 +90,11 @@ export interface RunningServer {
   stop(): Promise<void>;
 }
 
-/** Listen on 127.0.0.1. `port: 0` picks a free port (tests). */
-export function serve(app: Hono, port = DEFAULT_PORT): RunningServer {
-  const server = Bun.serve({ hostname: HOST, port, fetch: app.fetch });
+/** Listen on 127.0.0.1 (or `CONTAINER_HOST` in the Docker image). `port: 0` picks a free port (tests). */
+export function serve(app: Hono, port = DEFAULT_PORT, hostname = HOST): RunningServer {
+  const server = Bun.serve({ hostname, port, fetch: app.fetch });
   return {
+    // Reached on 127.0.0.1 in both cases.
     url: `http://${HOST}:${server.port}`,
     port: server.port as number,
     stop: () => server.stop(true),

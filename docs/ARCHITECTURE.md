@@ -135,6 +135,10 @@ Raw and TL values are integers and are held as `bigint`. Ratios are computed wit
 - `bun run start [data_dir]` is the server process (#168, [`server.ts`](../apps/server/src/server.ts)): it reads the settings file, opens Zova and DuckDB (running their migrations), then starts the processor, the collector (poller with downloads, reconciler) and the API on `127.0.0.1:8787` (`VIGIL_PORT`). `/v1/ready` answers 200 once start-up has finished. The processor runs at start, after each collector run that stored files, and every minute. Logs are JSON lines.
 - SIGINT or SIGTERM stops it gracefully (#198): the collector finishes its run, the write queue finishes the jobs it has and takes no new ones, then DuckDB and Zova are closed. After 30 seconds it exits anyway; each DuckDB write is one transaction, so a cut-off write leaves the database as it was.
 - `docker compose up` starts `server` and `web`; data lives in one Docker volume (the Zova file and the DuckDB file).
+- The images: [`apps/server/Dockerfile`](../apps/server/Dockerfile) (#260) and [`apps/web/Dockerfile`](../apps/web/Dockerfile) (#261), built from the repository root. Both run as a non-root user and report healthy (`/v1/ready` for the server).
+  - Inside a container, 127.0.0.1 is the container itself. So the images listen on every container interface (`VIGIL_HOST=0.0.0.0` for the server, the only other value `listenHost` accepts), and `docker-compose.yml` publishes the ports as `127.0.0.1:8787` and `127.0.0.1:3000`. Nothing is reachable from the network (decision 0008).
+  - The web server reaches the API at `VIGIL_API_URL` (`http://server:8787` on the compose network). The browser uses `NEXT_PUBLIC_API_URL`, 127.0.0.1:8787 by default.
+  - CI builds both images and waits for them to become healthy.
 - Images are published to GitHub Container Registry; users do not build them.
 - A launcher script and an install guide cover Docker Desktop for users who are not developers.
 - On upgrade, Zova's file format is migrated explicitly, keeping the old file until the new one is validated (0009).
