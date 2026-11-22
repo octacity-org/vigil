@@ -76,6 +76,18 @@ Quarters already in `data/raw/` go into the Zova archive (`data/vigil.zova`) wit
 
 For the tests, `bun run download --files tests/raw_files.txt data/raw` fetches only the raw files they use. CI runs the golden tests the same way (job `golden`, decision 0007). If you add a golden file or a test that needs another raw file, list it in `tests/raw_files.txt`.
 
+### Company types
+
+Companies that file statements only because they issue debt have no KAP sector, so Vigil does not know whether real-sector findings apply to them (decision 0017). `packages/core/data/company-types.json` gives each of them a type, `real_sector` or `financial`. It is kept like the known filing errors (`packages/core/src/known-errors.ts`):
+
+1. **Read the source first.** Use the company's KAP general information page (`https://www.kap.org.tr/tr/sirket-bilgileri/genel/{mkkMemberOid}`), "Şirketin Faaliyet Konusu", or its annual report.
+2. **Add one entry,** keeping the file sorted by ticker. Give `mkkMemberOid` (entries are matched by it, never by ticker), `ticker`, `title`, `type`, a `reason`, the `activity` as the source gives it, and a `source` naming what was read and when, with its address.
+   - Lease certificate issuers (`Varlık Kiralama`) are `financial`.
+   - So are brokers, and holding and investment companies until the holding methodology exists (#95).
+3. **Review it like code.** The reviewer opens the source.
+
+The loader (`loadCompanyTypes`) refuses an entry without a reason or a source and a member id that appears twice. It also refuses an entry for a company that has a KAP sector: KAP wins, and the entry is removed. A company left out gets no findings until it has an entry, so leave it out when the source does not say what the company does.
+
 ### CPI series
 
 The monthly CPI (TÜFE) series ships in `apps/server/reference/cpi-tr.csv` and is refreshed by maintainers once a month with `bun run cpi:import` from TÜİK's bulk download; the steps are in `docs/SCHEMA.md`, "CPI series". `bun run cpi` loads it into DuckDB.

@@ -1,0 +1,551 @@
+[
+  {
+    "mkkMemberOid": "8acae2c4991b8c31019928545a1100fe",
+    "ticker": "AKCVR",
+    "title": "AKADEMİ ÇEVRE ENTEGRE ATIK YÖNETİMİ ENDÜSTRİ A.Ş.",
+    "type": "real_sector",
+    "reason": "Industrial, trade or service company by its activity.",
+    "activity": "Elektrikli ve elektronik atık (AEEE) geri dönüşümü; hurda metal geri dönüşümü",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1516950), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c4991b8c31019928545a1100fe"
+  },
+  {
+    "mkkMemberOid": "4028e4a240e8d16e0140e8f3d0fe0047",
+    "ticker": "AKM",
+    "title": "AK YATIRIM MENKUL DEĞERLER A.Ş.",
+    "type": "financial",
+    "reason": "Brokerage (aracı kurum) licensed under the Capital Markets Law.",
+    "activity": "MENKUL KIYMETLER ARACILIK FAALİYETLERİ",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 539622), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a240e8d16e0140e8f3d0fe0047"
+  },
+  {
+    "mkkMemberOid": "4028e4a14371e097014371f9653d00c2",
+    "ticker": "AKTVK",
+    "title": "AKTİF BANK SUKUK VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": "Kira Sertifikası İhracı",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 545463), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a14371e097014371f9653d00c2"
+  },
+  {
+    "mkkMemberOid": "4028e4a141da49e50141e085b2112b8a",
+    "ticker": "ALNUS",
+    "title": "ALNUS YATIRIM MENKUL DEĞERLER A.Ş.",
+    "type": "financial",
+    "reason": "Brokerage (aracı kurum) licensed under the Capital Markets Law.",
+    "activity": "Sermaye Piyasası Araçları",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 545480), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a141da49e50141e085b2112b8a"
+  },
+  {
+    "mkkMemberOid": "4028e4a140e95bea0140ede507ca0145",
+    "ticker": "ATA",
+    "title": "ATA YATIRIM MENKUL KIYMETLER A.Ş.",
+    "type": "financial",
+    "reason": "Brokerage (aracı kurum) licensed under the Capital Markets Law.",
+    "activity": "YATIRIM KURULUŞU",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 540294), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a140e95bea0140ede507ca0145"
+  },
+  {
+    "mkkMemberOid": "8acae2c494bafc93019634bf00163e28",
+    "ticker": "ATAVK",
+    "title": "ATA VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c494bafc93019634bf00163e28"
+  },
+  {
+    "mkkMemberOid": "4028e4a14a5df521014b02a116c7424a",
+    "ticker": "BLKOM",
+    "title": "BİLKOM BİLİŞİM HİZMETLERİ A.Ş.",
+    "type": "real_sector",
+    "reason": "Industrial, trade or service company by its activity.",
+    "activity": "Bilkom ; Bilgisayar ile yan cihazlarının elektrik, elektronik ve iletişim cihazlarının ve bunların yedeklerinin, malzemelerinin ithali, satışı, kiraya verilmesi alanında faaliyet göstermektedir.",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1081571), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a14a5df521014b02a116c7424a"
+  },
+  {
+    "mkkMemberOid": "4028e4a2415f4f8401415ffac5a034a9",
+    "ticker": "BLS",
+    "title": "BULLS YATIRIM MENKUL DEĞERLER A.Ş.",
+    "type": "financial",
+    "reason": "Brokerage (aracı kurum) licensed under the Capital Markets Law.",
+    "activity": "YATIRIM KURULUŞU",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 545486), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a2415f4f8401415ffac5a034a9"
+  },
+  {
+    "mkkMemberOid": "8acae2c4508ff7260151497fffa30e9e",
+    "ticker": "BRKT",
+    "title": "BEREKET VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c4508ff7260151497fffa30e9e"
+  },
+  {
+    "mkkMemberOid": "4028e4a1415f4d9b01416002f6573cff",
+    "ticker": "CLKMT",
+    "title": "ÇELİK MOTOR TİCARET A.Ş.",
+    "type": "real_sector",
+    "reason": "Car distribution (KIA), vehicle rental and used-car sales.",
+    "activity": "Çelik Motor, KIA markasının Türkiye distribütörü olup, markanın araç ve yedek parça pazarlama ve satış faaliyetlerini yürütmektedir. Garenta markasıyla lisansiye bayiler üzerinden kurumlara ve bireylere araç kiralama hizmeti, ikinciyeni.com markasıyla da ikinci el araç alım-satım hizmeti vermekte...",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1208089), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a1415f4d9b01416002f6573cff"
+  },
+  {
+    "mkkMemberOid": "8acae2c575a1b5b60176707955d239ff",
+    "ticker": "DGRVK",
+    "title": "DEĞER VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c575a1b5b60176707955d239ff"
+  },
+  {
+    "mkkMemberOid": "01575ca846a34134b5c6bb879b7d0bc4",
+    "ticker": "DIMES",
+    "title": "DİMES GIDA SANAYİ VE TİCARET A.Ş.",
+    "type": "real_sector",
+    "reason": "Industrial, trade or service company by its activity.",
+    "activity": "Meyve suyu, gazlı meşrubat, enerji içeceği, gazlı içecek, soğuk çay, maden suyu , kahveli içecek, dondurma, alkollü ve alkolsüz her türlü içecek , her nevi meyve ve sebze konsantresi, marmelat ve konserveleri, süt ve süt ürünleri, reçel üretimi; yaş ve kuru meyve ve sebze ticareti; soğuk hava dep...",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1646309), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/01575ca846a34134b5c6bb879b7d0bc4"
+  },
+  {
+    "mkkMemberOid": "8acae2c5991b90af01992916f11d02c7",
+    "ticker": "DKVRL",
+    "title": "DK VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c5991b90af01992916f11d02c7"
+  },
+  {
+    "mkkMemberOid": "8acae2c4998f24d8019abf7bb7eb4396",
+    "ticker": "DNZEN",
+    "title": "DENİZ EKO ENERJİ VE GERİ DÖNÜŞÜM A.Ş.",
+    "type": "real_sector",
+    "reason": "Industrial, trade or service company by its activity.",
+    "activity": "Yenilenebilir enerji kaynakları dahil tüm kaynaklardan elektrik enerjisi üretmek amacıyla tesis kurulması ve işletilmesi; üretilen elektriğin satışı",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1575011), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c4998f24d8019abf7bb7eb4396"
+  },
+  {
+    "mkkMemberOid": "8acae2c49145e00b01928aa470dd5fda",
+    "ticker": "DVRLK",
+    "title": "D VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": "Varlık Kiralama Şirketi",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1370161), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c49145e00b01928aa470dd5fda"
+  },
+  {
+    "mkkMemberOid": "4028e4a2462cc71d014694521292040f",
+    "ticker": "ECZIP",
+    "title": "EİP ECZACIBAŞI İLAÇ PAZARLAMA A.Ş.",
+    "type": "real_sector",
+    "reason": "Industrial, trade or service company by its activity.",
+    "activity": "İlaç satış ve pazarlaması",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1571477), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a2462cc71d014694521292040f"
+  },
+  {
+    "mkkMemberOid": "1af4bb0512df41c599b6ff93a4468ac5",
+    "ticker": "EKER",
+    "title": "EKER SÜT ÜRÜNLERİ GIDA SANAYİ VE TİCARET A.Ş.",
+    "type": "real_sector",
+    "reason": "Industrial, trade or service company by its activity.",
+    "activity": "Gıda Sektörü / Süt ve Süt Ürünleri İmalatı ve Satışı",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1283356), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/1af4bb0512df41c599b6ff93a4468ac5"
+  },
+  {
+    "mkkMemberOid": "8acae2c56faf888c017139d3005854da",
+    "ticker": "EKTVK",
+    "title": "EMLAK KATILIM VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c56faf888c017139d3005854da"
+  },
+  {
+    "mkkMemberOid": "8acae2c56cc265e9016d204e39f71dbc",
+    "ticker": "EMVAR",
+    "title": "EMLAK VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c56cc265e9016d204e39f71dbc"
+  },
+  {
+    "mkkMemberOid": "4028e4a24337209001434898a6893468",
+    "ticker": "ERGLI",
+    "title": "EREĞLİ TEKSTİL TURİZM SANAYİ VE TİCARET A.Ş.",
+    "type": "real_sector",
+    "reason": "Industrial, trade or service company by its activity.",
+    "activity": "-JAN, EGM ,KKK ,HKK VB. RESMİ KURUMLARIN GİYECEK ALIMINA YÖNELİK DIŞ GİYİM EŞYALARI İMALATI (KAMUFLAJLI GÖMLEK,KAMUFLAFLI EĞİTİM ELBİSESİ,POLİS MONTU VB.) YAPILMAKTADIR.",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 540309), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a24337209001434898a6893468"
+  },
+  {
+    "mkkMemberOid": "4028e4a240f2ef4c01413a53aa850684",
+    "ticker": "GARFL",
+    "title": "GARANTİ BBVA OPERASYONEL KİRALAMA HİZMETLERİ A.Ş.",
+    "type": "real_sector",
+    "reason": "Long-term vehicle rental (operating lease): a service business, not a lessor that finances assets.",
+    "activity": "Uzun Dönem Araç Kiralama",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 538740), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a240f2ef4c01413a53aa850684"
+  },
+  {
+    "mkkMemberOid": "8acae2c5830502c2018451afb35c132d",
+    "ticker": "GGBVK",
+    "title": "GOLDEN GLOBAL VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c5830502c2018451afb35c132d"
+  },
+  {
+    "mkkMemberOid": "4028e4a141da49e50141e08580772b86",
+    "ticker": "GRM",
+    "title": "GARANTİ YATIRIM MENKUL KIYMETLER A.Ş.",
+    "type": "financial",
+    "reason": "Brokerage (aracı kurum) licensed under the Capital Markets Law.",
+    "activity": "Menkul Kıymetler Aracılık Faaliyetleri",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 589243), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a141da49e50141e08580772b86"
+  },
+  {
+    "mkkMemberOid": "8acae2c49c81f746019d5211d7a44714",
+    "ticker": "GYVAR",
+    "title": "GY VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c49c81f746019d5211d7a44714"
+  },
+  {
+    "mkkMemberOid": "4028e4a240f2ef4c01411654e5fc0479",
+    "ticker": "HALKI",
+    "title": "HALK YATIRIM MENKUL DEĞERLER A.Ş.",
+    "type": "financial",
+    "reason": "Brokerage (aracı kurum) licensed under the Capital Markets Law.",
+    "activity": "Sermaye Piyasası Kanunu ve ilgili mevzuata uygun olarak menkul kıymetler ve diğer sermaye piyasası araçlarıyla aracılık faaliyetleri",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1369518), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a240f2ef4c01411654e5fc0479"
+  },
+  {
+    "mkkMemberOid": "8acae2c59145e00e0197bff60dc62a30",
+    "ticker": "HAYVK",
+    "title": "HAYAT VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c59145e00e0197bff60dc62a30"
+  },
+  {
+    "mkkMemberOid": "4028e4a246b4c5ad0147c4b464893865",
+    "ticker": "HDFFL",
+    "title": "HEDEF ARAÇ KİRALAMA VE SERVİS A.Ş.",
+    "type": "real_sector",
+    "reason": "Vehicle rental: a service business that owns and rents out its fleet.",
+    "activity": "MOTORLU HAFİF KARA TAŞITLARININ VE ARABALARIN SÜRÜCÜSÜZ OLARAK KİRALANMASI VE LEASİNGİ",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1086335), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a246b4c5ad0147c4b464893865"
+  },
+  {
+    "mkkMemberOid": "8acae2c58b2fa64e018e0edc8c8619eb",
+    "ticker": "HDFVK",
+    "title": "HEDEF VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c58b2fa64e018e0edc8c8619eb"
+  },
+  {
+    "mkkMemberOid": "8acae2c45fc5ff9c016002b79772115e",
+    "ticker": "HLVKS",
+    "title": "HALK VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c45fc5ff9c016002b79772115e"
+  },
+  {
+    "mkkMemberOid": "4028e4a14184e9cf0141934f00662c2e",
+    "ticker": "IAZ",
+    "title": "INVEST-AZ YATIRIM MENKUL DEĞERLER A.Ş.",
+    "type": "financial",
+    "reason": "Brokerage (aracı kurum) licensed under the Capital Markets Law.",
+    "activity": "Sermaye Piyasası Araçları yatırım hizmetleri araclık işlemleri",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 545176), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a14184e9cf0141934f00662c2e"
+  },
+  {
+    "mkkMemberOid": "8acae2c568af01170169584cb0b8653c",
+    "ticker": "INALR",
+    "title": "İNALLAR OTOMOTİV SANAYİ VE TİCARET A.Ş.",
+    "type": "real_sector",
+    "reason": "Car retail and real estate trading.",
+    "activity": "OTOMOBİLLERİN VE HAFİF MOTORLU KARA TAŞITLARININ PARAKENDE TİCARETİ, YURTİÇİNDE VE DIŞINDA HER TÜRLÜ ARSA ARAZİ BİNA DAİRE VİLLA İŞ YERLERİ VE TESİS ALIMSATIMI KİRALAMA VE KİRAYA VERME EMLAK VE GAYRİMENKUL ALIP SATILMASI EMLAK ALANA VE SATANA ARACILIK ETMEK BUNLAR ÜZERİNDE KAT İRTİFAKI VE KAT MÜL...",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 992623), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c568af01170169584cb0b8653c"
+  },
+  {
+    "mkkMemberOid": "8acae2c45835eb6501589126d8f220fc",
+    "ticker": "KATVK",
+    "title": "KATILIM VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c45835eb6501589126d8f220fc"
+  },
+  {
+    "mkkMemberOid": "8acae2c4991b8c3201992881244b00c6",
+    "ticker": "KFILO",
+    "title": "KAYATUR FİLO KİRALAMA A.Ş.",
+    "type": "real_sector",
+    "reason": "Vehicle rental, vehicle retail and passenger transport.",
+    "activity": "* MOTORLU HAFİF KARA TAŞITLARININ VE ARABALARIN SÜRÜCÜLÜ VEYA SÜRÜCÜSÜZ OLARAK KİRALANMASI * OTOMOBİLLERİN VE HAFİF MOTORLU KARA TAŞITLARININ PERAKENDE TİCARETİ * ŞEHİR İÇİ, BANLİYÖ VE KIRSAL ALANLARDA KARA YOLU İLE PERSONEL, ÖĞRENCİ, VB. GRUP TAŞIMACILIĞI",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1562413), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c4991b8c3201992881244b00c6"
+  },
+  {
+    "mkkMemberOid": "8acae2c47afb298b017b638d20d840cd",
+    "ticker": "KLVKS",
+    "title": "KALKINMA YATIRIM VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c47afb298b017b638d20d840cd"
+  },
+  {
+    "mkkMemberOid": "4028e4a140f2ed720140f2f4659e00bc",
+    "ticker": "KORTS",
+    "title": "KORTEKS MENSUCAT SANAYİ VE TİCARET A.Ş.",
+    "type": "real_sector",
+    "reason": "Industrial, trade or service company by its activity.",
+    "activity": "SUNI VE SENTETIK ELYAFLARIN BÜKÜLMESI VE IPLIK HALINE GETIRILMESI (FILAMENT IPLIGI VE SUNI IPEK ELYAFI IMALATI HARIÇ) Bağımsız Denetçi : TTK BAĞIMSIZ DENETİM VE YMM A.Ş.",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1503794), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a140f2ed720140f2f4659e00bc"
+  },
+  {
+    "mkkMemberOid": "d21618f6aa554dd8a570f41dd0f46700",
+    "ticker": "KPTGY",
+    "title": "KAPİTAL GAYRİMENKUL YATIRIMI GELİŞTİRME VE İŞLETMECİLİK A.Ş.",
+    "type": "real_sector",
+    "reason": "Real estate development and operation; not a real estate investment trust (decision 0017 treats real estate companies outside MALİ KURULUŞLAR as real sector, like IHLGM).",
+    "activity": "Şirketimizin faaliyet konusu gayrimenkul geliştirmeciği ve işletmeciliğidir.",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1694848), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/d21618f6aa554dd8a570f41dd0f46700"
+  },
+  {
+    "mkkMemberOid": "1DE05DAA8332073AE0530A4A622A2EBD",
+    "ticker": "KTKVK",
+    "title": "KT KİRA SERTİFİKALARI VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/1DE05DAA8332073AE0530A4A622A2EBD"
+  },
+  {
+    "mkkMemberOid": "8acae2c45a97ffbc015b1e02e5033b72",
+    "ticker": "KTSVK",
+    "title": "KT SUKUK VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c45a97ffbc015b1e02e5033b72"
+  },
+  {
+    "mkkMemberOid": "8acae2c4782a4d580178a723f5383685",
+    "ticker": "MDASM",
+    "title": "MİDAS MENKUL DEĞERLER A.Ş.",
+    "type": "financial",
+    "reason": "Brokerage (aracı kurum) licensed under the Capital Markets Law.",
+    "activity": "Midas Menkul Değerler A.Ş., Sermaye Piyasası Kurulu'nca 31/03/2021 tarihinden itibaren Emir İletimine Aracılık Faaliyeti; 31/05/2022 tarihinden itibaren İşlem Aracılığı Faaliyeti ile Sınırlı Saklama Hizmetinde bulunmak üzere ''KISMİ YETKİLİ ARACI KURUM'' olarak yetkilendirilmiştir. Şirketin amacı...",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1035623), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c4782a4d580178a723f5383685"
+  },
+  {
+    "mkkMemberOid": "8acae2c49c81f743019d2defe3ba3d95",
+    "ticker": "MDIAZ",
+    "title": "MEDİAZZ YENİ MEDYA VE TEKNOLOJİ YATIRIMLARI A.Ş.",
+    "type": "real_sector",
+    "reason": "Builds and operates sports facilities, runs teams, sports media and software.",
+    "activity": "Esas Sözleşme'nin \"Amaç ve Konu\" başlıklı 3. maddesi uyarınca; Şirketin başlıca amacı; her türlü spor tesisini inşa etmek ve işletmek, sporun çeşitli dallarında takımlar kurmak veya devralmak, sporla ilgili yayıncılık ve yazılım faaliyetlerinde bulunmak, spor teknolojileri ve sporcu sağlığı alanı...",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1621524), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c49c81f743019d2defe3ba3d95"
+  },
+  {
+    "mkkMemberOid": "4028e4a24184e9e50141981faaf249d3",
+    "ticker": "MEKMD",
+    "title": "MEKSA YATIRIM MENKUL DEĞERLER A.Ş.",
+    "type": "financial",
+    "reason": "Brokerage (aracı kurum) licensed under the Capital Markets Law.",
+    "activity": "YATIRIM KURULUŞU",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 545124), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a24184e9e50141981faaf249d3"
+  },
+  {
+    "mkkMemberOid": "4028e4a140f2ed7101413af95c8c047c",
+    "ticker": "MRBAS",
+    "title": "MARBAŞ MENKUL DEĞERLER A.Ş.",
+    "type": "financial",
+    "reason": "Brokerage (aracı kurum) licensed under the Capital Markets Law.",
+    "activity": "Sermaye Piyasası Kanunu ve ilgili mevzuat hükümlerine uygun olarak sermaye piyasası faaliyetlerinde bulunmak.",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1512850), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a140f2ed7101413af95c8c047c"
+  },
+  {
+    "mkkMemberOid": "8acae2c55d8500f8015ee16f113a0c19",
+    "ticker": "NURVK",
+    "title": "NUROL VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": "Varlık Kiralama Şirketi",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 654963), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c55d8500f8015ee16f113a0c19"
+  },
+  {
+    "mkkMemberOid": "4028e4a240e95dc30140ee34335300e8",
+    "ticker": "OPET",
+    "title": "OPET PETROLCÜLÜK A.Ş.",
+    "type": "real_sector",
+    "reason": "Industrial, trade or service company by its activity.",
+    "activity": "Her türlü petrol ürünleri,madeni yağlar ve gresler ile petrol kimyası ürünleri, kimyevi maddeler, boyalar , kimyevi gübre ve ilaçların imali,alımı, satımı,ithali,ihracı,dağıtımı , yurt içi ve dışında nakliyesini yapmak ve yaptırmak, bunların kara ve deniz vasıtasyla boru hatlarıyla naklini yaptır...",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 662082), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a240e95dc30140ee34335300e8"
+  },
+  {
+    "mkkMemberOid": "8acae2c5998f25d70199f11791bb492a",
+    "ticker": "OSVKS",
+    "title": "OSMANLI VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c5998f25d70199f11791bb492a"
+  },
+  {
+    "mkkMemberOid": "8acae2c486d22a3b018b041f67b641d2",
+    "ticker": "OTOSR",
+    "title": "OTOSOR OTOMOTİV A.Ş.",
+    "type": "real_sector",
+    "reason": "Used-vehicle retail.",
+    "activity": "İkinci El Kara Taşıtları Perakende Ticareti",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1213189), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c486d22a3b018b041f67b641d2"
+  },
+  {
+    "mkkMemberOid": "8acae2c468aeffb70169914527d01563",
+    "ticker": "QNBVK",
+    "title": "QNB VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c468aeffb70169914527d01563"
+  },
+  {
+    "mkkMemberOid": "8acae2c582b7eb070182f3043ec810b9",
+    "ticker": "QYHOL",
+    "title": "Q YATIRIM HOLDİNG A.Ş.",
+    "type": "financial",
+    "reason": "Holding company: holding and investment companies get no real-sector findings until the holding methodology exists (decision 0017, #95).",
+    "activity": "Holding",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1175394), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c582b7eb070182f3043ec810b9"
+  },
+  {
+    "mkkMemberOid": "4028e4a1413b7ef5014144f0375b00cf",
+    "ticker": "SARTN",
+    "title": "SARTEN AMBALAJ SANAYİ VE TİCARET A.Ş.",
+    "type": "real_sector",
+    "reason": "Industrial, trade or service company by its activity.",
+    "activity": "Metal ve Plastik Ambalaj Malzemesi İmalatı",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 545525), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a1413b7ef5014144f0375b00cf"
+  },
+  {
+    "mkkMemberOid": "4028e4a14184e9cf01419c00c2a65a7e",
+    "ticker": "TAC",
+    "title": "TACİRLER YATIRIM MENKUL DEĞERLER A.Ş.",
+    "type": "financial",
+    "reason": "Brokerage (aracı kurum) licensed under the Capital Markets Law.",
+    "activity": "3794 SAYILI KANUN'LA DEĞİŞİK 2499 SAYILI SERMAYE PİYASASI KANUNU VE İLGİLİ MEVZUAT HÜKÜMLERİNE UYGUN OLARAK SERMAYE PİYASASI FAALİYETLERİNDE BULUNMAKTADIR. ŞİRKET BU AMACI GERÇEKLEŞTİRMEK İÇİN SERMAYE PİYASASI ARAÇLARININ SERMAYE PİYASASI MEVZUATI ÇERÇEVESİNDE KENDİ NAM VE HESABINA BAŞKASI NAM VE...",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 545878), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a14184e9cf01419c00c2a65a7e"
+  },
+  {
+    "mkkMemberOid": "8acae2c49b85f8cf019c2d1ef34e1606",
+    "ticker": "TEVKS",
+    "title": "TERA VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": "Varlık Kiralama ve Kira Sertifikası İhracı",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1606291), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c49b85f8cf019c2d1ef34e1606"
+  },
+  {
+    "mkkMemberOid": "4028e4a240f2ef4c01413b17046806f6",
+    "ticker": "TFNVK",
+    "title": "TF VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a240f2ef4c01413b17046806f6"
+  },
+  {
+    "mkkMemberOid": "8acae2c469cee2a4016a77942be766cf",
+    "ticker": "TRKNT",
+    "title": "TURKNET İLETİŞİM HİZMETLERİ A.Ş.",
+    "type": "real_sector",
+    "reason": "Industrial, trade or service company by its activity.",
+    "activity": "Şirket esas sözleşmesi Amaç ve Konu başlıklı Madde 3'te yer verildiği üzere, her türlü telekomünikasyon hizmeti verilmesi ve / veya altyapı kurulması ve işletilmesine yönelik faaliyetler yürütmektedir. Turknet, Bilgi Teknolojileri ve İletişim Kurumu (BTK) 15/03/2002 Ulusal I?nternet Servis Sag?la...",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1252884), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c469cee2a4016a77942be766cf"
+  },
+  {
+    "mkkMemberOid": "4028e4a2416f888d01416f9bd89f0453",
+    "ticker": "TRMEN",
+    "title": "TRIVE YATIRIM MENKUL DEĞERLER A.Ş.",
+    "type": "financial",
+    "reason": "Brokerage (aracı kurum) licensed under the Capital Markets Law.",
+    "activity": "661201-MENKUL KIYMETLER ARACILIK FAALIYETLERI (BORSA ARACILIGI VE VADELI ISLEMLER DAHIL).",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 539746), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a2416f888d01416f9bd89f0453"
+  },
+  {
+    "mkkMemberOid": "4028e4a1415f4d9b014160385b35407b",
+    "ticker": "TV8TV",
+    "title": "TV8 TV YAYINCILIK A.Ş.",
+    "type": "real_sector",
+    "reason": "Industrial, trade or service company by its activity.",
+    "activity": "Esas Sözleşme'nin \"Amaç ve Konu\" başlıklı 3. maddesi uyarınca; Şirket'in başlıca amacı; 6112 sayılı Radyo ve Televizyonların Kuruluş ve Yayın Hizmetleri Hakkında Kanun hükümleri çerçevesinde radyo yayıncılığı, televizyon yayıncılığı ve isteğe bağlı yayın hizmeti faaliyetlerinde bulunmaktır ve Şir...",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1552921), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a1415f4d9b014160385b35407b"
+  },
+  {
+    "mkkMemberOid": "8acae2c45835eb6501589126775520fb",
+    "ticker": "VAKVK",
+    "title": "VAKIF VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": null,
+    "source": "Company title on KAP ('Varlık Kiralama'; decision 0017 classifies lease certificate issuers by it), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c45835eb6501589126775520fb"
+  },
+  {
+    "mkkMemberOid": "8acae2c56faf888c0171e54394012909",
+    "ticker": "VDFLO",
+    "title": "VDF FİLO KİRALAMA A.Ş.",
+    "type": "real_sector",
+    "reason": "Operating vehicle rental: a service business, not a lessor that finances assets.",
+    "activity": "Operasyonel araç kiralama",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1380119), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c56faf888c0171e54394012909"
+  },
+  {
+    "mkkMemberOid": "8acae2c56d759b01016e02beaf763330",
+    "ticker": "YATVK",
+    "title": "YATIRIM VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": "Varlık Kiralama Şirketi",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 814685), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c56d759b01016e02beaf763330"
+  },
+  {
+    "mkkMemberOid": "4028e4a240f2ef4c01412ae47c99052d",
+    "ticker": "YKR",
+    "title": "YAPI KREDİ YATIRIM MENKUL DEĞERLER A.Ş.",
+    "type": "financial",
+    "reason": "Brokerage (aracı kurum) licensed under the Capital Markets Law.",
+    "activity": "Menkul Kıymetler Aracılık Faaliyetleri (Borsa Aracılığı ve Vadeli İşlemler dahil)",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1572456), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/4028e4a240f2ef4c01412ae47c99052d"
+  },
+  {
+    "mkkMemberOid": "8acae2c5540d442c0154a032b7740b6f",
+    "ticker": "ZKBVK",
+    "title": "ZİRAAT KATILIM VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": "Varlık Kiralama ve KiranSertifikası İhracı",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 538765), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c5540d442c0154a032b7740b6f"
+  },
+  {
+    "mkkMemberOid": "8acae2c465a51c3b01672b4d7dd02796",
+    "ticker": "ZKBVR",
+    "title": "ZKB VARLIK KİRALAMA A.Ş.",
+    "type": "financial",
+    "reason": "Lease certificate (sukuk) issuer: a special-purpose financial company (decision 0017).",
+    "activity": "Varlık Kiralama ve Kira Sertifikası İhracı",
+    "source": "KAP general information page, 'Şirketin Faaliyet Konusu' (disclosure 1001496), read 2026-11-22: https://www.kap.org.tr/tr/sirket-bilgileri/genel/8acae2c465a51c3b01672b4d7dd02796"
+  }
+]
