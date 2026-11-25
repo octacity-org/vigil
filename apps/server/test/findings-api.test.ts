@@ -296,12 +296,10 @@ describe("sorting and paging", () => {
 describe("headline", () => {
   const headlineOf = async (id: string) => (await byId(id))?.headline ?? "";
 
-  test("S1 states both margins Turkish-style and the direction", async () => {
-    const h = await headlineOf(GN2);
-    expect(h).toStartWith("3 aylık brüt marj");
-    expect(h).toContain("%47,50");
-    expect(h).toContain("%21,54");
-    expect(h).toContain("geriledi");
+  test("S1 is the docs/API.md example sentence", async () => {
+    expect(await headlineOf(GN2)).toBe(
+      "3 aylık brüt marj bir yıl önceki %47,50 seviyesinden %21,54 seviyesine geriledi.",
+    );
   });
 
   test("a negative margin keeps its sign before %", async () => {
