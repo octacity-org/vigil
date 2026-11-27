@@ -72,6 +72,16 @@ describe("start-up", () => {
     expect(server.settings).toEqual({ data_dir: expect.any(String), quarters: [], llm: null });
   });
 
+  test("every endpoint built so far is served (#216, #217, #223, #224, #226)", async () => {
+    server = await start();
+    for (const path of ["/v1/meta", "/v1/companies", "/v1/findings", "/v1/settings"]) {
+      expect(`${path} ${(await fetch(`${server.url}${path}`)).status}`).toBe(`${path} 200`);
+    }
+    const meta = (await (await fetch(`${server.url}/v1/meta`)).json()) as { quarters: unknown[] };
+    expect(meta.quarters).toEqual([]);
+    expect((await fetch(`${server.url}/v1/findings/2026-2-KATMR-gross_margin_change`)).status).toBe(404);
+  });
+
   test("processes the reports stored before it started", async () => {
     const store = openStore(dataDir);
     migrateStore(store);

@@ -18,6 +18,7 @@ import { join } from "node:path";
 import { createApp, DEFAULT_PORT, type Routes, type RunningServer, serve } from "./api/app.ts";
 import { companyRoutes } from "./api/companies.ts";
 import { findingRoutes } from "./api/findings.ts";
+import { metaRoutes } from "./api/meta.ts";
 import { settingsRoutes } from "./api/settings.ts";
 import type { LinkResult } from "./corrections.ts";
 import { close, connect, type Database } from "./db.ts";
@@ -193,7 +194,13 @@ export async function startServer(options: ServerOptions): Promise<VigilServer> 
       );
     }
     const app = createApp({
-      routes: [companyRoutes(db), findingRoutes(db), settingsRoutes(settingsPath), ...(options.routes ?? [])],
+      routes: [
+        companyRoutes(db),
+        findingRoutes(db),
+        metaRoutes({ db }),
+        settingsRoutes(settingsPath),
+        ...(options.routes ?? []),
+      ],
       isReady: () => ready,
       onInternalError: (e) => log("error", "API error", { error: describe(e) }),
     });
