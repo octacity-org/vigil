@@ -19,6 +19,7 @@ import { createApp, DEFAULT_PORT, type Routes, type RunningServer, serve } from 
 import { companyRoutes } from "./api/companies.ts";
 import { findingRoutes } from "./api/findings.ts";
 import { metaRoutes } from "./api/meta.ts";
+import { reportRoutes } from "./api/reports.ts";
 import { settingsRoutes } from "./api/settings.ts";
 import type { LinkResult } from "./corrections.ts";
 import { close, connect, type Database } from "./db.ts";
@@ -198,6 +199,7 @@ export async function startServer(options: ServerOptions): Promise<VigilServer> 
         companyRoutes(db, { store }),
         findingRoutes(db),
         metaRoutes({ db }),
+        reportRoutes(db),
         settingsRoutes(settingsPath),
         ...(options.routes ?? []),
       ],
