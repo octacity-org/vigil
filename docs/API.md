@@ -184,7 +184,7 @@ Every error has the same shape and an HTTP status:
 
 `GET /v1/companies` lists every company with a loaded report; `latest_report` is its latest by report period, then publication time, then document id. `q` matches the codes and the title, folded the Turkish way and without spaces, so `işbank`, `ISBANK` and `İş Bank` find `TÜRKİYE İŞ BANKASI A.Ş.`; before the company list is loaded only the code matches. `sort` is `code` (default) or `title`.
 
-`/v1/companies/{code}` adds `reports`: every report with `document_id`, `year`, `quarter`, `consolidation`, `published_at`, `quality`, and `corrects` (the document it corrects, or `null`).
+`/v1/companies/{code}` adds `reports`: every report with `document_id`, `year`, `quarter`, `consolidation`, `published_at`, `quality`, and `corrects` (the document it corrects, or `null`). Any code of the company, from its ticker groups or the company list, resolves to it.
 
 ### Report
 

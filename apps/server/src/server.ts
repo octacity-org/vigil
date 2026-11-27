@@ -195,7 +195,7 @@ export async function startServer(options: ServerOptions): Promise<VigilServer> 
     }
     const app = createApp({
       routes: [
-        companyRoutes(db),
+        companyRoutes(db, { store }),
         findingRoutes(db),
         metaRoutes({ db }),
         settingsRoutes(settingsPath),
